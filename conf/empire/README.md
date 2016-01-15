@@ -1,7 +1,13 @@
 # 'production' Empire example
 
 This is meant to be a base guideline for building a production ready
-[Empire][Empire] cluster. In order to launch it, you'll want to modify the
+[Empire][Empire] cluster.
+
+First copy the `example.env` & `empire.yaml` files somewhere for you to modify. You
+should not use the one in these directories directly for any real use as they may
+change in the future, which could cause issues for your existing deployment.
+
+In order to launch it, you'll want to modify the
 [example.env][example.env] to fit your needs. It's worth reading through the
 [example.env][example.env] & [empire.yaml][empire.yaml] for the comments that
 detail how things will be built. Once the env is to your liking, you can launch
@@ -39,6 +45,7 @@ likely be tightened up quite a bit more to suit your needs. Some basics:
 That said - if you see something that we missed, please let me know!
 
 [Empire]: https://github.com/remind101/empire/
-[example.env]: https://github.com/remind101/stacker/blob/master/conf/empire/example.env
-[empire.yaml]: https://github.com/remind101/stacker/blob/master/conf/empire/empire.yaml
+[example.env]: https://github.com/remind101/stacker_blueprints/blob/master/conf/empire/example.env
+[empire.yaml]: https://github.com/remind101/stacker_blueprints/blob/master/conf/empire/empire.yaml
 [empire_ami]: https://github.com/remind101/empire_ami
+[stacker_blueprints]: https://github.com/remind101/stacker_blueprints
