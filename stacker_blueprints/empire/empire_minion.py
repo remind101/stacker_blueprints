@@ -199,13 +199,13 @@ class EmpireMinion(EmpireBase):
     def generate_seed_contents(self):
         seed = [
             "EMPIRE_HOSTGROUP=minion\n",
-            "ECS_CLUSTER=\"", Ref("EmpireMinionCluster"), "\"\n",
-            "DOCKER_REGISTRY=\"", Ref("DockerRegistry"), "\"\n",
-            "DOCKER_USER=\"", Ref("DockerRegistryUser"), "\"\n",
-            "DOCKER_PASS=\"", Ref("DockerRegistryPassword"), "\"\n",
-            "DOCKER_EMAIL=\"", Ref("DockerRegistryEmail"), "\"\n",
-            "ENABLE_STREAMING_LOGS=\"", If("EnableStreamingLogs",
-                                           "true", "false"), "\"\n"
+            "ECS_CLUSTER=", Ref("EmpireMinionCluster"), "\n",
+            "DOCKER_REGISTRY=", Ref("DockerRegistry"), "\n",
+            "DOCKER_USER=", Ref("DockerRegistryUser"), "\n",
+            "DOCKER_PASS=", Ref("DockerRegistryPassword"), "\n",
+            "DOCKER_EMAIL=", Ref("DockerRegistryEmail"), "\n",
+            "ENABLE_STREAMING_LOGS=", If("EnableStreamingLogs",
+                                         "true", "false"), "\n"
             ]
         return seed
 
