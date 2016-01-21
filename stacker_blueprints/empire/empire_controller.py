@@ -1,7 +1,8 @@
 from troposphere import Ref, Join, Output, GetAtt, Not, Equals, If, FindInMap
 from troposphere import ec2, autoscaling
 from troposphere.autoscaling import Tag as ASTag
-from troposphere.iam import InstanceProfile, Policy, Role
+from troposphere.iam import InstanceProfile, Policy, PolicyType, Role
+from troposphere.sns import Topic
 from troposphere import elasticloadbalancing as elb
 from troposphere.route53 import RecordSetType
 
@@ -13,7 +14,8 @@ from .empire_base import EmpireBase
 
 from .policies import (
     service_role_policy,
-    empire_policy
+    empire_policy,
+    sns_events_policy
 )
 
 CLUSTER_SG_NAME = "EmpireControllerSecurityGroup"
@@ -107,6 +109,16 @@ class EmpireController(EmpireBase):
             "type": "String",
             "description": "Github Organization to enable Github "
                            "Authentication in Empire."},
+        "EmpireGithubWebhooksSecret": {
+            "type": "String",
+            "description": "If using github webhooks for deploying, set this "
+                           "to the shared secret for the webhook.",
+            "default": ""},
+        "EmpireGithubDeploymentsEnvironment": {
+            "type": "String",
+            "description": "If using github webhooks for deploying, this "
+                           "is the environment to deploy from.",
+            "default": ""},
         "EmpireTokenSecret": {
             "type": "String",
             "no_echo": True,
@@ -133,6 +145,14 @@ class EmpireController(EmpireBase):
                            "Note: Without this Empire creates a kinesis "
                            "stream per app that you deploy in Empire.",
             "default": ""},
+        "EnableSNSEvents": {
+            "type": "String",
+            "allowed_values": ["true", "false"],
+            "description": "If set to true, enables sending empire "
+                           "events to SNS. Specify EventsSNSTopicName "
+                           "to use a specific topic, or else one will "
+                           "be created for you.",
+            "default": "false"},
     }
 
     def create_conditions(self):
@@ -145,6 +165,15 @@ class EmpireController(EmpireBase):
         self.template.add_condition(
             "EnableStreamingLogs",
             Equals(Ref("DisableStreamingLogs"), ""))
+        self.template.add_condition(
+            "HasGithubWebhooksSecret",
+            Not(Equals(Ref("EmpireGithubWebhooksSecret"), "")))
+        self.template.add_condition(
+            "HasGithubDeploymentEnvironment",
+            Not(Equals(Ref("EmpireGithubDeploymentsEnvironment"), "")))
+        self.template.add_condition(
+            "EnableSNSEvents",
+            Not(Equals(Ref("EnableSNSEvents"), "false")))
 
     def create_security_groups(self):
         t = self.template
@@ -264,11 +293,35 @@ class EmpireController(EmpireBase):
                 Policies=[
                     Policy(PolicyName="EmpireControllerPolicy",
                            PolicyDocument=empire_policy())]))
+        # Add SNS Events policy if Events are enabled
+        t.add_resource(
+            PolicyType(
+                "SNSEventsPolicy",
+                PolicyName="EmpireSNSEventsPolicy",
+                Condition="EnableSNSEvents",
+                PolicyDocument=sns_events_policy(Ref("EventTopic")),
+                Roles=[Ref("EmpireControllerRole")]))
+
         t.add_resource(
             InstanceProfile(
                 "EmpireControllerProfile",
                 Path="/",
                 Roles=[Ref("EmpireControllerRole")]))
+        t.add_output(
+            Output("EmpireControllerRole",
+                   Value=Ref("EmpireControllerRole")))
+
+    def create_events_topic(self):
+        t = self.template
+        t.add_resource(
+            Topic(
+                "EventTopic",
+                Condition="EnableSNSEvents",
+                DisplayName="Empire"))
+        t.add_output(
+            Output("SNSEventTopicArn",
+                   Condition="EnableSNSEvents",
+                   Value=Ref("EventTopic")))
 
     def generate_seed_contents(self):
         seed = [
@@ -296,8 +349,24 @@ class EmpireController(EmpireBase):
             "DOCKER_PASS=", Ref("DockerRegistryPassword"), "\n",
             "DOCKER_EMAIL=", Ref("DockerRegistryEmail"), "\n",
             "ENABLE_STREAMING_LOGS=", If("EnableStreamingLogs",
-                                         "true", "false"), "\n"
-            ]
+                                         "true", "false"), "\n",
+            # Conditionally add the SNS Topic
+            If("EnableSNSEvents",
+               Join("", ["EMPIRE_EVENTS_SNS_TOPIC=", Ref("EventTopic"), "\n"]),
+               ""),
+            # Setup github webhooks if info profided
+            If("HasGithubWebhooksSecret",
+               Join("",
+                    ["EMPIRE_GITHUB_WEBHOOKS_SECRET=",
+                     Ref("EmpireGithubWebhooksSecret"), "\n"]),
+               ""),
+            If("HasGithubDeploymentEnvironment",
+               Join("",
+                    ["EMPIRE_GITHUB_DEPLOYMENTS_ENVIRONMENT=",
+                     Ref("EmpireGithubDeploymentsEnvironment"), "\n"]),
+               ""),
+
+        ]
         return seed
 
     def create_autoscaling_group(self):
@@ -325,3 +394,7 @@ class EmpireController(EmpireBase):
                 VPCZoneIdentifier=Ref("PrivateSubnets"),
                 LoadBalancerNames=[Ref("EmpireControllerLoadBalancer"), ],
                 Tags=[ASTag('Name', 'empire_controller', True)]))
+
+    def create_template(self):
+        self.create_events_topic()
+        super(EmpireController, self).create_template()

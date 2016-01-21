@@ -39,7 +39,7 @@ mappings:
     us-east-1:
       NAT: ami-c02b04a8
       ubuntu1404: ami-c135f3aa
-      empire: ami-80166fea # https://circleci.com/gh/remind101/empire_ami/55
+      empire: ami-6533150f # https://circleci.com/gh/remind101/empire_ami/55
     us-west-1:
       NAT: ami-67a54423
       ubuntu1404: ami-bf3dccfb
@@ -164,5 +164,10 @@ stacks:
       EmpireGithubClientId: ${empire_controller_github_client_id}
       EmpireGithubClientSecret: ${empire_controller_github_client_secret}
       EmpireGithubOrganization: ${empire_controller_github_organization}
+      # Used for github deploy webhooks
+      EmpireGithubWebhooksSecret: ${empire_controller_github_webhooks_secret}
+      EmpireGithubDeploymentsEnvironment: ${empire_controller_github_deployments_environment}
       EmpireTokenSecret: ${empire_controller_token_secret}
       DisableStreamingLogs: ${empire_disable_streaming_logs}
+      # Enables SNS Events for empire commands
+      EnableSNSEvents: ${empire_controller_enable_sns_events}
