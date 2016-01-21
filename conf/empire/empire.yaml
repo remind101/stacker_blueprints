@@ -39,19 +39,19 @@ mappings:
     us-east-1:
       NAT: ami-c02b04a8
       ubuntu1404: ami-c135f3aa
-      empire: ami-6533150f # https://circleci.com/gh/remind101/empire_ami/55
+      empire: ami-b30620d9 # https://circleci.com/gh/remind101/empire_ami/61
     us-west-1:
       NAT: ami-67a54423
       ubuntu1404: ami-bf3dccfb
-      empire: ami-90c3acf0 # https://circleci.com/gh/remind101/empire_ami/55
+      empire: ami-9ba8dcfb # https://circleci.com/gh/remind101/empire_ami/61
     us-west-2:
       NAT: ami-2dae821d
       ubuntu1404: ami-f15b5dc1
-      empire: ami-cdc0d6ac # https://circleci.com/gh/remind101/empire_ami/55
+      empire: ami-307b9e50 # https://circleci.com/gh/remind101/empire_ami/61
     eu-west-1:
       NAT: ami-ef76e898
       ubuntu1404: ami-47a23a30
-      empire: ami-3cef374f # https://circleci.com/gh/remind101/empire_ami/55
+      empire: ami-18e3566b # https://circleci.com/gh/remind101/empire_ami/61
 
 # Many stacks need these settings, or a subset of them, from the VPC -
 # this makes it easy to pass them around. Stacker will drop unused Parameters
