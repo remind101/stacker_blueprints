@@ -4,7 +4,7 @@ logger = logging.getLogger(__name__)
 
 from awacs.aws import Statement, Allow, Policy, Action
 
-from awacs import ecs, ec2, iam, route53, kinesis
+from awacs import ecs, ec2, iam, route53, kinesis, sns
 from awacs import elasticloadbalancing as elb
 
 
@@ -89,6 +89,20 @@ def empire_policy():
                 Resource=["*"]),
         ]
     )
+    return p
+
+
+def sns_events_policy(topic_arn):
+    p = Policy(
+        Statement=[
+            Statement(
+                Effect=Allow,
+                Action=[sns.Publish],
+                Resource=[topic_arn],
+            )
+        ]
+    )
+
     return p
 
 
