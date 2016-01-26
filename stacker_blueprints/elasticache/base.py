@@ -8,7 +8,7 @@ from troposphere.elasticache import (
 
 from troposphere.route53 import RecordSetType
 
-from staker.blueprints.base import Blueprint
+from stacker.blueprints.base import Blueprint
 
 # Resource name constants
 SUBNET_GROUP = "SubnetGroup"
