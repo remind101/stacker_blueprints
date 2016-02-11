@@ -6,7 +6,7 @@ src_dir = os.path.dirname(__file__)
 install_requires = [
     "troposphere>=1.3.0",
     "awacs>=0.5.3",
-    "stacker>=0.5.4, <=0.6.0",
+    "stacker>=0.5.4, <=0.6.2",
 ]
 
 tests_require = [
@@ -24,7 +24,7 @@ def read(filename):
 if __name__ == "__main__":
     setup(
         name="stacker_blueprints",
-        version="0.6.1",
+        version="0.6.2",
         author="Michael Barrett",
         author_email="loki77@gmail.com",
         license="New BSD license",
