@@ -56,6 +56,10 @@ class AutoscalingGroup(Blueprint):
             'type': 'String',
             'description': 'The SSL certificate name to use on the ELB.',
             'default': ''},
+        'ELBCertType': {
+            'type': 'String',
+            'description': 'The SSL certificate type to use on the ELB.',
+            'default': ''},
     }
 
     def create_conditions(self):
@@ -74,6 +78,9 @@ class AutoscalingGroup(Blueprint):
         self.template.add_condition(
             "SetupELBDNS",
             And(Condition("CreateELB"), Condition("SetupDNS")))
+        self.template.add_condition(
+            "UseIAM",
+            Not(Equals(Ref("ELBCertType"), "acm")))
 
     def create_security_groups(self):
         t = self.template
@@ -120,9 +127,15 @@ class AutoscalingGroup(Blueprint):
             InstanceProtocol='HTTP'
         )]
 
-        cert_id = Join("", [
+        # Choose proper certificate source
+        acm_cert = Join("", [
+            "arn:aws:acm:", Ref("AWS::Region"), ":", Ref("AWS::AccountId"),
+            ":certificate/", Ref("ELBCertName")])
+        iam_cert = Join("", [
             "arn:aws:iam::", Ref("AWS::AccountId"), ":server-certificate/",
             Ref("ELBCertName")])
+        cert_id = If("UseIAM", iam_cert, acm_cert)
+
         with_ssl = copy.deepcopy(no_ssl)
         with_ssl.append(elb.Listener(
             LoadBalancerPort=443,
