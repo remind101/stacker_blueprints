@@ -1,4 +1,4 @@
-## 0.6.3 (2016-03-15)
+## current (2016-03-15)
 
 - Add support for ACM certificates
 

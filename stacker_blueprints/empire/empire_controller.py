@@ -180,7 +180,7 @@ class EmpireController(EmpireBase):
             "EnableSNSEvents",
             Not(Equals(Ref("EnableSNSEvents"), "false")))
         self.template.add_condition(
-            "UseIAM",
+            "UseIAMCert",
             Not(Equals(Ref("ControllerELBCertType"), "acm")))
 
     def create_security_groups(self):
@@ -239,7 +239,7 @@ class EmpireController(EmpireBase):
         iam_cert = Join("", [
             "arn:aws:iam::", Ref("AWS::AccountId"), ":server-certificate/",
             Ref("ControllerELBCertName")])
-        cert_id = If("UseIAM", iam_cert, acm_cert)
+        cert_id = If("UseIAMCert", iam_cert, acm_cert)
 
         with_ssl = []
         with_ssl.append(elb.Listener(
