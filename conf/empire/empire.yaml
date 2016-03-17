@@ -70,7 +70,7 @@ docker_params: &docker_params
   DockerRegistryUser: ${docker_registry_user}
   DockerRegistryPassword: ${docker_registry_password}
   DockerRegistryEmail: ${docker_registry_email}
- 
+
 stacks:
   - name: vpc
     class_path: stacker_blueprints.vpc.VPC
@@ -153,6 +153,7 @@ stacks:
       ImageName: empire
       TrustedNetwork: ${trusted_network_cidr}
       ControllerELBCertName: ${empire_controller_cert_name}
+      ControllerELBCertType: ${empire_controller_cert_type}
       PublicEmpireAppELBSG: empireMinion::PublicEmpireAppELBSG
       PrivateEmpireAppELBSG: empireMinion::PrivateEmpireAppELBSG
       EmpireMinionCluster: empireMinion::MinionECSCluster

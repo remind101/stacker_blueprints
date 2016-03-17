@@ -1,3 +1,7 @@
+## current (2016-03-15)
+
+- Add support for ACM certificates
+
 ## 0.6.2 (2016-02-11)
 
 - Update dependency to include new compatible stacker release 0.6.1

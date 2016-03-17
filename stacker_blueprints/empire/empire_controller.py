@@ -74,6 +74,11 @@ class EmpireController(EmpireBase):
             "description": "The SSL certificate name to use on the ELB. Note: "
                            "If this is set, non-HTTPS access is disabled.",
             "default": ""},
+        "ControllerELBCertType": {
+            "type": "String",
+            "description": "The SSL certificate type to use on the ELB. Note: "
+                           "Can be either acm or iam.",
+            "default": ""},
         "PublicEmpireAppELBSG": {
             "type": "AWS::EC2::SecurityGroup::Id",
             "description": "The SG used by the Public App ELBs."},
@@ -174,6 +179,9 @@ class EmpireController(EmpireBase):
         self.template.add_condition(
             "EnableSNSEvents",
             Not(Equals(Ref("EnableSNSEvents"), "false")))
+        self.template.add_condition(
+            "UseIAMCert",
+            Not(Equals(Ref("ControllerELBCertType"), "acm")))
 
     def create_security_groups(self):
         t = self.template
@@ -224,9 +232,15 @@ class EmpireController(EmpireBase):
             InstanceProtocol='TCP'
         )]
 
-        cert_id = Join("", [
+        # Choose proper certificate source
+        acm_cert = Join("", [
+            "arn:aws:acm:", Ref("AWS::Region"), ":", Ref("AWS::AccountId"),
+            ":certificate/", Ref("ControllerELBCertName")])
+        iam_cert = Join("", [
             "arn:aws:iam::", Ref("AWS::AccountId"), ":server-certificate/",
             Ref("ControllerELBCertName")])
+        cert_id = If("UseIAMCert", iam_cert, acm_cert)
+
         with_ssl = []
         with_ssl.append(elb.Listener(
             LoadBalancerPort=443,
