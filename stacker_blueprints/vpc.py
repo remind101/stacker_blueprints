@@ -283,7 +283,7 @@ class VPC(Blueprint):
         eip = t.add_resource(ec2.EIP(
             'NATExternalIp%s' % suffix,
             Domain='vpc',
-            InstanceId=If("UseNatInstances", Ref(nat_instance), ""),
+            InstanceId=If("UseNatInstances", Ref(nat_instance), Ref("AWS::NoValue")),
             DependsOn=GW_ATTACH))
 
         t.add_resource(ec2.NatGateway(
