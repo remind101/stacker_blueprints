@@ -87,15 +87,17 @@ class BaseRDS(Blueprint):
         Return:
             list: A list of valid db families for a given db engine.
         """
-        return ["mysql5.1", "mysql5.5", "mysql5.6",
-                "oracle-ee-11.2", "oracle-ee-12.1",
-                "oracle-se-11.2", "oracle-se-12.1",
-                "oracle-se1-11.2", "oracle-se1-12.1",
-                "postgres9.3", "postgres9.4",
-                "sqlserver-ee-10.50", "sqlserver-ee-11.00",
-                "sqlserver-ex-10.50", "sqlserver-ex-11.00",
-                "sqlserver-se-10.50", "sqlserver-se-11.00",
-                "sqlserver-web-10.50", "sqlserver-web-11.00"]
+        return [
+            "mysql5.1", "mysql5.5", "mysql5.6", "mysql5.7",
+            "oracle-ee-11.2", "oracle-ee-12.1",
+            "oracle-se-11.2", "oracle-se-12.1",
+            "oracle-se1-11.2", "oracle-se1-12.1",
+            "postgres9.3", "postgres9.4", "postgres9.5",
+            "sqlserver-ee-10.50", "sqlserver-ee-11.00",
+            "sqlserver-ex-10.50", "sqlserver-ex-11.00",
+            "sqlserver-se-10.50", "sqlserver-se-11.00",
+            "sqlserver-web-10.50", "sqlserver-web-11.00"
+        ]
 
     def _get_parameters(self):
         parameters = {
