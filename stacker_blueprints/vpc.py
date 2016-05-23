@@ -5,7 +5,7 @@ This includes the VPC, it's subnets, availability zones, etc.
 
 from troposphere import (
     Ref, Output, Join, FindInMap, Select, GetAZs, Not, Equals, Tags, Or,
-    Condition
+    Condition, GetAtt, If
 )
 from troposphere import ec2
 from troposphere.route53 import HostedZone, HostedZoneVPCs
@@ -13,6 +13,7 @@ from troposphere.route53 import HostedZone, HostedZoneVPCs
 from stacker.blueprints.base import Blueprint
 
 NAT_INSTANCE_NAME = 'NatInstance%s'
+NAT_GATEWAY_NAME = 'NatGateway%s'
 GATEWAY = 'InternetGateway'
 GW_ATTACH = 'GatewayAttach'
 VPC_NAME = "VPC"
@@ -63,6 +64,12 @@ class VPC(Blueprint):
             "description": "The image name to use from the AMIMap (usually "
                            "found in the config file.)",
             "default": "NAT"},
+        "UseNatGateway": {
+            "type": "String",
+            "allowed_values": ["true", "false"],
+            "description": "If set to true, will configure a NAT Gateway"
+                           "instead of NAT instances.",
+            "default": "false"},
     }
 
     def create_conditions(self):
@@ -81,6 +88,12 @@ class VPC(Blueprint):
         self.template.add_condition(
             "NoHostedZones",
             Not(Condition("HasHostedZones")))
+        self.template.add_condition(
+            "UseNatGateway",
+            Equals(Ref("UseNatGateway"), "true"))
+        self.template.add_condition(
+            "UseNatInstances",
+            Not(Condition("UseNatGateway")))
 
     def create_vpc(self):
         t = self.template
@@ -197,12 +210,14 @@ class VPC(Blueprint):
                     "%sRouteTableAssociation%s" % (name_prefix, name_suffix),
                     SubnetId=Ref(subnet_name),
                     RouteTableId=Ref(route_table_name)))
+
+                route_name = '%sRoute%s' % (name_prefix, name_suffix)
                 if net_type == 'public':
                     # the public subnets are where the NAT instances live,
                     # so their default route needs to go to the AWS
                     # Internet Gateway
                     t.add_resource(ec2.Route(
-                        "%sRoute%s" % (name_prefix, name_suffix),
+                        route_name,
                         RouteTableId=Ref(route_table_name),
                         DestinationCidrBlock="0.0.0.0/0",
                         GatewayId=Ref(GATEWAY)))
@@ -211,10 +226,18 @@ class VPC(Blueprint):
                     # Private subnets are where actual instances will live
                     # so their gateway needs to be through the nat instances
                     t.add_resource(ec2.Route(
-                        '%sRoute%s' % (name_prefix, name_suffix),
+                        route_name,
                         RouteTableId=Ref(route_table_name),
                         DestinationCidrBlock='0.0.0.0/0',
-                        InstanceId=Ref(NAT_INSTANCE_NAME % name_suffix)))
+                        InstanceId=If(
+                            "UseNatInstances",
+                            Ref(NAT_INSTANCE_NAME % name_suffix),
+                            Ref("AWS::NoValue")),
+                        NatGatewayId=If(
+                            "UseNatGateway",
+                            Ref(NAT_GATEWAY_NAME % name_suffix),
+                            Ref("AWS::NoValue"))))
+
         for net_type in net_types:
             t.add_output(Output(
                 "%sSubnets" % net_type.capitalize(),
@@ -237,6 +260,7 @@ class VPC(Blueprint):
         return t.add_resource(ec2.SecurityGroup(
             NAT_SG,
             VpcId=VPC_ID,
+            Condition="UseNatInstances",
             GroupDescription='NAT Instance Security Group',
             SecurityGroupIngress=[nat_private_in_all_rule],
             SecurityGroupEgress=[nat_public_out_all_rule, ]))
@@ -246,6 +270,7 @@ class VPC(Blueprint):
         suffix = zone_id
         nat_instance = t.add_resource(ec2.Instance(
             NAT_INSTANCE_NAME % suffix,
+            Condition="UseNatInstances",
             ImageId=FindInMap('AmiMap', Ref("AWS::Region"), Ref("ImageName")),
             SecurityGroupIds=[Ref(DEFAULT_SG), Ref(NAT_SG)],
             SubnetId=Ref(subnet_name),
@@ -255,11 +280,19 @@ class VPC(Blueprint):
             Tags=[ec2.Tag('Name', 'nat-gw%s' % suffix)],
             DependsOn=GW_ATTACH))
 
-        t.add_resource(ec2.EIP(
+        eip = t.add_resource(ec2.EIP(
             'NATExternalIp%s' % suffix,
             Domain='vpc',
-            InstanceId=Ref(nat_instance),
+            InstanceId=If("UseNatInstances", Ref(nat_instance), Ref("AWS::NoValue")),
             DependsOn=GW_ATTACH))
+
+        t.add_resource(ec2.NatGateway(
+            NAT_GATEWAY_NAME % suffix,
+            Condition="UseNatGateway",
+            AllocationId=GetAtt(eip, 'AllocationId'),
+            SubnetId=Ref(subnet_name),
+        ))
+
         return nat_instance
 
     def create_template(self):
