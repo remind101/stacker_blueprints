@@ -138,7 +138,7 @@ class VPC(Blueprint):
 
     def _dhcp_options_hosted_zones(self):
         t = self.template
-        domain_name = Join(" ", [Ref("BaseDomain"), Ref("InternalDomain")])
+        domain_name = Join(" ", [Ref("InternalDomain"), Ref("BaseDomain")])
         dhcp_options = t.add_resource(ec2.DHCPOptions(
             'DHCPOptionsWithDNS',
             DomainName=domain_name,
