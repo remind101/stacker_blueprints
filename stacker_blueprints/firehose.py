@@ -1,4 +1,5 @@
 from awacs.aws import (
+    Action,
     Allow,
     Condition,
     Policy,
@@ -6,7 +7,6 @@ from awacs.aws import (
     Statement,
     StringEquals,
 )
-import awacs.firehose
 import awacs.logs
 import awacs.s3
 from awacs import sts
@@ -31,6 +31,12 @@ S3_WRITE_POLICY = 'S3WriteAccess'
 LOGS_WRITE_POLICY = 'LogsWriteAccess'
 
 
+class FirehoseAction(Action):
+    def __init__(self, action=None):
+        self.prefix = "firehose"
+        self.action = action
+
+
 def logs_policy():
     statements = [
         Statement(
@@ -50,11 +56,11 @@ def firehose_write_policy():
         Statement(
             Effect=Allow,
             Action=[
-                awacs.firehose.CreateDeliveryStream,
-                awacs.firehose.DeleteDeliveryStream,
-                awacs.firehose.DescribeDeliveryStream,
-                awacs.firehose.PutRecord,
-                awacs.firehose.PutRecordBatch,
+                FirehoseAction("CreateDeliveryStream"),
+                FirehoseAction("DeleteDeliveryStream"),
+                FirehoseAction("DescribeDeliveryStream"),
+                FirehoseAction("PutRecord"),
+                FirehoseAction("PutRecordBatch"),
             ],
             Resource=['*'],
         ),
@@ -105,7 +111,8 @@ class Firehose(Blueprint):
     PARAMETERS = {
         'Role': {
             'type': 'String',
-            'description': 'The role that should have access to write to firehose.',
+            'description': 'The role that should have access to write to '
+                           'firehose.',
             'default': '',
         },
         'BucketName': {
