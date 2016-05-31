@@ -1,3 +1,7 @@
+## 0.6.5 (2016-05-31)
+
+- Fix issue w/ firehose support relying on unreleased awacs features
+
 ## 0.6.4 (2016-05-29)
 
 - Make internal zone first in DNS in VPC blueprints [#7]
