@@ -24,6 +24,8 @@ from troposphere import (
     Ref,
 )
 
+from troposphere import Condition as TropoCondition
+
 BUCKET = 'S3Bucket'
 IAM_ROLE = 'IAMRole'
 ROLE_POLICY = 'RolePolicy'
@@ -190,23 +192,23 @@ class Firehose(Blueprint):
 
         t.add_condition(
             'ExternalRoles',
-            Not(Equals(Ref('RoleNames'), '')),
+            Not(Equals(Join(",", Ref('RoleNames')), '')),
         )
         t.add_condition(
             'ExternalGroups',
-            Not(Equals(Ref('GroupNames'), '')),
+            Not(Equals(Join(",", Ref('GroupNames')), '')),
         )
         t.add_condition(
             'ExternalUsers',
-            Not(Equals(Ref('UserNames'), '')),
+            Not(Equals(Join(",", Ref('UserNames')), '')),
         )
 
-        t.add_condtion(
+        t.add_condition(
             'CreatePolicy',
             Or(
-                Condition("ExternalRoles"),
-                Condition("ExternalGroups"),
-                Condition("ExternalUsers"),
+                TropoCondition("ExternalRoles"),
+                TropoCondition("ExternalGroups"),
+                TropoCondition("ExternalUsers"),
             )
         )
 
