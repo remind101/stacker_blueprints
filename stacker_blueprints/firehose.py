@@ -16,8 +16,10 @@ from troposphere import (
     s3,
     Equals,
     GetAtt,
+    If,
     Join,
     Not,
+    Or,
     Output,
     Ref,
 )
@@ -109,15 +111,27 @@ def s3_write_policy(bucket):
 class Firehose(Blueprint):
 
     PARAMETERS = {
-        'Role': {
-            'type': 'String',
-            'description': 'The role that should have access to write to '
-                           'firehose.',
-            'default': '',
+        "RoleNames": {
+            "type": "CommaDelimitedList",
+            "description": "A list of role names that should have access to "
+                           "write to the firehose stream.",
+            "default": "",
         },
-        'BucketName': {
-            'type': 'String',
-            'description': 'Name for the S3 Bucket',
+        "GroupNames": {
+            "type": "CommaDelimitedList",
+            "description": "A list of group names that should have access to "
+                           "write to the firehose stream.",
+            "default": "",
+        },
+        "UserNames": {
+            "type": "CommaDelimitedList",
+            "description": "A list of user names that should have access to "
+                           "write to the firehose stream.",
+            "default": "",
+        },
+        "BucketName": {
+            "type": "String",
+            "description": "Name for the S3 Bucket",
         },
     }
 
@@ -175,8 +189,25 @@ class Firehose(Blueprint):
         t = self.template
 
         t.add_condition(
-            'ExternalRole',
-            Not(Equals(Ref('Role'), '')),
+            'ExternalRoles',
+            Not(Equals(Ref('RoleNames'), '')),
+        )
+        t.add_condition(
+            'ExternalGroups',
+            Not(Equals(Ref('GroupNames'), '')),
+        )
+        t.add_condition(
+            'ExternalUsers',
+            Not(Equals(Ref('UserNames'), '')),
+        )
+
+        t.add_condtion(
+            'CreatePolicy',
+            Or(
+                Condition("ExternalRoles"),
+                Condition("ExternalGroups"),
+                Condition("ExternalUsers"),
+            )
         )
 
         t.add_resource(
@@ -184,8 +215,16 @@ class Firehose(Blueprint):
                 FIREHOSE_WRITE_POLICY,
                 PolicyName='{}-firehose'.format(ns),
                 PolicyDocument=firehose_write_policy(),
-                Roles=[Ref('Role')],
-                Condition='ExternalRole',
+                Roles=If("ExternalRoles",
+                         Ref("RoleNames"),
+                         Ref("AWS::NoValue")),
+                Groups=If("ExternalGroups",
+                          Ref("GroupNames"),
+                          Ref("AWS::NoValue")),
+                Users=If("ExternalUsers",
+                         Ref("UserNames"),
+                         Ref("AWS::NoValue")),
+                Condition='CreatePolicy',
             ),
         )
         t.add_resource(
@@ -193,8 +232,16 @@ class Firehose(Blueprint):
                 LOGS_POLICY,
                 PolicyName='{}-logs'.format(ns),
                 PolicyDocument=logs_policy(),
-                Roles=[Ref('Role')],
-                Condition='ExternalRole',
+                Roles=If("ExternalRoles",
+                         Ref("RoleNames"),
+                         Ref("AWS::NoValue")),
+                Groups=If("ExternalGroups",
+                          Ref("GroupNames"),
+                          Ref("AWS::NoValue")),
+                Users=If("ExternalUsers",
+                         Ref("UserNames"),
+                         Ref("AWS::NoValue")),
+                Condition='CreatePolicy',
             ),
         )
 
