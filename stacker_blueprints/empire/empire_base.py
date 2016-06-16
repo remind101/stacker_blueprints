@@ -26,6 +26,9 @@ class EmpireBase(Blueprint):
     def create_autoscaling_group(self):
         logger.debug("No autoscaling_group to setup for %s", self.name)
 
+    def generate_seed_contents(self):
+        raise Exception('Empire subclass must define seed contents')
+
     def generate_user_data(self):
         contents = Join("", self.generate_seed_contents())
         stanza = Base64(Join(
