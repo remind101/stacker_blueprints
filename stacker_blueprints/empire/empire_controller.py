@@ -1,7 +1,7 @@
 import copy
 
 from troposphere import Ref, Output, GetAtt, FindInMap, If, Equals
-from troposphere import ec2, autoscaling, ecs
+from troposphere import ec2, autoscaling, ecs, logs
 from troposphere.autoscaling import Tag as ASTag
 from troposphere.iam import InstanceProfile, Policy, Role
 
@@ -172,3 +172,12 @@ class EmpireController(EmpireBase):
                 VPCZoneIdentifier=Ref("PrivateSubnets"),
                 LoadBalancerNames=[Ref("EmpireControllerLoadBalancer"), ],
                 Tags=[ASTag('Name', 'empire_controller', True)]))
+
+        def create_log_group(self):
+            t = self.template
+            t.add_resource(logs.LogGroup('RunLogs', Condition='EnableRunLogs'))
+            t.add_output(Output('RunLogs', Value=Ref('RunLogs')))
+
+        def create_template(self):
+            super(EmpireController, self).create_template()
+            self.create_log_group()
