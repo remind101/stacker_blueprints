@@ -204,9 +204,7 @@ class EmpireMinion(EmpireBase):
             "DOCKER_USER=", Ref("DockerRegistryUser"), "\n",
             "DOCKER_PASS=", Ref("DockerRegistryPassword"), "\n",
             "DOCKER_EMAIL=", Ref("DockerRegistryEmail"), "\n",
-            "ENABLE_STREAMING_LOGS=", If("EnableStreamingLogs",
-                                         "true", "false"), "\n"
-            ]
+        ]
         return seed
 
     def create_autoscaling_group(self):
