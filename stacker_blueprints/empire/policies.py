@@ -4,8 +4,10 @@ logger = logging.getLogger(__name__)
 
 from awacs.aws import Statement, Allow, Policy, Action
 
-from awacs import ecs, ec2, iam, route53, kinesis, sns
+from awacs import ecs, ec2, iam, route53, kinesis, sns, logs
 from awacs import elasticloadbalancing as elb
+
+from troposphere import Ref, Join
 
 
 def ecs_agent_policy():
@@ -117,6 +119,24 @@ def logstream_policy():
                     kinesis.CreateStream, kinesis.DescribeStream,
                     Action(kinesis.prefix, "AddTagsToStream"),
                     Action(kinesis.prefix, "PutRecords")
+                ])
+        ]
+    )
+    return p
+
+
+def runlogs_policy(log_group):
+    """Policy needed for Empire -> Cloudwatch logs to record interactive runs."""
+    p = Policy(
+        Statement=[
+            Statement(
+                Effect=Allow,
+                Resource=[
+                    Join('', ['arn:aws:logs:*:*:log-group:', Ref(log_group), ':log-stream:*'])
+                ],
+                Action=[
+                    logs.CreateLogStream,
+                    logs.PutLogEvents,
                 ])
         ]
     )

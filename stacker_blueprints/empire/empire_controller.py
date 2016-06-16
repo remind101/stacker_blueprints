@@ -1,18 +1,19 @@
-from troposphere import Ref, Output, GetAtt, FindInMap
+import copy
+
+from troposphere import Ref, Output, GetAtt, FindInMap, If, Equals
 from troposphere import ec2, autoscaling, ecs
 from troposphere.autoscaling import Tag as ASTag
 from troposphere.iam import InstanceProfile, Policy, Role
 
 from awacs.helpers.trust import (
-    get_default_assumerole_policy, get_ecs_assumerole_policy
+    get_default_assumerole_policy,
 )
 
 from .empire_base import EmpireBase
 
 from .policies import (
-    service_role_policy,
-    empire_policy,
     ecs_agent_policy,
+    runlogs_policy,
 )
 
 CLUSTER_SG_NAME = "EmpireControllerSecurityGroup"
@@ -54,7 +55,21 @@ class EmpireController(EmpireBase):
         "EmpireDBSecurityGroup": {
             "type": "AWS::EC2::SecurityGroup::Id",
             "description": "Security group of Empire database."},
+        "DisableRunLogs": {
+            "type": "String",
+            "description": (
+                "Disables run logs if set to anything."
+                " Note: Without this, Empire will log interactive runs to"
+                " CloudWatch."
+            ),
+        },
     }
+
+    def create_conditions(self):
+        t = self.template
+        t.add_condition(
+            "EnableRunLogs",
+            Equals(Ref("DisableRunLogs"), ""))
 
     def create_security_groups(self):
         t = self.template
@@ -85,32 +100,32 @@ class EmpireController(EmpireBase):
         return [autoscaling.BlockDeviceMapping(
             DeviceName='/dev/sdh', Ebs=volume)]
 
+    def generate_iam_policies(self):
+        base_policies = [
+            Policy(
+                PolicyName="ecs-agent",
+                PolicyDocument=ecs_agent_policy(),
+            ),
+        ]
+        with_logging = copy.deepcopy(base_policies)
+        with_logging.append(
+            Policy(
+                PolicyName="runlogs",
+                PolicyDocument=runlogs_policy(),
+            ),
+        )
+        policies = If("EnableRunLogs", with_logging, base_policies)
+        return policies
+
     def create_iam_profile(self):
         t = self.template
-        ns = self.context.namespace
-        # Create EC2 Container Service Role
-        t.add_resource(
-            Role(
-                "ecsServiceRole",
-                AssumeRolePolicyDocument=get_ecs_assumerole_policy(),
-                Path="/",
-                Policies=[
-                    Policy(PolicyName="ecsServiceRolePolicy",
-                           PolicyDocument=service_role_policy())
-                ]))
-
         # Role for Empire Controllers
         t.add_resource(
             Role(
                 "EmpireControllerRole",
                 AssumeRolePolicyDocument=get_default_assumerole_policy(),
                 Path="/",
-                Policies=[
-                    Policy(PolicyName="EmpireControllerPolicy",
-                           PolicyDocument=empire_policy()),
-                    Policy(PolicyName="%s-ecs-agent" % ns,
-                           PolicyDocument=ecs_agent_policy()),
-                ]))
+                Policies=self.generate_iam_policies()))
 
         t.add_resource(
             InstanceProfile(
@@ -157,6 +172,3 @@ class EmpireController(EmpireBase):
                 VPCZoneIdentifier=Ref("PrivateSubnets"),
                 LoadBalancerNames=[Ref("EmpireControllerLoadBalancer"), ],
                 Tags=[ASTag('Name', 'empire_controller', True)]))
-
-    def create_template(self):
-        super(EmpireController, self).create_template()

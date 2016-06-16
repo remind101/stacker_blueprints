@@ -159,16 +159,15 @@ class EmpireMinion(EmpireBase):
         return [docker_volume, swap_volume]
 
     def generate_iam_policies(self):
-        ns = self.context.namespace
         base_policies = [
             Policy(
-                PolicyName="%s-ecs-agent" % ns,
+                PolicyName="ecs-agent",
                 PolicyDocument=ecs_agent_policy()),
         ]
         with_logging = copy.deepcopy(base_policies)
         with_logging.append(
             Policy(
-                PolicyName="%s-kinesis-logging" % ns,
+                PolicyName="logstream",
                 PolicyDocument=logstream_policy()
             )
         )
