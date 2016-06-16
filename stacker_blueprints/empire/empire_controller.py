@@ -1,10 +1,7 @@
-from troposphere import Ref, Join, Output, GetAtt, Not, Equals, If, FindInMap
-from troposphere import ec2, autoscaling
+from troposphere import Ref, Output, GetAtt, FindInMap
+from troposphere import ec2, autoscaling, ecs
 from troposphere.autoscaling import Tag as ASTag
-from troposphere.iam import InstanceProfile, Policy, PolicyType, Role
-from troposphere.sns import Topic
-from troposphere import elasticloadbalancing as elb
-from troposphere.route53 import RecordSetType
+from troposphere.iam import InstanceProfile, Policy, Role
 
 from awacs.helpers.trust import (
     get_default_assumerole_policy, get_ecs_assumerole_policy
@@ -15,11 +12,10 @@ from .empire_base import EmpireBase
 from .policies import (
     service_role_policy,
     empire_policy,
-    sns_events_policy
+    ecs_agent_policy,
 )
 
 CLUSTER_SG_NAME = "EmpireControllerSecurityGroup"
-ELB_SG_NAME = "EmpireControllerELBSecurityGroup"
 
 
 class EmpireController(EmpireBase):
@@ -30,20 +26,9 @@ class EmpireController(EmpireBase):
         "DefaultSG": {
             "type": "AWS::EC2::SecurityGroup::Id",
             "description": "Top level security group."},
-        "ExternalDomain": {
-            "type": "String",
-            "description": "Base domain for the stack.",
-            "default": ""},
-        "InternalZoneId": {
-            "type": "AWS::Route53::HostedZone::Id",
-            "description": "Zone ID of the internal Empire zone",
-            },
         "PrivateSubnets": {
             "type": "List<AWS::EC2::Subnet::Id>",
             "description": "Subnets to deploy private instances in."},
-        "PublicSubnets": {
-            "type": "List<AWS::EC2::Subnet::Id>",
-            "description": "Subnets to deploy public (elb) instances in."},
         "AvailabilityZones": {
             "type": "CommaDelimitedList",
             "description": "Availability Zones to deploy instances in."},
@@ -61,127 +46,15 @@ class EmpireController(EmpireBase):
             "default": "3"},
         "SshKeyName": {
             "type": "AWS::EC2::KeyPair::KeyName"},
-        "TrustedNetwork": {
-            "type": "String",
-            "description": "CIDR block allowed to connect to empire ELB."},
         "ImageName": {
             "type": "String",
             "description": "The image name to use from the AMIMap (usually "
                            "found in the config file.)",
             "default": "NAT"},
-        "ControllerELBCertName": {
-            "type": "String",
-            "description": "The SSL certificate name to use on the ELB. Note: "
-                           "If this is set, non-HTTPS access is disabled.",
-            "default": ""},
-        "ControllerELBCertType": {
-            "type": "String",
-            "description": "The SSL certificate type to use on the ELB. Note: "
-                           "Can be either acm or iam.",
-            "default": ""},
-        "PublicEmpireAppELBSG": {
-            "type": "AWS::EC2::SecurityGroup::Id",
-            "description": "The SG used by the Public App ELBs."},
-        "PrivateEmpireAppELBSG": {
-            "type": "AWS::EC2::SecurityGroup::Id",
-            "description": "The SG used by the Private App ELBs."},
         "EmpireDBSecurityGroup": {
             "type": "AWS::EC2::SecurityGroup::Id",
             "description": "Security group of Empire database."},
-        "EmpireDatabaseUser": {
-            "type": "String",
-            "description": "User for empire database."},
-        "EmpireDatabasePassword": {
-            "type": "String",
-            "no_echo": True,
-            "description": "Password for empire database."},
-        "EmpireDatabaseHost": {
-            "type": "String",
-            "description": "Hostname for empire database."},
-        "EmpireMinionCluster": {
-            "type": "String",
-            "description": "ECS Cluster Name for Empire Minion Hosts."},
-        "EmpireGithubClientId": {
-            "type": "String",
-            "description": "Github Client Id to enable Github Authentication "
-                           "in Empire."},
-        "EmpireGithubClientSecret": {
-            "type": "String",
-            "no_echo": True,
-            "description": "Github Client Secret to enable Github "
-                           "Authentication in Empire."},
-        "EmpireGithubOrganization": {
-            "type": "String",
-            "description": "Github Organization to enable Github "
-                           "Authentication in Empire."},
-        "EmpireGithubWebhooksSecret": {
-            "type": "String",
-            "description": "If using github webhooks for deploying, set this "
-                           "to the shared secret for the webhook.",
-            "default": ""},
-        "EmpireGithubDeploymentsEnvironment": {
-            "type": "String",
-            "description": "If using github webhooks for deploying, this "
-                           "is the environment to deploy from.",
-            "default": ""},
-        "EmpireTokenSecret": {
-            "type": "String",
-            "no_echo": True,
-            "description": "Secret used to sign Empire access tokens."},
-        "DockerRegistry": {
-            "type": "String",
-            "description": "Optional docker registry where private images "
-                           "are located.",
-            "default": "https://index.docker.io/v1/"},
-        "DockerRegistryUser": {
-            "type": "String",
-            "description": "User for authentication with docker registry."},
-        "DockerRegistryPassword": {
-            "type": "String",
-            "no_echo": True,
-            "description": "Password for authentication with docker "
-                           "registry."},
-        "DockerRegistryEmail": {
-            "type": "String",
-            "description": "Email for authentication with docker registry."},
-        "DisableStreamingLogs": {
-            "type": "String",
-            "description": "Disables streaming logging if set to anything."
-                           "Note: Without this Empire creates a kinesis "
-                           "stream per app that you deploy in Empire.",
-            "default": ""},
-        "EnableSNSEvents": {
-            "type": "String",
-            "allowed_values": ["true", "false"],
-            "description": "If set to true, enables sending empire "
-                           "events to SNS. Specify EventsSNSTopicName "
-                           "to use a specific topic, or else one will "
-                           "be created for you.",
-            "default": "false"},
     }
-
-    def create_conditions(self):
-        self.template.add_condition(
-            "UseSSL",
-            Not(Equals(Ref("ControllerELBCertName"), "")))
-        self.template.add_condition(
-            "UseDNS",
-            Not(Equals(Ref("ExternalDomain"), "")))
-        self.template.add_condition(
-            "EnableStreamingLogs",
-            Equals(Ref("DisableStreamingLogs"), ""))
-        self.template.add_condition(
-            "HasGithubWebhooksSecret",
-            Not(Equals(Ref("EmpireGithubWebhooksSecret"), "")))
-        self.template.add_condition(
-            "HasGithubDeploymentEnvironment",
-            Not(Equals(Ref("EmpireGithubDeploymentsEnvironment"), "")))
-        self.template.add_condition(
-            "EnableSNSEvents",
-            Not(Equals(Ref("EnableSNSEvents"), "false")))
-        self.template.add_condition(
-            "UseIAMCert",
-            Not(Equals(Ref("ControllerELBCertType"), "acm")))
 
     def create_security_groups(self):
         t = self.template
@@ -201,84 +74,11 @@ class EmpireController(EmpireBase):
                 SourceSecurityGroupId=Ref(CLUSTER_SG_NAME),
                 GroupId=Ref('EmpireDBSecurityGroup')))
 
-        # Now setup all Empire ELB SG stuff
-        t.add_resource(
-            ec2.SecurityGroup(
-                ELB_SG_NAME, GroupDescription=ELB_SG_NAME,
-                VpcId=Ref("VpcId")))
-        t.add_resource(
-            ec2.SecurityGroupIngress(
-                "EmpireControllerELBPort80FromTrusted",
-                IpProtocol='tcp', FromPort='80', ToPort='80',
-                CidrIp=Ref("TrustedNetwork"), GroupId=Ref(ELB_SG_NAME)))
-        t.add_resource(
-            ec2.SecurityGroupIngress(
-                "EmpireControllerELBPort443FromTrusted",
-                IpProtocol='tcp', FromPort='443', ToPort='443',
-                CidrIp=Ref("TrustedNetwork"), GroupId=Ref(ELB_SG_NAME)))
-
-        t.add_resource(
-            ec2.SecurityGroupIngress(
-                "ELBPort80ToControllerPort8080",
-                IpProtocol='tcp', FromPort='8080', ToPort='8080',
-                SourceSecurityGroupId=Ref(ELB_SG_NAME),
-                GroupId=Ref(CLUSTER_SG_NAME)))
-
-    def setup_listeners(self):
-        no_ssl = [elb.Listener(
-            LoadBalancerPort=80,
-            Protocol='TCP',
-            InstancePort=8080,
-            InstanceProtocol='TCP'
-        )]
-
-        # Choose proper certificate source
-        acm_cert = Join("", [
-            "arn:aws:acm:", Ref("AWS::Region"), ":", Ref("AWS::AccountId"),
-            ":certificate/", Ref("ControllerELBCertName")])
-        iam_cert = Join("", [
-            "arn:aws:iam::", Ref("AWS::AccountId"), ":server-certificate/",
-            Ref("ControllerELBCertName")])
-        cert_id = If("UseIAMCert", iam_cert, acm_cert)
-
-        with_ssl = []
-        with_ssl.append(elb.Listener(
-            LoadBalancerPort=443,
-            InstancePort=8080,
-            Protocol='SSL',
-            InstanceProtocol="TCP",
-            SSLCertificateId=cert_id))
-        listeners = If("UseSSL", with_ssl, no_ssl)
-
-        return listeners
-
-    def create_load_balancer(self):
+    def create_ecs_cluster(self):
         t = self.template
-        t.add_resource(
-            elb.LoadBalancer(
-                'EmpireControllerLoadBalancer',
-                HealthCheck=elb.HealthCheck(
-                    Target='HTTP:8080/health',
-                    HealthyThreshold=3,
-                    UnhealthyThreshold=3,
-                    Interval=5,
-                    Timeout=3),
-                Listeners=self.setup_listeners(),
-                SecurityGroups=[Ref(ELB_SG_NAME), ],
-                Subnets=Ref("PublicSubnets")))
-
-        # Setup ELB DNS
-        t.add_resource(
-            RecordSetType(
-                'EmpireControllerElbDnsRecord',
-                Condition="UseDNS",
-                HostedZoneName=Join("", [Ref("ExternalDomain"), "."]),
-                Comment='Router ELB DNS',
-                Name=Join('.', ["empire", Ref("ExternalDomain")]),
-                Type='CNAME',
-                TTL='120',
-                ResourceRecords=[
-                    GetAtt("EmpireControllerLoadBalancer", 'DNSName')]))
+        t.add_resource(ecs.Cluster("EmpireControllerCluster"))
+        t.add_output(
+            Output("ControllerECSCluster", Value=Ref("EmpireControllerCluster")))
 
     def build_block_device(self):
         volume = autoscaling.EBSBlockDevice(VolumeSize='50')
@@ -287,6 +87,7 @@ class EmpireController(EmpireBase):
 
     def create_iam_profile(self):
         t = self.template
+        ns = self.context.namespace
         # Create EC2 Container Service Role
         t.add_resource(
             Role(
@@ -306,15 +107,10 @@ class EmpireController(EmpireBase):
                 Path="/",
                 Policies=[
                     Policy(PolicyName="EmpireControllerPolicy",
-                           PolicyDocument=empire_policy())]))
-        # Add SNS Events policy if Events are enabled
-        t.add_resource(
-            PolicyType(
-                "SNSEventsPolicy",
-                PolicyName="EmpireSNSEventsPolicy",
-                Condition="EnableSNSEvents",
-                PolicyDocument=sns_events_policy(Ref("EventTopic")),
-                Roles=[Ref("EmpireControllerRole")]))
+                           PolicyDocument=empire_policy()),
+                    Policy(PolicyName="%s-ecs-agent" % ns,
+                           PolicyDocument=ecs_agent_policy()),
+                ]))
 
         t.add_resource(
             InstanceProfile(
@@ -325,61 +121,14 @@ class EmpireController(EmpireBase):
             Output("EmpireControllerRole",
                    Value=Ref("EmpireControllerRole")))
 
-    def create_events_topic(self):
-        t = self.template
-        t.add_resource(
-            Topic(
-                "EventTopic",
-                Condition="EnableSNSEvents",
-                DisplayName="Empire"))
-        t.add_output(
-            Output("SNSEventTopicArn",
-                   Condition="EnableSNSEvents",
-                   Value=Ref("EventTopic")))
-
     def generate_seed_contents(self):
         seed = [
             "EMPIRE_HOSTGROUP=controller\n",
-            "EMPIRE_ECS_SERVICE_ROLE=", Ref("ecsServiceRole"), "\n",
-            "EMPIRE_ELB_SG_PRIVATE=", Ref("PrivateEmpireAppELBSG"), "\n",
-            "EMPIRE_ELB_SG_PUBLIC=", Ref("PublicEmpireAppELBSG"), "\n",
-            "EMPIRE_EC2_SUBNETS_PRIVATE=",
-            Join(",", Ref("PrivateSubnets")), "\n",
-            "EMPIRE_EC2_SUBNETS_PUBLIC=",
-            Join(",", Ref("PublicSubnets")), "\n",
-            "EMPIRE_DATABASE_USER=", Ref("EmpireDatabaseUser"), "\n",
-            "EMPIRE_DATABASE_PASSWORD=", Ref("EmpireDatabasePassword"), "\n",
-            "EMPIRE_DATABASE_HOST=", Ref("EmpireDatabaseHost"), "\n",
-            "EMPIRE_ROUTE53_INTERNAL_ZONE_ID=", Ref("InternalZoneId"), "\n",
-            "ECS_CLUSTER=", Ref("EmpireMinionCluster"), "\n",
-            "EMPIRE_GITHUB_CLIENT_ID=", Ref("EmpireGithubClientId"), "\n",
-            "EMPIRE_GITHUB_CLIENT_SECRET=", Ref("EmpireGithubClientSecret"),
-            "\n",
-            "EMPIRE_GITHUB_ORGANIZATION=", Ref("EmpireGithubOrganization"),
-            "\n",
-            "EMPIRE_TOKEN_SECRET=", Ref("EmpireTokenSecret"), "\n",
+            "ECS_CLUSTER=", Ref("EmpireControllerCluster"), "\n",
             "DOCKER_REGISTRY=", Ref("DockerRegistry"), "\n",
             "DOCKER_USER=", Ref("DockerRegistryUser"), "\n",
             "DOCKER_PASS=", Ref("DockerRegistryPassword"), "\n",
             "DOCKER_EMAIL=", Ref("DockerRegistryEmail"), "\n",
-            "ENABLE_STREAMING_LOGS=", If("EnableStreamingLogs",
-                                         "true", "false"), "\n",
-            # Conditionally add the SNS Topic
-            If("EnableSNSEvents",
-               Join("", ["EMPIRE_EVENTS_SNS_TOPIC=", Ref("EventTopic"), "\n"]),
-               ""),
-            # Setup github webhooks if info profided
-            If("HasGithubWebhooksSecret",
-               Join("",
-                    ["EMPIRE_GITHUB_WEBHOOKS_SECRET=",
-                     Ref("EmpireGithubWebhooksSecret"), "\n"]),
-               ""),
-            If("HasGithubDeploymentEnvironment",
-               Join("",
-                    ["EMPIRE_GITHUB_DEPLOYMENTS_ENVIRONMENT=",
-                     Ref("EmpireGithubDeploymentsEnvironment"), "\n"]),
-               ""),
-
         ]
         return seed
 
@@ -410,5 +159,4 @@ class EmpireController(EmpireBase):
                 Tags=[ASTag('Name', 'empire_controller', True)]))
 
     def create_template(self):
-        self.create_events_topic()
         super(EmpireController, self).create_template()
