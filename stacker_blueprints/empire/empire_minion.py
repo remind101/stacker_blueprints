@@ -34,11 +34,11 @@ class EmpireMinion(EmpireBase):
             "type": "String",
             "description": "Empire AWS Instance Type",
             "default": "c4.2xlarge"},
-        "MinSize": {
+        "MinHosts": {
             "type": "Number",
             "description": "Minimum # of empire minion instances.",
             "default": "3"},
-        "MaxSize": {
+        "MaxHosts": {
             "type": "Number",
             "description": "Maximum # of empire minion instances.",
             "default": "20"},
@@ -227,7 +227,7 @@ class EmpireMinion(EmpireBase):
                 'EmpireMinionAutoscalingGroup',
                 AvailabilityZones=Ref("AvailabilityZones"),
                 LaunchConfigurationName=Ref("EmpireMinionLaunchConfig"),
-                MinSize=Ref("MinSize"),
-                MaxSize=Ref("MaxSize"),
+                MinSize=Ref("MinHosts"),
+                MaxSize=Ref("MaxHosts"),
                 VPCZoneIdentifier=Ref("PrivateSubnets"),
                 Tags=[ASTag('Name', 'empire_minion', True)]))
