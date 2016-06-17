@@ -55,6 +55,11 @@ class EmpireDaemon(Blueprint):
             'description': 'The SSL certificate name to use on the ELB. Note: '
                            'If this is set, non-HTTPS access is disabled.',
             'default': ''},
+        "ELBCertType": {
+            "type": "String",
+            "description": "The SSL certificate type to use on the ELB. Note: "
+                           "Can be either acm or iam.",
+            "default": ''},
         'InstanceSecurityGroup': {
             'type': 'String',
             'description': 'Security group of the controller instances.',
@@ -211,9 +216,14 @@ class EmpireDaemon(Blueprint):
             InstanceProtocol='TCP'
         )]
 
-        cert_id = Join("", [
+        acm_cert = Join("", [
+            "arn:aws:acm:", Ref("AWS::Region"), ":", Ref("AWS::AccountId"),
+            ":certificate/", Ref("ELBCertName")])
+        iam_cert = Join("", [
             "arn:aws:iam::", Ref("AWS::AccountId"), ":server-certificate/",
             Ref("ELBCertName")])
+        cert_id = If("UseIAMCert", iam_cert, acm_cert)
+
         with_ssl = []
         with_ssl.append(elb.Listener(
             LoadBalancerPort=443,
