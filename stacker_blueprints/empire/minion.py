@@ -191,7 +191,7 @@ class EmpireMinion(EmpireBase):
         ec2_role_policy = get_default_assumerole_policy()
         t.add_resource(
             Role(
-                "IAMRole",
+                "EmpireMinionRole",
                 AssumeRolePolicyDocument=ec2_role_policy,
                 Path="/",
                 Policies=self.generate_iam_policies()))
@@ -199,9 +199,9 @@ class EmpireMinion(EmpireBase):
             InstanceProfile(
                 "EmpireMinionProfile",
                 Path="/",
-                Roles=[Ref("IAMRole")]))
+                Roles=[Ref("EmpireMinionRole")]))
         t.add_output(
-            Output("IAMRole", Value=Ref("IAMRole")))
+            Output("IAMRole", Value=Ref("EmpireMinionRole")))
 
     def create_ecs_cluster(self):
         t = self.template
@@ -212,7 +212,7 @@ class EmpireMinion(EmpireBase):
     def generate_seed_contents(self):
         seed = [
             "EMPIRE_HOSTGROUP=minion\n",
-            "ECS_CLUSTER=", Ref("ECSCluster"), "\n",
+            "ECS_CLUSTER=", Ref("EmpireMinionCluster"), "\n",
             "DOCKER_REGISTRY=", Ref("DockerRegistry"), "\n",
             "DOCKER_USER=", Ref("DockerRegistryUser"), "\n",
             "DOCKER_PASS=", Ref("DockerRegistryPassword"), "\n",

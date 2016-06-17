@@ -136,7 +136,7 @@ class EmpireController(EmpireBase):
         t = self.template
         t.add_resource(ecs.Cluster("EmpireControllerCluster"))
         t.add_output(
-            Output("ECSCluster", Value=Ref("ECSCluster")))
+            Output("ECSCluster", Value=Ref("EmpireControllerCluster")))
 
     def build_block_device(self):
         volume = autoscaling.EBSBlockDevice(VolumeSize="50")
@@ -172,13 +172,13 @@ class EmpireController(EmpireBase):
             InstanceProfile(
                 "EmpireControllerProfile",
                 Path="/",
-                Roles=[Ref("IAMRole")]))
-        t.add_output(Output("IAMRole", Value=Ref("IAMRole")))
+                Roles=[Ref("EmpireControllerRole")]))
+        t.add_output(Output("IAMRole", Value=Ref("EmpireControllerRole")))
 
     def generate_seed_contents(self):
         seed = [
             "EMPIRE_HOSTGROUP=controller\n",
-            "ECS_CLUSTER=", Ref("ECSCluster"), "\n",
+            "ECS_CLUSTER=", Ref("EmpireControllerCluster"), "\n",
             "DOCKER_REGISTRY=", Ref("DockerRegistry"), "\n",
             "DOCKER_USER=", Ref("DockerRegistryUser"), "\n",
             "DOCKER_PASS=", Ref("DockerRegistryPassword"), "\n",
