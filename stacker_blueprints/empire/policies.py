@@ -164,14 +164,14 @@ def logstream_policy():
     return p
 
 
-def runlogs_policy(log_group):
+def runlogs_policy(log_group_ref):
     """Policy needed for Empire -> Cloudwatch logs to record interactive runs."""
     p = Policy(
         Statement=[
             Statement(
                 Effect=Allow,
                 Resource=[
-                    Join('', ['arn:aws:logs:*:*:log-group:', Ref(log_group), ':log-stream:*'])
+                    Join('', ['arn:aws:logs:*:*:log-group:', log_group_ref, ':log-stream:*'])
                 ],
                 Action=[
                     logs.CreateLogStream,
