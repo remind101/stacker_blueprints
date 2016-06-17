@@ -64,6 +64,22 @@ class EmpireController(EmpireBase):
             ),
             "default": "",
         },
+        "DockerRegistry": {
+            "type": "String",
+            "description": "Optional docker registry where private images "
+                           "are located.",
+            "default": "https://index.docker.io/v1/"},
+        "DockerRegistryUser": {
+            "type": "String",
+            "description": "User for authentication with docker registry."},
+        "DockerRegistryPassword": {
+            "type": "String",
+            "no_echo": True,
+            "description": "Password for authentication with docker "
+                           "registry."},
+        "DockerRegistryEmail": {
+            "type": "String",
+            "description": "Email for authentication with docker registry."},
     }
 
     def create_conditions(self):
