@@ -336,7 +336,8 @@ class EmpireDaemon(Blueprint):
                 Value="sns"),
             ecs.Environment(
                 Name="EMPIRE_SNS_TOPIC",
-                Value=Ref(EVENTS_TOPIC)),
+                Value=Ref(EVENTS_TOPIC),
+                Condition="EnableSNSEvents"),
             ecs.Environment(
                 Name="EMPIRE_TUGBOAT_URL",
                 Value=Ref("TugboatUrl")),
