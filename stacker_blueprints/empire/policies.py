@@ -2,14 +2,33 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-from awacs.aws import Statement, Allow, Policy, Action, Principal, Condition, SourceArn, ArnEquals
-
 from awacs import (
-    ecs, ec2, iam, route53, kinesis, sns, logs, sqs, s3, cloudformation
+    ecs,
+    ec2,
+    iam,
+    route53,
+    kinesis,
+    sns,
+    logs,
+    sqs,
+    s3,
+    cloudformation,
+    elasticloadbalancing as elb,
 )
-from awacs import elasticloadbalancing as elb
-
-from troposphere import Ref, Join
+from awacs.aws import (
+    Statement,
+    Allow,
+    Policy,
+    Action,
+    Principal,
+    Condition,
+    SourceArn,
+    ArnEquals,
+)
+from troposphere import (
+    Ref,
+    Join,
+)
 
 
 def ecs_agent_policy():
@@ -18,13 +37,14 @@ def ecs_agent_policy():
             Statement(
                 Effect=Allow,
                 Resource=["*"],
-                Action=[ecs.CreateCluster, ecs.RegisterContainerInstance,
-                        ecs.DeregisterContainerInstance,
-                        ecs.DiscoverPollEndpoint, ecs.ECSAction("Submit*"),
-                        ecs.Poll, ecs.ECSAction("StartTelemetrySession")]
-            )
-        ]
-    )
+                Action=[
+                    ecs.CreateCluster,
+                    ecs.RegisterContainerInstance,
+                    ecs.DeregisterContainerInstance,
+                    ecs.DiscoverPollEndpoint,
+                    ecs.ECSAction("Submit*"),
+                    ecs.Poll,
+                    ecs.ECSAction("StartTelemetrySession")])])
     return p
 
 
@@ -34,14 +54,12 @@ def service_role_policy():
             Statement(
                 Effect=Allow,
                 Resource=["*"],
-                Action=[ec2.AuthorizeSecurityGroupIngress,
-                        Action("ec2", "Describe*"),
-                        elb.DeregisterInstancesFromLoadBalancer,
-                        Action("elasticloadbalancing", "Describe*"),
-                        elb.RegisterInstancesWithLoadBalancer]
-            )
-        ]
-    )
+                Action=[
+                    ec2.AuthorizeSecurityGroupIngress,
+                    Action("ec2", "Describe*"),
+                    elb.DeregisterInstancesFromLoadBalancer,
+                    Action("elasticloadbalancing", "Describe*"),
+                    elb.RegisterInstancesWithLoadBalancer])])
     return p
 
 
@@ -69,7 +87,11 @@ def empire_policy(resources):
                     s3.GetObjectVersionAcl]),
             Statement(
                 Effect=Allow,
-                Resource=[Join('', ['arn:aws:cloudformation:', Ref('AWS::Region'), ':', Ref('AWS::AccountId'), ':stack/', resources['Environment'], '-*'])],
+                Resource=[
+                    Join('', [
+                        'arn:aws:cloudformation:', Ref('AWS::Region'), ':',
+                        Ref('AWS::AccountId'), ':stack/',
+                        resources['Environment'], '-*'])],
                 Action=[
                     cloudformation.CreateStack,
                     cloudformation.UpdateStack,
@@ -140,9 +162,7 @@ def sns_events_policy(topic_arn):
                 Effect=Allow,
                 Action=[sns.Publish],
                 Resource=[topic_arn],
-            )
-        ]
-    )
+            )])
 
     return p
 
@@ -158,9 +178,7 @@ def logstream_policy():
                     kinesis.CreateStream, kinesis.DescribeStream,
                     Action(kinesis.prefix, "AddTagsToStream"),
                     Action(kinesis.prefix, "PutRecords")
-                ])
-        ]
-    )
+                ])])
     return p
 
 
@@ -171,14 +189,14 @@ def runlogs_policy(log_group_ref):
             Statement(
                 Effect=Allow,
                 Resource=[
-                    Join('', ['arn:aws:logs:*:*:log-group:', log_group_ref, ':log-stream:*'])
-                ],
+                    Join('', [
+                        'arn:aws:logs:*:*:log-group:',
+                        log_group_ref,
+                        ':log-stream:*'])],
                 Action=[
                     logs.CreateLogStream,
                     logs.PutLogEvents,
-                ])
-        ]
-    )
+                ])])
     return p
 
 
