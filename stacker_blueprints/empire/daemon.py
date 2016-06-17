@@ -20,8 +20,7 @@ class EmpireDaemon(Blueprint):
     PARAMETERS = {
         "InstanceRole": {
             "type": "String",
-            "description": "The IAM role to add permissions to.",
-            "default": ""},
+            "description": "The IAM role to add permissions to."},
         "VpcId": {"type": "AWS::EC2::VPC::Id", "description": "Vpc Id"},
         "DefaultSG": {
             "type": "AWS::EC2::SecurityGroup::Id",
