@@ -1,9 +1,25 @@
 import copy
 
-from troposphere import Ref, Output, GetAtt, FindInMap, If, Equals
-from troposphere import ec2, autoscaling, ecs, logs
+from troposphere import (
+    Ref,
+    Output,
+    GetAtt,
+    FindInMap,
+    If,
+    Equals,
+)
+from troposphere import (
+    ec2,
+    autoscaling,
+    ecs,
+    logs,
+)
 from troposphere.autoscaling import Tag as ASTag
-from troposphere.iam import InstanceProfile, Policy, Role
+from troposphere.iam import (
+    InstanceProfile,
+    Policy,
+    Role,
+)
 
 from awacs.helpers.trust import (
     get_default_assumerole_policy,
@@ -16,8 +32,8 @@ from .policies import (
     runlogs_policy,
 )
 
-CLUSTER_SG_NAME = "EmpireControllerSecurityGroup"
-RUN_LOGS = 'RunLogs'
+CLUSTER_SG_NAME = "SecurityGroup"
+RUN_LOGS = "RunLogs"
 
 
 class EmpireController(EmpireBase):
@@ -50,8 +66,10 @@ class EmpireController(EmpireBase):
             "type": "AWS::EC2::KeyPair::KeyName"},
         "ImageName": {
             "type": "String",
-            "description": "The image name to use from the AMIMap (usually "
-                           "found in the config file.)",
+            "description": (
+                "The image name to use from the AMIMap (usually found in the"
+                " config file.)"
+            ),
             "default": "NAT"},
         "EmpireDBSecurityGroup": {
             "type": "AWS::EC2::SecurityGroup::Id",
@@ -63,12 +81,12 @@ class EmpireController(EmpireBase):
                 " Note: Without this, Empire will log interactive runs to"
                 " CloudWatch."
             ),
-            "default": "",
-        },
+            "default": ""},
         "DockerRegistry": {
             "type": "String",
-            "description": "Optional docker registry where private images "
-                           "are located.",
+            "description": (
+                "Optional docker registry where private images are located."
+            ),
             "default": "https://index.docker.io/v1/"},
         "DockerRegistryUser": {
             "type": "String",
@@ -76,12 +94,17 @@ class EmpireController(EmpireBase):
         "DockerRegistryPassword": {
             "type": "String",
             "no_echo": True,
-            "description": "Password for authentication with docker "
-                           "registry."},
+            "description": (
+                "Password for authentication with docker registry."
+            )},
         "DockerRegistryEmail": {
             "type": "String",
             "description": "Email for authentication with docker registry."},
     }
+
+    def create_template(self):
+        self.create_log_group()
+        super(EmpireController, self).create_template()
 
     def create_conditions(self):
         t = self.template
@@ -94,44 +117,44 @@ class EmpireController(EmpireBase):
 
         t.add_resource(
             ec2.SecurityGroup(
-                CLUSTER_SG_NAME, GroupDescription=CLUSTER_SG_NAME,
+                CLUSTER_SG_NAME,
+                GroupDescription=CLUSTER_SG_NAME,
                 VpcId=Ref("VpcId")))
+
         t.add_output(
-            Output('EmpireControllerSG', Value=Ref(CLUSTER_SG_NAME)))
+            Output("SecurityGroup", Value=Ref(CLUSTER_SG_NAME)))
 
         # Allow access to the DB
         t.add_resource(
             ec2.SecurityGroupIngress(
-                "EmpireControllerDBAccess",
-                IpProtocol='tcp', FromPort=5432, ToPort=5432,
+                "DBAccess",
+                IpProtocol="tcp", FromPort=5432, ToPort=5432,
                 SourceSecurityGroupId=Ref(CLUSTER_SG_NAME),
-                GroupId=Ref('EmpireDBSecurityGroup')))
+                GroupId=Ref("EmpireDBSecurityGroup")))
 
     def create_ecs_cluster(self):
         t = self.template
-        t.add_resource(ecs.Cluster("EmpireControllerCluster"))
+        t.add_resource(ecs.Cluster("ECSCluster"))
         t.add_output(
-            Output("ControllerECSCluster", Value=Ref("EmpireControllerCluster")))
+            Output("ECSCluster", Value=Ref("ECSCluster")))
 
     def build_block_device(self):
-        volume = autoscaling.EBSBlockDevice(VolumeSize='50')
+        volume = autoscaling.EBSBlockDevice(VolumeSize="50")
         return [autoscaling.BlockDeviceMapping(
-            DeviceName='/dev/sdh', Ebs=volume)]
+            DeviceName="/dev/sdh", Ebs=volume)]
 
     def generate_iam_policies(self):
         base_policies = [
             Policy(
                 PolicyName="ecs-agent",
                 PolicyDocument=ecs_agent_policy(),
-            ),
-        ]
+            )]
         with_logging = copy.deepcopy(base_policies)
         with_logging.append(
             Policy(
                 PolicyName="runlogs",
                 PolicyDocument=runlogs_policy(Ref(RUN_LOGS)),
-            ),
-        )
+            ))
         policies = If("EnableRunLogs", with_logging, base_policies)
         return policies
 
@@ -140,24 +163,22 @@ class EmpireController(EmpireBase):
         # Role for Empire Controllers
         t.add_resource(
             Role(
-                "EmpireControllerRole",
+                "IAMRole",
                 AssumeRolePolicyDocument=get_default_assumerole_policy(),
                 Path="/",
                 Policies=self.generate_iam_policies()))
 
         t.add_resource(
             InstanceProfile(
-                "EmpireControllerProfile",
+                "InstanceProfile",
                 Path="/",
-                Roles=[Ref("EmpireControllerRole")]))
-        t.add_output(
-            Output("EmpireControllerRole",
-                   Value=Ref("EmpireControllerRole")))
+                Roles=[Ref("IAMRole")]))
+        t.add_output(Output("IAMRole", Value=Ref("IAMRole")))
 
     def generate_seed_contents(self):
         seed = [
             "EMPIRE_HOSTGROUP=controller\n",
-            "ECS_CLUSTER=", Ref("EmpireControllerCluster"), "\n",
+            "ECS_CLUSTER=", Ref("ECSCluster"), "\n",
             "DOCKER_REGISTRY=", Ref("DockerRegistry"), "\n",
             "DOCKER_USER=", Ref("DockerRegistryUser"), "\n",
             "DOCKER_PASS=", Ref("DockerRegistryPassword"), "\n",
@@ -169,12 +190,12 @@ class EmpireController(EmpireBase):
         t = self.template
         t.add_resource(
             autoscaling.LaunchConfiguration(
-                'EmpireControllerLaunchConfig',
-                IamInstanceProfile=GetAtt("EmpireControllerProfile",
-                                          "Arn"),
-                ImageId=FindInMap('AmiMap',
-                                  Ref("AWS::Region"),
-                                  Ref("ImageName")),
+                "LaunchConfig",
+                IamInstanceProfile=GetAtt("InstanceProfile", "Arn"),
+                ImageId=FindInMap(
+                    "AmiMap",
+                    Ref("AWS::Region"),
+                    Ref("ImageName")),
                 BlockDeviceMappings=self.build_block_device(),
                 InstanceType=Ref("InstanceType"),
                 KeyName=Ref("SshKeyName"),
@@ -182,19 +203,15 @@ class EmpireController(EmpireBase):
                 SecurityGroups=[Ref("DefaultSG"), Ref(CLUSTER_SG_NAME)]))
         t.add_resource(
             autoscaling.AutoScalingGroup(
-                'EmpireControllerAutoscalingGroup',
+                "AutoscalingGroup",
                 AvailabilityZones=Ref("AvailabilityZones"),
-                LaunchConfigurationName=Ref("EmpireControllerLaunchConfig"),
+                LaunchConfigurationName=Ref("LaunchConfig"),
                 MinSize=Ref("MinHosts"),
                 MaxSize=Ref("MaxHosts"),
                 VPCZoneIdentifier=Ref("PrivateSubnets"),
-                Tags=[ASTag('Name', 'empire_controller', True)]))
+                Tags=[ASTag("Name", "empire_controller", True)]))
 
     def create_log_group(self):
         t = self.template
-        t.add_resource(logs.LogGroup(RUN_LOGS, Condition='EnableRunLogs'))
-        t.add_output(Output('RunLogs', Value=Ref(RUN_LOGS)))
-
-    def create_template(self):
-        self.create_log_group()
-        super(EmpireController, self).create_template()
+        t.add_resource(logs.LogGroup(RUN_LOGS, Condition="EnableRunLogs"))
+        t.add_output(Output("RunLogs", Value=Ref(RUN_LOGS)))
