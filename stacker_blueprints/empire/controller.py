@@ -25,7 +25,7 @@ from awacs.helpers.trust import (
     get_default_assumerole_policy,
 )
 
-from .empire_base import EmpireBase
+from .base import EmpireBase
 
 from .policies import (
     ecs_agent_policy,
