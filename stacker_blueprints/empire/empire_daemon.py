@@ -41,9 +41,6 @@ class EmpireDaemon(Blueprint):
             'description': 'CIDR Network for for GitHub webhooks (https://goo.gl/D2kZKw).',
             'default': '192.30.252.0/22',
         },
-        'DBSecurityGroup': {
-            'type': 'AWS::EC2::SecurityGroup::Id',
-            'description': 'Database security group.'},
         'DatabaseHost': {
             'type': 'String',
             'description': 'Host for the Empire DB'},
