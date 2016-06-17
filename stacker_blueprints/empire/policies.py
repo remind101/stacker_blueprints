@@ -128,12 +128,6 @@ def empire_policy(resources):
                     Action(kinesis.prefix, "List*")
                 ],
                 Resource=["*"]),
-            Statement(
-                Effect=Allow,
-                Action=[
-                    sns.Publish,
-                ],
-                Resource=[resources['EventsTopic']])
         ]
     )
     return p

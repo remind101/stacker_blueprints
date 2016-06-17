@@ -6,7 +6,11 @@ from troposphere.iam import PolicyType
 
 from stacker.blueprints.base import Blueprint
 
-from .policies import empire_policy, sns_to_sqs_policy
+from .policies import (
+    empire_policy,
+    sns_to_sqs_policy,
+    sns_events_policy,
+)
 
 INSTANCE_SG_NAME = "InstanceSecurityGroup"
 ELB_SG_NAME = "ELBSecurityGroup"
@@ -136,6 +140,14 @@ class EmpireDaemon(Blueprint):
             'type': 'String',
             'description': 'ECS Cluster for the Controllers.',
             'default': ''},
+        'EnableSNSEvents': {
+            "type": "String",
+            "allowed_values": ["true", "false"],
+            "description": "If set to true, enables sending empire "
+                           "events to SNS. Specify EventsSNSTopicName "
+                           "to use a specific topic, or else one will "
+                           "be created for you.",
+            "default": "false"},
     }
 
     def create_template(self):
@@ -147,8 +159,13 @@ class EmpireDaemon(Blueprint):
         self.create_ecs_resources()
 
     def create_conditions(self):
+        t = self.template
         ssl_condition = Not(Equals(Ref("ELBCertName"), ""))
-        self.template.add_condition("UseSSL", ssl_condition)
+        t.add_condition("UseSSL", ssl_condition)
+        t.add_condition(
+            "EnableSNSEvents",
+            Not(Equals(Ref("EnableSNSEvents"), "false")),
+        )
 
     def create_security_groups(self):
         t = self.template
@@ -311,7 +328,6 @@ class EmpireDaemon(Blueprint):
                 PolicyName="empire",
                 PolicyDocument=empire_policy({
                     'Environment': Ref('Environment'),
-                    'EventsTopic': Ref('EventsTopic'),
                     'CustomResourcesTopic': Ref('CustomResourcesTopic'),
                     'CustomResourcesQueue': GetAtt('CustomResourcesQueue', 'Arn'),
                     'TemplateBucket': Join('', ['arn:aws:s3:::', Ref('TemplateBucket'), '/*'])}),
@@ -319,7 +335,18 @@ class EmpireDaemon(Blueprint):
 
         t.add_resource(sns.Topic(
             'EventsTopic',
-            DisplayName="Empire events"))
+            DisplayName="Empire events",
+            Condition='EnableSNSEvents',
+        ))
+
+        # Add SNS Events policy if Events are enabled
+        t.add_resource(
+            PolicyType(
+                "SNSEventsPolicy",
+                PolicyName="EmpireSNSEventsPolicy",
+                Condition="EnableSNSEvents",
+                PolicyDocument=sns_events_policy(Ref("EventTopic")),
+                Roles=[Ref("InstanceRole")]))
 
         t.add_resource(
             ecs.TaskDefinition(
