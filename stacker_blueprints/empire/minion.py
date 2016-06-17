@@ -112,7 +112,7 @@ class EmpireMinion(EmpireBase):
         # Allow all ports within cluster
         t.add_resource(
             ec2.SecurityGroupIngress(
-                "AllTCPAccess",
+                "EmpireMinionAllTCPAccess",
                 IpProtocol="-1", FromPort="-1", ToPort="-1",
                 SourceSecurityGroupId=Ref(CLUSTER_SG_NAME),
                 GroupId=Ref(CLUSTER_SG_NAME)))
@@ -120,7 +120,7 @@ class EmpireMinion(EmpireBase):
         # Application ELB Security Groups
         # Internal
         for elb in ("public", "private"):
-            group_name = "%sAppELBSG" % elb.capitalize()
+            group_name = "Empire%sAppELBSG" % elb.capitalize()
             t.add_resource(
                 ec2.SecurityGroup(
                     group_name,
@@ -135,7 +135,7 @@ class EmpireMinion(EmpireBase):
             # Allow ELB to talk to cluster on 9000-10000
             t.add_resource(
                 ec2.SecurityGroupIngress(
-                    "%sAppPort9000To10000" % elb.capitalize(),
+                    "Empire%sAppPort9000To10000" % elb.capitalize(),
                     IpProtocol="tcp", FromPort=9000, ToPort=10000,
                     SourceSecurityGroupId=Ref(group_name),
                     GroupId=Ref(CLUSTER_SG_NAME)))
@@ -145,13 +145,13 @@ class EmpireMinion(EmpireBase):
             # the elb
             t.add_resource(
                 ec2.SecurityGroupIngress(
-                    "%sELBAllow80" % elb.capitalize(),
+                    "Empire%sELBAllow80" % elb.capitalize(),
                     IpProtocol="tcp", FromPort=80, ToPort=80,
                     CidrIp="0.0.0.0/0",
                     GroupId=Ref(group_name)))
             t.add_resource(
                 ec2.SecurityGroupIngress(
-                    "%sELBAllow443" % elb.capitalize(),
+                    "Empire%sELBAllow443" % elb.capitalize(),
                     IpProtocol="tcp", FromPort=443, ToPort=443,
                     CidrIp="0.0.0.0/0",
                     GroupId=Ref(group_name)))
@@ -197,7 +197,7 @@ class EmpireMinion(EmpireBase):
                 Policies=self.generate_iam_policies()))
         t.add_resource(
             InstanceProfile(
-                "InstanceProfile",
+                "EmpireMinionProfile",
                 Path="/",
                 Roles=[Ref("IAMRole")]))
         t.add_output(
@@ -205,9 +205,9 @@ class EmpireMinion(EmpireBase):
 
     def create_ecs_cluster(self):
         t = self.template
-        t.add_resource(ecs.Cluster("ECSCluster"))
+        t.add_resource(ecs.Cluster("EmpireMinionCluster"))
         t.add_output(
-            Output("MinionECSCluster", Value=Ref("ECSCluster")))
+            Output("ECSCluster", Value=Ref("EmpireMinionCluster")))
 
     def generate_seed_contents(self):
         seed = [
@@ -224,8 +224,8 @@ class EmpireMinion(EmpireBase):
         t = self.template
         t.add_resource(
             autoscaling.LaunchConfiguration(
-                "LaunchConfig",
-                IamInstanceProfile=GetAtt("InstanceProfile", "Arn"),
+                "EmpireMinionLaunchConfig",
+                IamInstanceProfile=GetAtt("EmpireMinionProfile", "Arn"),
                 ImageId=FindInMap(
                     "AmiMap",
                     Ref("AWS::Region"),
@@ -239,7 +239,7 @@ class EmpireMinion(EmpireBase):
             autoscaling.AutoScalingGroup(
                 "AutoscalingGroup",
                 AvailabilityZones=Ref("AvailabilityZones"),
-                LaunchConfigurationName=Ref("LaunchConfig"),
+                LaunchConfigurationName=Ref("EmpireMinionLaunchConfig"),
                 MinSize=Ref("MinHosts"),
                 MaxSize=Ref("MaxHosts"),
                 VPCZoneIdentifier=Ref("PrivateSubnets"),
