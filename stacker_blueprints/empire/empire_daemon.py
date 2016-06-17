@@ -38,7 +38,8 @@ class EmpireDaemon(Blueprint):
             'description': 'CIDR block allowed to connect to empire ELB.'},
         'GitHubCIDR': {
             'type': 'String',
-            'description': 'CIDR Network for for GitHub webhooks.',
+            'description': 'CIDR Network for for GitHub webhooks (https://goo.gl/D2kZKw).',
+            'default': '192.30.252.0/22',
         },
         'DBSecurityGroup': {
             'type': 'AWS::EC2::SecurityGroup::Id',
