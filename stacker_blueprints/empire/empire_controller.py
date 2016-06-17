@@ -17,6 +17,7 @@ from .policies import (
 )
 
 CLUSTER_SG_NAME = "EmpireControllerSecurityGroup"
+RUN_LOGS = 'RunLogs'
 
 
 class EmpireController(EmpireBase):
@@ -128,7 +129,7 @@ class EmpireController(EmpireBase):
         with_logging.append(
             Policy(
                 PolicyName="runlogs",
-                PolicyDocument=runlogs_policy(Ref('RunLogs')),
+                PolicyDocument=runlogs_policy(Ref(RUN_LOGS)),
             ),
         )
         policies = If("EnableRunLogs", with_logging, base_policies)
@@ -189,11 +190,11 @@ class EmpireController(EmpireBase):
                 VPCZoneIdentifier=Ref("PrivateSubnets"),
                 Tags=[ASTag('Name', 'empire_controller', True)]))
 
-        def create_log_group(self):
-            t = self.template
-            t.add_resource(logs.LogGroup('RunLogs', Condition='EnableRunLogs'))
-            t.add_output(Output('RunLogs', Value=Ref('RunLogs')))
+    def create_log_group(self):
+        t = self.template
+        t.add_resource(logs.LogGroup(RUN_LOGS, Condition='EnableRunLogs'))
+        t.add_output(Output('RunLogs', Value=Ref(RUN_LOGS)))
 
-        def create_template(self):
-            super(EmpireController, self).create_template()
-            self.create_log_group()
+    def create_template(self):
+        self.create_log_group()
+        super(EmpireController, self).create_template()
