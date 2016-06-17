@@ -32,7 +32,7 @@ from .policies import (
     runlogs_policy,
 )
 
-CLUSTER_SG_NAME = "SecurityGroup"
+CLUSTER_SG_NAME = "EmpireControllerSecurityGroup"
 RUN_LOGS = "RunLogs"
 
 
@@ -127,14 +127,14 @@ class EmpireController(EmpireBase):
         # Allow access to the DB
         t.add_resource(
             ec2.SecurityGroupIngress(
-                "DBAccess",
+                "EmpireControllerDBAccess",
                 IpProtocol="tcp", FromPort=5432, ToPort=5432,
                 SourceSecurityGroupId=Ref(CLUSTER_SG_NAME),
                 GroupId=Ref("EmpireDBSecurityGroup")))
 
     def create_ecs_cluster(self):
         t = self.template
-        t.add_resource(ecs.Cluster("ECSCluster"))
+        t.add_resource(ecs.Cluster("EmpireControllerCluster"))
         t.add_output(
             Output("ECSCluster", Value=Ref("ECSCluster")))
 
@@ -163,14 +163,14 @@ class EmpireController(EmpireBase):
         # Role for Empire Controllers
         t.add_resource(
             Role(
-                "IAMRole",
+                "EmpireControllerRole",
                 AssumeRolePolicyDocument=get_default_assumerole_policy(),
                 Path="/",
                 Policies=self.generate_iam_policies()))
 
         t.add_resource(
             InstanceProfile(
-                "InstanceProfile",
+                "EmpireControllerProfile",
                 Path="/",
                 Roles=[Ref("IAMRole")]))
         t.add_output(Output("IAMRole", Value=Ref("IAMRole")))
@@ -190,8 +190,8 @@ class EmpireController(EmpireBase):
         t = self.template
         t.add_resource(
             autoscaling.LaunchConfiguration(
-                "LaunchConfig",
-                IamInstanceProfile=GetAtt("InstanceProfile", "Arn"),
+                "EmpireControllerLaunchConfig",
+                IamInstanceProfile=GetAtt("EmpireControllerProfile", "Arn"),
                 ImageId=FindInMap(
                     "AmiMap",
                     Ref("AWS::Region"),
@@ -203,9 +203,9 @@ class EmpireController(EmpireBase):
                 SecurityGroups=[Ref("DefaultSG"), Ref(CLUSTER_SG_NAME)]))
         t.add_resource(
             autoscaling.AutoScalingGroup(
-                "AutoscalingGroup",
+                "EmpireControllerAutoscalingGroup",
                 AvailabilityZones=Ref("AvailabilityZones"),
-                LaunchConfigurationName=Ref("LaunchConfig"),
+                LaunchConfigurationName=Ref("EmpireControllerLaunchConfig"),
                 MinSize=Ref("MinHosts"),
                 MaxSize=Ref("MaxHosts"),
                 VPCZoneIdentifier=Ref("PrivateSubnets"),
