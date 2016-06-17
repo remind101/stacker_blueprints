@@ -120,7 +120,7 @@ class EmpireMinion(EmpireBase):
         # Application ELB Security Groups
         # Internal
         for elb in ("public", "private"):
-            group_name = "%sAppELBSG".format(elb.capitalize())
+            group_name = "%sAppELBSG" % elb.capitalize()
             t.add_resource(
                 ec2.SecurityGroup(
                     group_name,
