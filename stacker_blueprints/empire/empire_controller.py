@@ -62,6 +62,7 @@ class EmpireController(EmpireBase):
                 " Note: Without this, Empire will log interactive runs to"
                 " CloudWatch."
             ),
+            "default": "",
         },
     }
 
