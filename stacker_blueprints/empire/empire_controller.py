@@ -128,7 +128,7 @@ class EmpireController(EmpireBase):
         with_logging.append(
             Policy(
                 PolicyName="runlogs",
-                PolicyDocument=runlogs_policy(),
+                PolicyDocument=runlogs_policy(Ref('RunLogs')),
             ),
         )
         policies = If("EnableRunLogs", with_logging, base_policies)
