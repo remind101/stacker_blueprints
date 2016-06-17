@@ -21,7 +21,7 @@ class EmpireDaemon(Blueprint):
         'VpcId': {'type': 'AWS::EC2::VPC::Id', 'description': 'Vpc Id'},
         'DefaultSG': {'type': 'AWS::EC2::SecurityGroup::Id',
                       'description': 'Top level security group.'},
-        'BaseDomain': {
+        'ExternalDomain': {
             'type': 'String',
             'description': 'Base domain for the stack.'},
         'PrivateSubnets': {'type': 'List<AWS::EC2::Subnet::Id>',
@@ -247,9 +247,9 @@ class EmpireDaemon(Blueprint):
         t.add_resource(
             RecordSetType(
                 'ElbDnsRecord',
-                HostedZoneName=Join("", [Ref("BaseDomain"), "."]),
+                HostedZoneName=Join("", [Ref("ExternalDomain"), "."]),
                 Comment='Router ELB DNS',
-                Name=Join('.', ["empire", Ref("BaseDomain")]),
+                Name=Join('.', ["empire", Ref("ExternalDomain")]),
                 Type='CNAME',
                 TTL='120',
                 ResourceRecords=[
