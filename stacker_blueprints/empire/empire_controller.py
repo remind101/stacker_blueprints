@@ -187,7 +187,6 @@ class EmpireController(EmpireBase):
                 MinSize=Ref("MinHosts"),
                 MaxSize=Ref("MaxHosts"),
                 VPCZoneIdentifier=Ref("PrivateSubnets"),
-                LoadBalancerNames=[Ref("EmpireControllerLoadBalancer"), ],
                 Tags=[ASTag('Name', 'empire_controller', True)]))
 
         def create_log_group(self):
