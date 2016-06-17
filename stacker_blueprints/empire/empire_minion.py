@@ -46,23 +46,30 @@ class EmpireMinion(EmpireBase):
             "type": "AWS::EC2::KeyPair::KeyName"},
         "ImageName": {
             "type": "String",
-            "description": "The image name to use from the AMIMap (usually "
-                           "found in the config file.)",
+            "description": (
+                "The image name to use from the AMIMap (usually found in the"
+                " config file.)"
+            ),
             "default": "NAT"},
         "DockerVolumeSize": {
             "type": "Number",
-            "description": "Size, in GB, of the EBS volume where docker will "
-                           "store its images and containers.",
+            "description": (
+                "Size, in GB, of the EBS volume where docker will store its"
+                " images and containers."
+            ),
             "default": "50"},
         "SwapVolumeSize": {
             "type": "Number",
-            "description": "Size, in GB, of the EBS volume that will be "
-                           "turned into a swap volume.",
+            "description": (
+                "Size, in GB, of the EBS volume that will be turned into a swap"
+                " volume."
+            ),
             "default": "16"},
         "DockerRegistry": {
             "type": "String",
-            "description": "Optional docker registry where private images "
-                           "are located.",
+            "description": (
+                "Optional docker registry where private images are located."
+            ),
             "default": "https://index.docker.io/v1/"},
         "DockerRegistryUser": {
             "type": "String",
@@ -70,18 +77,20 @@ class EmpireMinion(EmpireBase):
         "DockerRegistryPassword": {
             "type": "String",
             "no_echo": True,
-            "description": "Password for authentication with docker "
-                           "registry."},
+            "description": (
+                "Password for authentication with docker registry."
+            )},
         "DockerRegistryEmail": {
             "type": "String",
             "description": "Email for authentication with docker registry."},
         "DisableStreamingLogs": {
             "type": "String",
-            "description": "Disables streaming logging if set to anything."
-                           "Note: Without this Empire creates a kinesis "
-                           "stream per app that you deploy in Empire.",
-            "default": "",
-        },
+            "description": (
+                "Disables streaming logging if set to anything. Note: Without"
+                " this Empire creates a kinesis stream per app that you deploy"
+                " in Empire."
+            ),
+            "default": ""},
     }
 
     def create_conditions(self):
@@ -93,37 +102,40 @@ class EmpireMinion(EmpireBase):
     def create_security_groups(self):
         t = self.template
         t.add_resource(
-            ec2.SecurityGroup(CLUSTER_SG_NAME,
-                              GroupDescription='EmpireMinionSecurityGroup',
-                              VpcId=Ref("VpcId")))
+            ec2.SecurityGroup(
+                CLUSTER_SG_NAME,
+                GroupDescription="EmpireMinionSecurityGroup",
+                VpcId=Ref("VpcId")))
         t.add_output(
-            Output('EmpireMinionSG', Value=Ref(CLUSTER_SG_NAME)))
+            Output("SecurityGroup", Value=Ref(CLUSTER_SG_NAME)))
+
         # Allow all ports within cluster
         t.add_resource(
             ec2.SecurityGroupIngress(
-                "EmpireMinionAllTCPAccess",
-                IpProtocol='-1', FromPort='-1', ToPort='-1',
+                "AllTCPAccess",
+                IpProtocol="-1", FromPort="-1", ToPort="-1",
                 SourceSecurityGroupId=Ref(CLUSTER_SG_NAME),
                 GroupId=Ref(CLUSTER_SG_NAME)))
 
         # Application ELB Security Groups
         # Internal
-        for elb in ('public', 'private'):
-            group_name = "Empire%sAppELBSG" % elb.capitalize()
+        for elb in ("public", "private"):
+            group_name = "%sAppELBSG".format(elb.capitalize())
             t.add_resource(
                 ec2.SecurityGroup(
                     group_name,
                     GroupDescription=group_name,
                     VpcId=Ref("VpcId"),
-                    Tags=Tags(Name='%s-app-elb-sg' % elb)))
+                    Tags=Tags(Name="%s-app-elb-sg" % elb)))
             t.add_output(
-                Output("%sEmpireAppELBSG" % elb.capitalize(),
-                       Value=Ref(group_name)))
+                Output(
+                    "%sAppELBSG" % elb.capitalize(),
+                    Value=Ref(group_name)))
 
             # Allow ELB to talk to cluster on 9000-10000
             t.add_resource(
                 ec2.SecurityGroupIngress(
-                    "Empire%sAppPort9000To10000" % elb.capitalize(),
+                    "%sAppPort9000To10000" % elb.capitalize(),
                     IpProtocol="tcp", FromPort=9000, ToPort=10000,
                     SourceSecurityGroupId=Ref(group_name),
                     GroupId=Ref(CLUSTER_SG_NAME)))
@@ -133,13 +145,13 @@ class EmpireMinion(EmpireBase):
             # the elb
             t.add_resource(
                 ec2.SecurityGroupIngress(
-                    "Empire%sELBAllow80" % elb.capitalize(),
+                    "%sELBAllow80" % elb.capitalize(),
                     IpProtocol="tcp", FromPort=80, ToPort=80,
                     CidrIp="0.0.0.0/0",
                     GroupId=Ref(group_name)))
             t.add_resource(
                 ec2.SecurityGroupIngress(
-                    "Empire%sELBAllow443" % elb.capitalize(),
+                    "%sELBAllow443" % elb.capitalize(),
                     IpProtocol="tcp", FromPort=443, ToPort=443,
                     CidrIp="0.0.0.0/0",
                     GroupId=Ref(group_name)))
@@ -179,26 +191,28 @@ class EmpireMinion(EmpireBase):
         ec2_role_policy = get_default_assumerole_policy()
         t.add_resource(
             Role(
-                "EmpireMinionRole",
+                "IAMRole",
                 AssumeRolePolicyDocument=ec2_role_policy,
                 Path="/",
                 Policies=self.generate_iam_policies()))
         t.add_resource(
             InstanceProfile(
-                "EmpireMinionProfile",
+                "InstanceProfile",
                 Path="/",
-                Roles=[Ref("EmpireMinionRole")]))
+                Roles=[Ref("IAMRole")]))
+        t.add_output(
+            Output("IAMRole", Value=Ref("IAMRole")))
 
     def create_ecs_cluster(self):
         t = self.template
-        t.add_resource(ecs.Cluster("EmpireMinionCluster"))
+        t.add_resource(ecs.Cluster("ECSCluster"))
         t.add_output(
-            Output("MinionECSCluster", Value=Ref("EmpireMinionCluster")))
+            Output("MinionECSCluster", Value=Ref("ECSCluster")))
 
     def generate_seed_contents(self):
         seed = [
             "EMPIRE_HOSTGROUP=minion\n",
-            "ECS_CLUSTER=", Ref("EmpireMinionCluster"), "\n",
+            "ECS_CLUSTER=", Ref("ECSCluster"), "\n",
             "DOCKER_REGISTRY=", Ref("DockerRegistry"), "\n",
             "DOCKER_USER=", Ref("DockerRegistryUser"), "\n",
             "DOCKER_PASS=", Ref("DockerRegistryPassword"), "\n",
@@ -210,12 +224,12 @@ class EmpireMinion(EmpireBase):
         t = self.template
         t.add_resource(
             autoscaling.LaunchConfiguration(
-                'EmpireMinionLaunchConfig',
-                IamInstanceProfile=GetAtt("EmpireMinionProfile",
-                                          "Arn"),
-                ImageId=FindInMap('AmiMap',
-                                  Ref("AWS::Region"),
-                                  Ref("ImageName")),
+                "LaunchConfig",
+                IamInstanceProfile=GetAtt("InstanceProfile", "Arn"),
+                ImageId=FindInMap(
+                    "AmiMap",
+                    Ref("AWS::Region"),
+                    Ref("ImageName")),
                 BlockDeviceMappings=self.build_block_device(),
                 InstanceType=Ref("InstanceType"),
                 KeyName=Ref("SshKeyName"),
@@ -223,10 +237,10 @@ class EmpireMinion(EmpireBase):
                 SecurityGroups=[Ref("DefaultSG"), Ref(CLUSTER_SG_NAME)]))
         t.add_resource(
             autoscaling.AutoScalingGroup(
-                'EmpireMinionAutoscalingGroup',
+                "AutoscalingGroup",
                 AvailabilityZones=Ref("AvailabilityZones"),
-                LaunchConfigurationName=Ref("EmpireMinionLaunchConfig"),
+                LaunchConfigurationName=Ref("LaunchConfig"),
                 MinSize=Ref("MinHosts"),
                 MaxSize=Ref("MaxHosts"),
                 VPCZoneIdentifier=Ref("PrivateSubnets"),
-                Tags=[ASTag('Name', 'empire_minion', True)]))
+                Tags=[ASTag("Name", "empire_minion", True)]))
