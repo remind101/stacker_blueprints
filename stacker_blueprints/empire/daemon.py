@@ -131,8 +131,7 @@ class EmpireDaemon(Blueprint):
             "default": ""},
         "InternalZoneId": {
             "type": "String",
-            "description": "The ID for the route53 zone for internal DNS",
-            "default": ""},
+            "description": "The ID for the route53 zone for internal DNS"},
         "PrivateAppELBSG": {
             "type": "String",
             "description": (
