@@ -69,6 +69,10 @@ class EmpireDaemon(Blueprint):
                 " either acm or iam."
             ),
             "default": ""},
+        "DesiredCount": {
+            "type": "Number",
+            "description": "The number of controller tasks to run.",
+            "default": "2"},
         "InstanceSecurityGroup": {
             "type": "String",
             "description": "Security group of the controller instances."},
@@ -457,7 +461,7 @@ class EmpireDaemon(Blueprint):
             ecs.Service(
                 "Service",
                 Cluster=Ref("ControllerCluster"),
-                DesiredCount=2,
+                DesiredCount=Ref("DesiredCount"),
                 LoadBalancers=[
                     ecs.LoadBalancer(
                         ContainerName="empire",
