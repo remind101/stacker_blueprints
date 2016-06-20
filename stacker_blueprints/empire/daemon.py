@@ -160,6 +160,14 @@ class EmpireDaemon(Blueprint):
                 " be created for you."
             ),
             "default": "false"},
+        "TaskMemory": {
+            "type": "Number",
+            "description": "The number of MiB to reserve for the task.",
+            "default": "1024"},
+        "TaskCPU": {
+            "type": "Number",
+            "description": "The number of CPU units to reserve for the task.",
+            "default": "1024"},
     }
 
     def create_template(self):
@@ -454,8 +462,8 @@ class EmpireDaemon(Blueprint):
                             ecs.PortMapping(
                                 HostPort=8081,
                                 ContainerPort=8081)],
-                        Cpu=1024,
-                        Memory=1024)]))
+                        Cpu=Ref("TaskCPU"),
+                        Memory=Ref("TaskMemory"))]))
 
         t.add_resource(
             ecs.Service(
