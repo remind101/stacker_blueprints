@@ -173,7 +173,8 @@ class EmpireDaemon(Blueprint):
         "RunLogsBackend": {
             "type": "String",
             "allowed_values": ["cloudwatch", "stdout"],
-            "description": "The backend to use for empire run logs."},
+            "description": "The backend to use for empire run logs.",
+            "default": "stdout"},
         "EventsBackend": {
             "type": "String",
             "allowed_values": ["sns", "stdout", ""],
