@@ -206,7 +206,7 @@ class EmpireDaemon(Blueprint):
                 " Amazon ECS service's DesiredCount value, that can run in a"
                 " service during a deployment."
             ),
-            "default": ""},
+            "default": "100"},
         "ServiceMinimumHealthyPercent": {
             "type": "Number",
             "description": (
@@ -214,7 +214,7 @@ class EmpireDaemon(Blueprint):
                 " Amazon ECS service's DesiredCount value, that must continue"
                 " to run and remain healthy during a deployment."
             ),
-            "default": ""}
+            "default": "50"}
     }
 
     def create_template(self):
