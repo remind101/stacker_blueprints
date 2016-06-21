@@ -50,7 +50,7 @@ class EmpireMinion(EmpireBase):
                 "The image name to use from the AMIMap (usually found in the"
                 " config file.)"
             ),
-            "default": "NAT"},
+            "default": "empire"},
         "DockerVolumeSize": {
             "type": "Number",
             "description": (
