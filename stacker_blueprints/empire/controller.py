@@ -1,18 +1,13 @@
-import copy
-
 from troposphere import (
     Ref,
     Output,
     GetAtt,
     FindInMap,
-    If,
-    Equals,
 )
 from troposphere import (
     ec2,
     autoscaling,
     ecs,
-    logs,
 )
 from troposphere.autoscaling import Tag as ASTag
 from troposphere.iam import (
@@ -27,13 +22,9 @@ from awacs.helpers.trust import (
 
 from .base import EmpireBase
 
-from .policies import (
-    ecs_agent_policy,
-    runlogs_policy,
-)
+from .policies import ecs_agent_policy
 
 CLUSTER_SG_NAME = "EmpireControllerSecurityGroup"
-RUN_LOGS = "RunLogs"
 
 
 class EmpireController(EmpireBase):
@@ -74,14 +65,6 @@ class EmpireController(EmpireBase):
         "EmpireDBSecurityGroup": {
             "type": "AWS::EC2::SecurityGroup::Id",
             "description": "Security group of Empire database."},
-        "DisableRunLogs": {
-            "type": "String",
-            "description": (
-                "Disables run logs if set to anything."
-                " Note: Without this, Empire will log interactive runs to"
-                " CloudWatch."
-            ),
-            "default": ""},
         "DockerRegistry": {
             "type": "String",
             "description": (
@@ -101,16 +84,6 @@ class EmpireController(EmpireBase):
             "type": "String",
             "description": "Email for authentication with docker registry."},
     }
-
-    def create_template(self):
-        self.create_log_group()
-        super(EmpireController, self).create_template()
-
-    def create_conditions(self):
-        t = self.template
-        t.add_condition(
-            "EnableRunLogs",
-            Equals(Ref("DisableRunLogs"), ""))
 
     def create_security_groups(self):
         t = self.template
@@ -144,19 +117,11 @@ class EmpireController(EmpireBase):
             DeviceName="/dev/sdh", Ebs=volume)]
 
     def generate_iam_policies(self):
-        base_policies = [
+        return [
             Policy(
                 PolicyName="ecs-agent",
                 PolicyDocument=ecs_agent_policy(),
             )]
-        with_logging = copy.deepcopy(base_policies)
-        with_logging.append(
-            Policy(
-                PolicyName="runlogs",
-                PolicyDocument=runlogs_policy(Ref(RUN_LOGS)),
-            ))
-        policies = If("EnableRunLogs", with_logging, base_policies)
-        return policies
 
     def create_iam_profile(self):
         t = self.template
@@ -210,8 +175,3 @@ class EmpireController(EmpireBase):
                 MaxSize=Ref("MaxHosts"),
                 VPCZoneIdentifier=Ref("PrivateSubnets"),
                 Tags=[ASTag("Name", "empire_controller", True)]))
-
-    def create_log_group(self):
-        t = self.template
-        t.add_resource(logs.LogGroup(RUN_LOGS, Condition="EnableRunLogs"))
-        t.add_output(Output("RunLogs", Value=Ref(RUN_LOGS)))
