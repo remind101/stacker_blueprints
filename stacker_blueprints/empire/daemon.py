@@ -141,10 +141,6 @@ class EmpireDaemon(Blueprint):
             "type": "String",
             "description": "EMPIRE_LOGS_STREAMER",
             "default": ""},
-        "RunLogs": {
-            "type": "String",
-            "description": "EMPIRE_CLOUDWATCH_LOGS_GROUP",
-            "default": ""},
         "Reporter": {
             "type": "String",
             "description": "The reporter to use to report errors",
@@ -175,6 +171,14 @@ class EmpireDaemon(Blueprint):
             "allowed_values": ["cloudwatch", "stdout"],
             "description": "The backend to use for empire run logs.",
             "default": "stdout"},
+        "RunLogsCloudwatchGroup": {
+            "type": "String",
+            "description": (
+                "The cloudwatch log group to use for run logs if the"
+                " 'RunLogsBackend' is set to 'cloudwatch'. If not provided, one"
+                " will be created for the run logs backend."
+            ),
+            "default": ""},
         "EventsBackend": {
             "type": "String",
             "allowed_values": ["sns", "stdout", ""],
@@ -243,6 +247,10 @@ class EmpireDaemon(Blueprint):
         t.add_condition(
             "EnableCloudwatchLogs",
             Equals(Ref("RunLogsBackend"), "cloudwatch"))
+        t.add_condition(
+            "CreateRunLogsGroup",
+            And(Equals(Ref("RunLogsCloudwatchGroup"), ""),
+                Condition("EnableCloudwatchLogs")))
 
     def create_security_groups(self):
         t = self.template
@@ -506,7 +514,11 @@ class EmpireDaemon(Blueprint):
                 "RunLogsPolicy",
                 PolicyName="EmpireRunLogsPolicy",
                 Condition="EnableCloudwatchLogs",
-                PolicyDocument=runlogs_policy(Ref(RUN_LOGS)),
+                PolicyDocument=runlogs_policy(
+                    If(
+                        "CreateRunLogsGroup",
+                        Ref(RUN_LOGS),
+                        Ref("RunLogsCloudwatchGroup"))),
             ))
 
         t.add_resource(
@@ -561,6 +573,9 @@ class EmpireDaemon(Blueprint):
 
     def create_log_group(self):
         t = self.template
-        t.add_resource(logs.LogGroup(RUN_LOGS, Condition="EnableRunLogs"))
+        t.add_resource(logs.LogGroup(RUN_LOGS, Condition="CreateRunLogsGroup"))
         t.add_output(
-            Output("RunLogs", Value=Ref(RUN_LOGS), Condition="EnableRunLogs"))
+            Output(
+                "RunLogs",
+                Value=Ref(RUN_LOGS),
+                Condition="CreateRunLogsGroup"))
