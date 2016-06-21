@@ -1,5 +1,23 @@
-from troposphere import (Ref, Join, GetAtt, Not, Equals, If)
-from troposphere import ec2, ecs, sns, sqs, s3
+from troposphere import (
+    And,
+    Condition,
+    Ref,
+    Join,
+    GetAtt,
+    Not,
+    Equals,
+    If,
+    Output,
+)
+from troposphere import (
+    ec2,
+    ecs,
+    logs,
+    sns,
+    sqs,
+    s3,
+)
+
 from troposphere import elasticloadbalancing as elb
 from troposphere.route53 import RecordSetType
 from troposphere.iam import PolicyType
@@ -10,17 +28,16 @@ from .policies import (
     empire_policy,
     sns_to_sqs_policy,
     sns_events_policy,
+    runlogs_policy,
 )
 
 ELB_SG_NAME = "ELBSecurityGroup"
 EVENTS_TOPIC = "EventsTopic"
+RUN_LOGS = "RunLogs"
 
 
 class EmpireDaemon(Blueprint):
     PARAMETERS = {
-        "InstanceRole": {
-            "type": "String",
-            "description": "The IAM role to add permissions to."},
         "VpcId": {"type": "AWS::EC2::VPC::Id", "description": "Vpc Id"},
         "DefaultSG": {
             "type": "AWS::EC2::SecurityGroup::Id",
@@ -73,9 +90,12 @@ class EmpireDaemon(Blueprint):
             "type": "Number",
             "description": "The number of controller tasks to run.",
             "default": "2"},
-        "InstanceSecurityGroup": {
+        "ControllerInstanceSecurityGroup": {
             "type": "String",
             "description": "Security group of the controller instances."},
+        "ControllerInstanceRole": {
+            "type": "String",
+            "description": "The IAM role to add permissions to."},
         "DockerImage": {
             "type": "String",
             "description": "The docker image to run for the Empire dameon",
@@ -150,15 +170,26 @@ class EmpireDaemon(Blueprint):
             "type": "String",
             "description": "ECS Cluster for the Controllers.",
             "default": ""},
-        "EnableSNSEvents": {
+        "RunLogsBackend": {
             "type": "String",
-            "allowed_values": ["true", "false"],
+            "allowed_values": ["cloudwatch", "stdout"],
+            "description": "The backend to use for empire run logs."},
+        "EventsBackend": {
+            "type": "String",
+            "allowed_values": ["sns", "stdout", ""],
             "description": (
-                "If set to true, enables sending empire events to SNS. Specify"
-                " EventsSNSTopicName to use a specific topic, or else one will"
-                " be created for you."
+                "The backend to use for empire events. If 'sns' is specified,"
+                " provide EventsSNSTopicName to use a specific topic, or else"
+                " one will be created for you."
             ),
-            "default": "false"},
+            "default": "sdout"},
+        "EventsSNSTopicName": {
+            "type": "String",
+            "description": (
+                "The SNS topic to use if the 'EventsBackend' is set to 'sns'."
+                " If not provided, one will be created for the sns backend."
+            ),
+            "default": ""},
         "TaskMemory": {
             "type": "Number",
             "description": "The number of MiB to reserve for the task.",
@@ -174,7 +205,7 @@ class EmpireDaemon(Blueprint):
                 " Amazon ECS service's DesiredCount value, that can run in a"
                 " service during a deployment."
             ),
-            "default": ""}
+            "default": ""},
         "TaskMinimumPercent": {
             "type": "Number",
             "description": (
@@ -192,6 +223,7 @@ class EmpireDaemon(Blueprint):
         self.create_template_bucket()
         self.create_load_balancer()
         self.create_ecs_resources()
+        self.create_log_group()
 
     def create_conditions(self):
         t = self.template
@@ -202,7 +234,14 @@ class EmpireDaemon(Blueprint):
             Not(Equals(Ref("ELBCertType"), "acm")))
         t.add_condition(
             "EnableSNSEvents",
-            Not(Equals(Ref("EnableSNSEvents"), "false")))
+            Equals(Ref("EventsBackend"), "sns"))
+        t.add_condition(
+            "CreateSNSTopic",
+            And(Equals(Ref("EventsSNSTopicName"), ""),
+                Condition("EnableSNSEvents")))
+        t.add_condition(
+            "EnableCloudwatchLogs",
+            Equals(Ref("RunLogsBackend"), "cloudwatch"))
 
     def create_security_groups(self):
         t = self.template
@@ -235,7 +274,7 @@ class EmpireDaemon(Blueprint):
                 "80ToControllerPort8081",
                 IpProtocol="tcp", FromPort="8081", ToPort="8081",
                 SourceSecurityGroupId=Ref(ELB_SG_NAME),
-                GroupId=Ref("InstanceSecurityGroup")))
+                GroupId=Ref("ControllerInstanceSecurityGroup")))
 
     def create_custom_cloudformation_resources(self):
         t = self.template
@@ -359,12 +398,14 @@ class EmpireDaemon(Blueprint):
                 Value=Ref("GitHubDeploymentsEnvironment")),
             ecs.Environment(
                 Name="EMPIRE_EVENTS_BACKEND",
-                Value="sns"),
+                Value=Ref("EventsBackend")),
             ecs.Environment(
                 Name="EMPIRE_SNS_TOPIC",
                 Value=If(
                     "EnableSNSEvents",
-                    Ref(EVENTS_TOPIC),
+                    If("CreateSNSTopic",
+                       Ref(EVENTS_TOPIC),
+                       Ref("EventsSNSTopicName")),
                     "AWS::NoValue")),
             ecs.Environment(
                 Name="EMPIRE_TUGBOAT_URL",
@@ -401,7 +442,7 @@ class EmpireDaemon(Blueprint):
                 Value=Ref("ConveyorUrl")),
             ecs.Environment(
                 Name="EMPIRE_RUN_LOGS_BACKEND",
-                Value="cloudwatch"),
+                Value=Ref("RunLogsBackend")),
             ecs.Environment(
                 Name="EMPIRE_CUSTOM_RESOURCES_TOPIC",
                 Value=Ref("CustomResourcesTopic")),
@@ -410,7 +451,10 @@ class EmpireDaemon(Blueprint):
                 Value=Ref("CustomResourcesQueue")),
             ecs.Environment(
                 Name="EMPIRE_CLOUDWATCH_LOG_GROUP",
-                Value=Ref("RunLogs"))
+                Value=If(
+                    "EnableCloudwatchLogs",
+                    Ref(RUN_LOGS),
+                    "AWS::NoValue")),
         ]
 
     def create_ecs_resources(self):
@@ -430,13 +474,18 @@ class EmpireDaemon(Blueprint):
                     "TemplateBucket": (
                         Join("", ["arn:aws:s3:::", Ref("TemplateBucket"), "/*"])
                     )}),
-                Roles=[Ref("InstanceRole")]))
+                Roles=[Ref("ControllerInstanceRole")]))
 
         t.add_resource(sns.Topic(
             EVENTS_TOPIC,
             DisplayName="Empire events",
-            Condition="EnableSNSEvents",
+            Condition="CreateSNSTopic",
         ))
+        t.add_resource(
+            Output(
+                "EventsSNSTopic",
+                Value=Ref(EVENTS_TOPIC),
+                Condition="CreateSNSTopic"))
 
         # Add SNS Events policy if Events are enabled
         t.add_resource(
@@ -444,8 +493,20 @@ class EmpireDaemon(Blueprint):
                 "SNSEventsPolicy",
                 PolicyName="EmpireSNSEventsPolicy",
                 Condition="EnableSNSEvents",
-                PolicyDocument=sns_events_policy(Ref(EVENTS_TOPIC)),
-                Roles=[Ref("InstanceRole")]))
+                PolicyDocument=sns_events_policy(
+                    If("CreateSNSTopic",
+                       Ref(EVENTS_TOPIC),
+                       Ref("EventsSNSTopicName"))),
+                Roles=[Ref("ControllerInstanceRole")]))
+
+        # Add run logs policy if run logs are enabled
+        t.add_resource(
+            PolicyType(
+                "RunLogsPolicy",
+                PolicyName="EmpireRunLogsPolicy",
+                Condition="EnableCloudwatchLogs",
+                PolicyDocument=runlogs_policy(Ref(RUN_LOGS)),
+            ))
 
         t.add_resource(
             ecs.TaskDefinition(
@@ -496,3 +557,9 @@ class EmpireDaemon(Blueprint):
                         LoadBalancerName=Ref("LoadBalancer"))],
                 Role="ecsServiceRole",
                 TaskDefinition=Ref("TaskDefinition")))
+
+    def create_log_group(self):
+        t = self.template
+        t.add_resource(logs.LogGroup(RUN_LOGS, Condition="EnableRunLogs"))
+        t.add_output(
+            Output("RunLogs", Value=Ref(RUN_LOGS), Condition="EnableRunLogs"))
