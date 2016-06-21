@@ -1,3 +1,13 @@
+## 0.6.5 (2016-05-31)
+
+- Fix issue w/ firehose support relying on unreleased awacs features
+
+## 0.6.4 (2016-05-29)
+
+- Make internal zone first in DNS in VPC blueprints [#7]
+- Add support for NAT Gateways [#10]
+- Add stack to help creating firehose delivery streams [#16]
+
 ## 0.6.3 (2016-05-16)
 
 - Add support for ACM certificates
