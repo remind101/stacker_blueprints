@@ -206,7 +206,7 @@ class EmpireDaemon(Blueprint):
                 " service during a deployment."
             ),
             "default": ""},
-        "ServiceMinimumPercent": {
+        "ServiceMinimumHealthyPercent": {
             "type": "Number",
             "description": (
                 "The minimum number of tasks, specified as a percentage of the"
@@ -547,7 +547,7 @@ class EmpireDaemon(Blueprint):
                 Cluster=Ref("ControllerCluster"),
                 DeploymentConfiguration=ecs.DeploymentConfiguration(
                     MaximumPercent=Ref("ServiceMaximumPercent"),
-                    MinimumPercent=Ref("ServiceMinimumPercent"),
+                    MinimumHealthyPercent=Ref("ServiceMinimumHealthyPercent"),
                 ),
                 DesiredCount=Ref("DesiredCount"),
                 LoadBalancers=[
