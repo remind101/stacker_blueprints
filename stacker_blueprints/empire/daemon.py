@@ -90,10 +90,10 @@ class EmpireDaemon(Blueprint):
             "type": "Number",
             "description": "The number of controller tasks to run.",
             "default": "2"},
-        "ControllerInstanceSecurityGroup": {
+        "InstanceSecurityGroup": {
             "type": "String",
             "description": "Security group of the controller instances."},
-        "ControllerInstanceRole": {
+        "InstanceRole": {
             "type": "String",
             "description": "The IAM role to add permissions to."},
         "DockerImage": {
@@ -274,7 +274,7 @@ class EmpireDaemon(Blueprint):
                 "80ToControllerPort8081",
                 IpProtocol="tcp", FromPort="8081", ToPort="8081",
                 SourceSecurityGroupId=Ref(ELB_SG_NAME),
-                GroupId=Ref("ControllerInstanceSecurityGroup")))
+                GroupId=Ref("InstanceSecurityGroup")))
 
     def create_custom_cloudformation_resources(self):
         t = self.template
@@ -474,7 +474,7 @@ class EmpireDaemon(Blueprint):
                     "TemplateBucket": (
                         Join("", ["arn:aws:s3:::", Ref("TemplateBucket"), "/*"])
                     )}),
-                Roles=[Ref("ControllerInstanceRole")]))
+                Roles=[Ref("InstanceRole")]))
 
         t.add_resource(sns.Topic(
             EVENTS_TOPIC,
@@ -497,7 +497,7 @@ class EmpireDaemon(Blueprint):
                     If("CreateSNSTopic",
                        Ref(EVENTS_TOPIC),
                        Ref("EventsSNSTopicName"))),
-                Roles=[Ref("ControllerInstanceRole")]))
+                Roles=[Ref("InstanceRole")]))
 
         # Add run logs policy if run logs are enabled
         t.add_resource(
