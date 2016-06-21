@@ -482,7 +482,7 @@ class EmpireDaemon(Blueprint):
             DisplayName="Empire events",
             Condition="CreateSNSTopic",
         ))
-        t.add_resource(
+        t.add_output(
             Output(
                 "EventsSNSTopic",
                 Value=Ref(EVENTS_TOPIC),
