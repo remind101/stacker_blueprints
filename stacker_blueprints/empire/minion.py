@@ -239,7 +239,7 @@ class EmpireMinion(EmpireBase):
                 SecurityGroups=[Ref("DefaultSG"), Ref(CLUSTER_SG_NAME)]))
         t.add_resource(
             autoscaling.AutoScalingGroup(
-                "AutoscalingGroup",
+                "EmpireMinionAutoscalingGroup",
                 AvailabilityZones=Ref("AvailabilityZones"),
                 LaunchConfigurationName=Ref("EmpireMinionLaunchConfig"),
                 MinSize=Ref("MinHosts"),
