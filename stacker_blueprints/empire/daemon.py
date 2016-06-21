@@ -167,6 +167,22 @@ class EmpireDaemon(Blueprint):
             "type": "Number",
             "description": "The number of CPU units to reserve for the task.",
             "default": "1024"},
+        "TaskMaximumPercent": {
+            "type": "Number",
+            "description": (
+                "The maximum number of tasks, specified as a percentage of the"
+                " Amazon ECS service's DesiredCount value, that can run in a"
+                " service during a deployment."
+            ),
+            "default": ""}
+        "TaskMinimumPercent": {
+            "type": "Number",
+            "description": (
+                "The minimum number of tasks, specified as a percentage of the"
+                " Amazon ECS service's DesiredCount value, that must continue"
+                " to run and remain healthy during a deployment."
+            ),
+            "default": ""}
     }
 
     def create_template(self):
@@ -468,6 +484,10 @@ class EmpireDaemon(Blueprint):
             ecs.Service(
                 "Service",
                 Cluster=Ref("ControllerCluster"),
+                DeploymentConfiguration=ecs.DeploymentConfiguration(
+                    MaximumPercent=Ref("TaskMaximumPercent"),
+                    MinimumPercent=Ref("TaskMinimumPercent"),
+                ),
                 DesiredCount=Ref("DesiredCount"),
                 LoadBalancers=[
                     ecs.LoadBalancer(
