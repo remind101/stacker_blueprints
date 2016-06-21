@@ -198,7 +198,7 @@ class EmpireDaemon(Blueprint):
             "type": "Number",
             "description": "The number of CPU units to reserve for the task.",
             "default": "1024"},
-        "TaskMaximumPercent": {
+        "ServiceMaximumPercent": {
             "type": "Number",
             "description": (
                 "The maximum number of tasks, specified as a percentage of the"
@@ -206,7 +206,7 @@ class EmpireDaemon(Blueprint):
                 " service during a deployment."
             ),
             "default": ""},
-        "TaskMinimumPercent": {
+        "ServiceMinimumPercent": {
             "type": "Number",
             "description": (
                 "The minimum number of tasks, specified as a percentage of the"
@@ -546,8 +546,8 @@ class EmpireDaemon(Blueprint):
                 "Service",
                 Cluster=Ref("ControllerCluster"),
                 DeploymentConfiguration=ecs.DeploymentConfiguration(
-                    MaximumPercent=Ref("TaskMaximumPercent"),
-                    MinimumPercent=Ref("TaskMinimumPercent"),
+                    MaximumPercent=Ref("ServiceMaximumPercent"),
+                    MinimumPercent=Ref("ServiceMinimumPercent"),
                 ),
                 DesiredCount=Ref("DesiredCount"),
                 LoadBalancers=[
