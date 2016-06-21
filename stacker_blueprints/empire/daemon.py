@@ -182,7 +182,7 @@ class EmpireDaemon(Blueprint):
                 " provide EventsSNSTopicName to use a specific topic, or else"
                 " one will be created for you."
             ),
-            "default": "sdout"},
+            "default": "stdout"},
         "EventsSNSTopicName": {
             "type": "String",
             "description": (
