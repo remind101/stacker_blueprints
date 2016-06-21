@@ -171,15 +171,19 @@ class EmpireMinion(EmpireBase):
         return [docker_volume, swap_volume]
 
     def generate_iam_policies(self):
+        # Referencing NS like this within a resource name is deprecated, it's
+        # only done here to maintain backwards compatability for minion
+        # clusters.
+        ns = self.context.namespace
         base_policies = [
             Policy(
-                PolicyName="ecs-agent",
+                PolicyName="%s-ecs-agent" % ns,
                 PolicyDocument=ecs_agent_policy()),
         ]
         with_logging = copy.deepcopy(base_policies)
         with_logging.append(
             Policy(
-                PolicyName="logstream",
+                PolicyName="%s-kinesis-logging" % ns,
                 PolicyDocument=logstream_policy()
             )
         )
