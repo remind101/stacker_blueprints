@@ -519,7 +519,7 @@ class EmpireDaemon(Blueprint):
                         "CreateRunLogsGroup",
                         Ref(RUN_LOGS),
                         Ref("RunLogsCloudwatchGroup"))),
-            ))
+                Roles=[Ref("InstanceRole")]))
 
         t.add_resource(
             ecs.TaskDefinition(
