@@ -29,6 +29,7 @@ from .policies import (
     sns_to_sqs_policy,
     sns_events_policy,
     runlogs_policy,
+    logstream_policy,
 )
 
 ELB_SG_NAME = "ELBSecurityGroup"
@@ -251,6 +252,9 @@ class EmpireDaemon(Blueprint):
             "CreateRunLogsGroup",
             And(Equals(Ref("RunLogsCloudwatchGroup"), ""),
                 Condition("EnableCloudwatchLogs")))
+        t.add_condition(
+            "EnableAppEventStream",
+            Equals(Ref("LogsStreamer"), "kinesis"))
 
     def create_security_groups(self):
         t = self.template
@@ -519,6 +523,16 @@ class EmpireDaemon(Blueprint):
                         "CreateRunLogsGroup",
                         Ref(RUN_LOGS),
                         Ref("RunLogsCloudwatchGroup"))),
+                Roles=[Ref("InstanceRole")]))
+
+        # Allow the controller to write empire events to kinesis if kinesis is
+        # enabled.
+        t.add_resource(
+            PolicyType(
+                "AppEventStreamPolicy",
+                PolicyName="EmpireAppEventStreamPolicy",
+                Condition="EnableAppEventStream",
+                PolicyDocument=logstream_policy(),
                 Roles=[Ref("InstanceRole")]))
 
         t.add_resource(
