@@ -217,7 +217,7 @@ class EmpireDaemon(Blueprint):
                 " Amazon ECS service's DesiredCount value, that can run in a"
                 " service during a deployment."
             ),
-            "default": "100"},
+            "default": "200"},
         "ServiceMinimumHealthyPercent": {
             "type": "Number",
             "description": (
