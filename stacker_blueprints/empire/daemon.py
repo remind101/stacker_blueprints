@@ -200,6 +200,12 @@ class EmpireDaemon(Blueprint):
             "type": "Number",
             "description": "The number of MiB to reserve for the task.",
             "default": "1024"},
+        "AwsDebug": {
+            "type": "String",
+            "description": (
+                "Boolean for whether or not to enable AWS debug logs."
+            ),
+            "default": "false"},
         "TaskCPU": {
             "type": "Number",
             "description": "The number of CPU units to reserve for the task.",
@@ -400,6 +406,9 @@ class EmpireDaemon(Blueprint):
             ecs.Environment(
                 Name="EMPIRE_PORT",
                 Value="8081"),
+            ecs.Environment(
+                Name="EMPIRE_AWS_DEBUG",
+                Value=Ref("AwsDebug")),
             ecs.Environment(
                 Name="EMPIRE_GITHUB_ORGANIZATION",
                 Value=Ref("GitHubOrganization")),
