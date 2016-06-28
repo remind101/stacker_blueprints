@@ -145,7 +145,7 @@ class EmpireDaemon(Blueprint):
         "Reporter": {
             "type": "String",
             "description": "The reporter to use to report errors",
-            "allowed_values": ["hb"],
+            "allowed_values": ["hb", ""],
             "default": ""},
         "InternalZoneId": {
             "type": "String",
