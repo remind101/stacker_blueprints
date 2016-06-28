@@ -76,15 +76,15 @@ class EmpireDaemon(Blueprint):
         "ELBCertName": {
             "type": "String",
             "description": (
-                "The SSL certificate name to use on the ELB. Note: If this is"
-                " set, non-HTTPS access is disabled."
+                "The SSL certificate name to use on the ELB. Note: If this is "
+                "set, non-HTTPS access is disabled."
             ),
             "default": ""},
         "ELBCertType": {
             "type": "String",
             "description": (
-                "The SSL certificate type to use on the ELB. Note: Can be"
-                " either acm or iam."
+                "The SSL certificate type to use on the ELB. Note: Can be "
+                "either acm or iam."
             ),
             "default": ""},
         "DesiredCount": {
@@ -185,21 +185,23 @@ class EmpireDaemon(Blueprint):
             "type": "String",
             "allowed_values": ["sns", "stdout", ""],
             "description": (
-                "The backend to use for empire events. If 'sns' is specified,"
-                " provide EventsSNSTopicName to use a specific topic, or else"
-                " one will be created for you."
+                "The backend to use for empire events. If 'sns' is specified, "
+                "provide EventsSNSTopicName to use a specific topic, or else "
+                "one will be created for you."
             ),
             "default": "stdout"},
         "EventsSNSTopicName": {
             "type": "String",
             "description": (
-                "The SNS topic to use if the 'EventsBackend' is set to 'sns'."
-                " If not provided, one will be created for the sns backend."
+                "The SNS topic to use if the 'EventsBackend' is set to 'sns'. "
+                "If not provided, one will be created for the sns backend."
             ),
             "default": ""},
         "TaskMemory": {
             "type": "Number",
-            "description": "The number of MiB to reserve for the task.",
+            "description": (
+                "The number of MiB to reserve for the empire daemon task."
+            ),
             "default": "1024"},
         "AwsDebug": {
             "type": "String",
@@ -210,22 +212,24 @@ class EmpireDaemon(Blueprint):
             "default": "false"},
         "TaskCPU": {
             "type": "Number",
-            "description": "The number of CPU units to reserve for the task.",
+            "description": (
+                "The number of CPU units to reserve for the empire daemon task."
+            ),
             "default": "1024"},
         "ServiceMaximumPercent": {
             "type": "Number",
             "description": (
-                "The maximum number of tasks, specified as a percentage of the"
-                " Amazon ECS service's DesiredCount value, that can run in a"
-                " service during a deployment."
+                "The maximum number of tasks, specified as a percentage of the "
+                "Amazon ECS service's DesiredCount value, that can run in a "
+                "service during a deployment."
             ),
             "default": "200"},
         "ServiceMinimumHealthyPercent": {
             "type": "Number",
             "description": (
-                "The minimum number of tasks, specified as a percentage of the"
-                " Amazon ECS service's DesiredCount value, that must continue"
-                " to run and remain healthy during a deployment."
+                "The minimum number of tasks, specified as a percentage of the "
+                "Amazon ECS service's DesiredCount value, that must continue "
+                "to run and remain healthy during a deployment."
             ),
             "default": "50"}
     }
