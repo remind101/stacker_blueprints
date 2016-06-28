@@ -206,6 +206,7 @@ class EmpireDaemon(Blueprint):
             "description": (
                 "Boolean for whether or not to enable AWS debug logs."
             ),
+            "allowed_values": ["true", "false"],
             "default": "false"},
         "TaskCPU": {
             "type": "Number",
