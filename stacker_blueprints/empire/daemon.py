@@ -247,6 +247,7 @@ class EmpireDaemon(Blueprint):
         t = self.template
         ssl_condition = Not(Equals(Ref("ELBCertName"), ""))
         t.add_condition("UseSSL", ssl_condition)
+        t.add_condition("UseHTTP", Not(ssl_condition))
         self.template.add_condition(
             "UseIAMCert",
             Not(Equals(Ref("ELBCertType"), "acm")))
@@ -281,18 +282,21 @@ class EmpireDaemon(Blueprint):
                 "ELBPort80FromTrustedNetwork",
                 IpProtocol="tcp", FromPort="80", ToPort="80",
                 CidrIp=Ref("TrustedNetwork"),
+                Condition="UseHTTP",
                 GroupId=Ref(ELB_SG_NAME)))
         t.add_resource(
             ec2.SecurityGroupIngress(
                 "ELBPort443FromTrustedNetwork",
                 IpProtocol="tcp", FromPort="443", ToPort="443",
                 CidrIp=Ref("TrustedNetwork"),
+                Condition="UseSSL",
                 GroupId=Ref(ELB_SG_NAME)))
         t.add_resource(
             ec2.SecurityGroupIngress(
                 "ELBPort443GitHub",
                 IpProtocol="tcp", FromPort="443", ToPort="443",
                 CidrIp=Ref("GitHubCIDR"),
+                Condition="UseSSL",
                 GroupId=Ref(ELB_SG_NAME)))
         t.add_resource(
             ec2.SecurityGroupIngress(
