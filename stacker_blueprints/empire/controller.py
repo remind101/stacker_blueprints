@@ -58,8 +58,8 @@ class EmpireController(EmpireBase):
         "ImageName": {
             "type": "String",
             "description": (
-                "The image name to use from the AMIMap (usually found in the"
-                " config file.)"
+                "The image name to use from the AMIMap (usually found in the "
+                "config file.)"
             ),
             "default": "empire"},
         "EmpireDBSecurityGroup": {

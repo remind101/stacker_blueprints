@@ -176,9 +176,9 @@ class EmpireDaemon(Blueprint):
         "RunLogsCloudwatchGroup": {
             "type": "String",
             "description": (
-                "The cloudwatch log group to use for run logs if the"
-                " 'RunLogsBackend' is set to 'cloudwatch'. If not provided, one"
-                " will be created for the run logs backend."
+                "The cloudwatch log group to use for run logs if the "
+                "'RunLogsBackend' is set to 'cloudwatch'. If not provided, one "
+                "will be created for the run logs backend."
             ),
             "default": ""},
         "EventsBackend": {

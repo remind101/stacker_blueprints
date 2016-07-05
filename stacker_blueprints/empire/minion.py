@@ -47,22 +47,22 @@ class EmpireMinion(EmpireBase):
         "ImageName": {
             "type": "String",
             "description": (
-                "The image name to use from the AMIMap (usually found in the"
-                " config file.)"
+                "The image name to use from the AMIMap (usually found in the "
+                "config file.)"
             ),
             "default": "empire"},
         "DockerVolumeSize": {
             "type": "Number",
             "description": (
-                "Size, in GB, of the EBS volume where docker will store its"
-                " images and containers."
+                "Size, in GB, of the EBS volume where docker will store its "
+                "images and containers."
             ),
             "default": "50"},
         "SwapVolumeSize": {
             "type": "Number",
             "description": (
-                "Size, in GB, of the EBS volume that will be turned into a swap"
-                " volume."
+                "Size, in GB, of the EBS volume that will be turned into a "
+                "swap volume."
             ),
             "default": "16"},
         "DockerRegistry": {
@@ -86,9 +86,9 @@ class EmpireMinion(EmpireBase):
         "DisableStreamingLogs": {
             "type": "String",
             "description": (
-                "Disables streaming logging if set to anything. Note: Without"
-                " this Empire creates a kinesis stream per app that you deploy"
-                " in Empire."
+                "Disables streaming logging if set to anything. Note: Without "
+                "this Empire creates a kinesis stream per app that you deploy "
+                "in Empire."
             ),
             "default": ""},
     }
