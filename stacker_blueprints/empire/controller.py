@@ -62,7 +62,7 @@ class EmpireController(EmpireBase):
                 "config file.)"
             ),
             "default": "empire"},
-        "EmpireDBSecurityGroup": {
+        "DatabaseSecurityGroup": {
             "type": "AWS::EC2::SecurityGroup::Id",
             "description": "Security group of Empire database."},
         "DockerRegistry": {
@@ -103,7 +103,7 @@ class EmpireController(EmpireBase):
                 "EmpireControllerDBAccess",
                 IpProtocol="tcp", FromPort=5432, ToPort=5432,
                 SourceSecurityGroupId=Ref(CLUSTER_SG_NAME),
-                GroupId=Ref("EmpireDBSecurityGroup")))
+                GroupId=Ref("DatabaseSecurityGroup")))
 
     def create_ecs_cluster(self):
         t = self.template
