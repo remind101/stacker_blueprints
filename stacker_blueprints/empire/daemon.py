@@ -20,12 +20,21 @@ from troposphere import (
 
 from troposphere import elasticloadbalancing as elb
 from troposphere.route53 import RecordSetType
-from troposphere.iam import PolicyType
+from troposphere.iam import (
+    PolicyType,
+    Policy,
+    Role,
+)
+
+from awacs.helpers.trust import (
+    get_default_assumerole_policy,
+)
 
 from stacker.blueprints.base import Blueprint
 
 from .policies import (
     empire_policy,
+    service_role_policy,
     sns_to_sqs_policy,
     sns_events_policy,
     runlogs_policy,
@@ -450,7 +459,7 @@ class EmpireDaemon(Blueprint):
                 Value=Ref("MinionCluster")),
             ecs.Environment(
                 Name="EMPIRE_ECS_SERVICE_ROLE",
-                Value="ecsServiceRole"),
+                Value=Ref("ecsServiceRole")),
             ecs.Environment(
                 Name="EMPIRE_ROUTE53_INTERNAL_ZONE_ID",
                 Value=Ref("InternalZoneId")),
@@ -588,6 +597,16 @@ class EmpireDaemon(Blueprint):
                         Memory=Ref("TaskMemory"))]))
 
         t.add_resource(
+            Role(
+                "ecsServiceRole",
+                AssumeRolePolicyDocument=get_default_assumerole_policy(),
+                Path="/",
+                policies=[
+                    Policy(
+                        PolicyName="ecs-service-role",
+                        PolicyDocument=service_role_policy())]))
+
+        t.add_resource(
             ecs.Service(
                 "Service",
                 Cluster=Ref("ControllerCluster"),
@@ -601,7 +620,7 @@ class EmpireDaemon(Blueprint):
                         ContainerName="empire",
                         ContainerPort=8081,
                         LoadBalancerName=Ref("LoadBalancer"))],
-                Role="ecsServiceRole",
+                Role=Ref("ecsServiceRole"),
                 TaskDefinition=Ref("TaskDefinition")))
 
     def create_log_group(self):
