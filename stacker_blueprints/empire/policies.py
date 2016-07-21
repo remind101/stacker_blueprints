@@ -42,9 +42,9 @@ def ecs_agent_policy():
                     ecs.RegisterContainerInstance,
                     ecs.DeregisterContainerInstance,
                     ecs.DiscoverPollEndpoint,
-                    ecs.ECSAction("Submit*"),
+                    ecs.Action("Submit*"),
                     ecs.Poll,
-                    ecs.ECSAction("StartTelemetrySession")])])
+                    ecs.Action("StartTelemetrySession")])])
     return p
 
 
@@ -108,7 +108,7 @@ def empire_policy(resources):
                 Resource=["*"],
                 Action=[ecs.CreateService, ecs.DeleteService,
                         ecs.DeregisterTaskDefinition,
-                        ecs.ECSAction("Describe*"), ecs.ECSAction("List*"),
+                        ecs.Action("Describe*"), ecs.Action("List*"),
                         ecs.RegisterTaskDefinition, ecs.RunTask,
                         ecs.StartTask, ecs.StopTask, ecs.SubmitTaskStateChange,
                         ecs.UpdateService]),
