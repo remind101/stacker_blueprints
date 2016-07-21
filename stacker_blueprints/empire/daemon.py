@@ -109,7 +109,7 @@ class EmpireDaemon(Blueprint):
         "DockerImage": {
             "type": "String",
             "description": "The docker image to run for the Empire dameon",
-            "default": "master"},
+            "default": "remind101/empire:master"},
         "Environment": {
             "type": "String",
             "description": "Environment used for Empire."},
