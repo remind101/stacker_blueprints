@@ -375,6 +375,8 @@ class EmpireDaemon(Blueprint):
                     UnhealthyThreshold=3,
                     Interval=5,
                     Timeout=3),
+                ConnectionSettings=elb.ConnectionSettings(
+                    IdleTimeout=3600),  # 1 hour
                 Listeners=self.setup_listeners(),
                 SecurityGroups=[Ref(ELB_SG_NAME), ],
                 Subnets=Ref("PublicSubnets")))
