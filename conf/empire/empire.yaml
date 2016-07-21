@@ -39,19 +39,19 @@ mappings:
     us-east-1:
       NAT: ami-c02b04a8
       ubuntu1404: ami-c135f3aa
-      empire: ami-7286a018 # https://circleci.com/gh/remind101/empire_ami/63
+      empire: ami-1a15db77 # https://circleci.com/gh/remind101/empire_ami/89
     us-west-1:
       NAT: ami-67a54423
       ubuntu1404: ami-bf3dccfb
-      empire: ami-5df7833d # https://circleci.com/gh/remind101/empire_ami/63
+      empire: ami-e90f4889 # https://circleci.com/gh/remind101/empire_ami/89
     us-west-2:
       NAT: ami-2dae821d
       ubuntu1404: ami-f15b5dc1
-      empire: ami-36a84c56 # https://circleci.com/gh/remind101/empire_ami/63
+      empire: ami-050dcb65 # https://circleci.com/gh/remind101/empire_ami/89
     eu-west-1:
       NAT: ami-ef76e898
       ubuntu1404: ami-47a23a30
-      empire: ami-3aad1849 # https://circleci.com/gh/remind101/empire_ami/63
+      empire: ami-b6c258c5 # https://circleci.com/gh/remind101/empire_ami/89
 
 # Many stacks need these settings, or a subset of them, from the VPC -
 # this makes it easy to pass them around. Stacker will drop unused Parameters
@@ -129,46 +129,54 @@ stacks:
       InternalZoneName: vpc::InternalZoneName
       InternalHostname: empire-db
   - name: empireMinion
-    class_path: stacker_blueprints.empire.empire_minion.EmpireMinion
+    class_path: stacker_blueprints.empire.minion.EmpireMinion
     parameters:
       << : *vpc_parameters
       << : *docker_params
       InstanceType: ${empire_minion_instance_type}
-      MinSize: ${empire_minion_min_instance_count}
-      MaxSize: ${empire_minion_max_instance_count}
+      MinHosts: ${empire_minion_min_instance_count}
+      MaxHosts: ${empire_minion_max_instance_count}
       SshKeyName: ${ssh_key_name}
       ImageName: empire
       DisableStreamingLogs: ${empire_disable_streaming_logs}
   - name: empireController
-    class_path: stacker_blueprints.empire.empire_controller.EmpireController
+    class_path: stacker_blueprints.empire.controller.EmpireController
     parameters:
       << : *vpc_parameters
       << : *docker_params
-      ExternalDomain: ${external_domain}
-      InternalZoneId: vpc::InternalZoneId
       InstanceType: ${empire_controller_instance_type}
-      MinSize: ${empire_controller_min_instance_count}
-      MaxSize: ${empire_controller_max_instance_count}
+      MinHosts: ${empire_controller_min_instance_count}
+      MaxHosts: ${empire_controller_max_instance_count}
       SshKeyName: ${ssh_key_name}
       ImageName: empire
+      DatabaseSecurityGroup: empireDB::SecurityGroup
+  - name: empireDaemon
+    class_path: stacker_blueprints.empire.daemon.EmpireDaemon
+    parameters:
+      << : *vpc_parameters
+      << : *docker_params
+      DesiredCount: 1
+      TaskMemory: 256
+      TaskCPU: 256
+      InternalZoneId: vpc::InternalZoneId
+      ExternalDomain: ${external_domain}
       TrustedNetwork: ${trusted_network_cidr}
-      ControllerELBCertName: ${empire_controller_cert_name}
-      ControllerELBCertType: ${empire_controller_cert_type}
-      PublicEmpireAppELBSG: empireMinion::PublicEmpireAppELBSG
-      PrivateEmpireAppELBSG: empireMinion::PrivateEmpireAppELBSG
-      EmpireMinionCluster: empireMinion::MinionECSCluster
-      EmpireDBSecurityGroup: empireDB::SecurityGroup
-      EmpireDatabaseHost: empireDB::DBCname
-      EmpireDatabaseSG: empireDB::SecurityGroup
-      EmpireDatabaseUser: ${empiredb_user}
-      EmpireDatabasePassword: ${empiredb_password}
-      EmpireGithubClientId: ${empire_controller_github_client_id}
-      EmpireGithubClientSecret: ${empire_controller_github_client_secret}
-      EmpireGithubOrganization: ${empire_controller_github_organization}
+      ELBCertName: ${empire_controller_cert_name}
+      ELBCertType: ${empire_controller_cert_type}
+      PublicAppELBSG: empireMinion::PublicAppELBSG
+      PrivateAppELBSG: empireMinion::PrivateAppELBSG
+      MinionCluster: empireMinion::ECSCluster
+      ControllerCluster: empireController::ECSCluster
+      DatabaseHost: empireDB::DBCname
+      DatabaseUser: ${empiredb_user}
+      DatabasePassword: ${empiredb_password}
+      GithubClientId: ${empire_controller_github_client_id}
+      GithubClientSecret: ${empire_controller_github_client_secret}
+      GithubOrganization: ${empire_controller_github_organization}
+      Environment: ${empire_environment}
+      InstanceRole: empireController::IAMRole
+      InstanceSecurityGroup: empireController::SecurityGroup
       # Used for github deploy webhooks
-      EmpireGithubWebhooksSecret: ${empire_controller_github_webhooks_secret}
-      EmpireGithubDeploymentsEnvironment: ${empire_controller_github_deployments_environment}
-      EmpireTokenSecret: ${empire_controller_token_secret}
-      DisableStreamingLogs: ${empire_disable_streaming_logs}
-      # Enables SNS Events for empire commands
-      EnableSNSEvents: ${empire_controller_enable_sns_events}
+      GithubWebhooksSecret: ${empire_controller_github_webhooks_secret}
+      GithubDeploymentsEnvironment: ${empire_controller_github_deployments_environment}
+      TokenSecret: ${empire_controller_token_secret}
