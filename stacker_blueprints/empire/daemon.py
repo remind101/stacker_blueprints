@@ -27,7 +27,7 @@ from troposphere.iam import (
 )
 
 from awacs.helpers.trust import (
-    get_default_assumerole_policy,
+    get_ecs_assumerole_policy,
 )
 
 from stacker.blueprints.base import Blueprint
@@ -459,7 +459,7 @@ class EmpireDaemon(Blueprint):
                 Value=Ref("MinionCluster")),
             ecs.Environment(
                 Name="EMPIRE_ECS_SERVICE_ROLE",
-                Value=Ref("ecsServiceRole")),
+                Value=Ref("ServiceRole")),
             ecs.Environment(
                 Name="EMPIRE_ROUTE53_INTERNAL_ZONE_ID",
                 Value=Ref("InternalZoneId")),
@@ -598,10 +598,10 @@ class EmpireDaemon(Blueprint):
 
         t.add_resource(
             Role(
-                "ecsServiceRole",
-                AssumeRolePolicyDocument=get_default_assumerole_policy(),
+                "ServiceRole",
+                AssumeRolePolicyDocument=get_ecs_assumerole_policy(),
                 Path="/",
-                policies=[
+                Policies=[
                     Policy(
                         PolicyName="ecs-service-role",
                         PolicyDocument=service_role_policy())]))
@@ -620,7 +620,7 @@ class EmpireDaemon(Blueprint):
                         ContainerName="empire",
                         ContainerPort=8081,
                         LoadBalancerName=Ref("LoadBalancer"))],
-                Role=Ref("ecsServiceRole"),
+                Role=Ref("ServiceRole"),
                 TaskDefinition=Ref("TaskDefinition")))
 
     def create_log_group(self):
