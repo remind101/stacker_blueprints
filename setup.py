@@ -4,9 +4,9 @@ from setuptools import setup, find_packages
 src_dir = os.path.dirname(__file__)
 
 install_requires = [
-    "troposphere>=1.3.0",
-    "awacs>=0.5.3",
-    "stacker>=0.5.4, <=0.6.3",
+    "troposphere==1.7.0",
+    "awacs==0.6.0",
+    "stacker==0.6.3",
 ]
 
 tests_require = [
