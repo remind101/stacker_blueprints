@@ -157,7 +157,7 @@ stacks:
       << : *docker_params
       DesiredCount: 1
       TaskMemory: 256
-      TaskCPU: 256
+      TaskCPU: 1024
       InternalZoneId: vpc::InternalZoneId
       ExternalDomain: ${external_domain}
       TrustedNetwork: ${trusted_network_cidr}
