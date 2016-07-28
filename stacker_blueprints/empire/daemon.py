@@ -71,6 +71,8 @@ class EmpireDaemon(Blueprint):
             "type": "String",
             "description": (
                 "CIDR Network for for GitHub webhooks (https://goo.gl/D2kZKw)."
+                " NOTE: We'll only enable this on the ELB if ELBCertName is"
+                " provided."
             ),
             "default": "192.30.252.0/22"},
         "DatabaseHost": {
