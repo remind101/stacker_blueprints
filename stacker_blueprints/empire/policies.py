@@ -2,10 +2,33 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-from awacs.aws import Statement, Allow, Policy, Action
-
-from awacs import ecs, ec2, iam, route53, kinesis, sns
-from awacs import elasticloadbalancing as elb
+from awacs import (
+    ecs,
+    ec2,
+    iam,
+    route53,
+    kinesis,
+    sns,
+    logs,
+    sqs,
+    s3,
+    cloudformation,
+    elasticloadbalancing as elb,
+)
+from awacs.aws import (
+    Statement,
+    Allow,
+    Policy,
+    Action,
+    Principal,
+    Condition,
+    SourceArn,
+    ArnEquals,
+)
+from troposphere import (
+    Ref,
+    Join,
+)
 
 
 def ecs_agent_policy():
@@ -14,13 +37,14 @@ def ecs_agent_policy():
             Statement(
                 Effect=Allow,
                 Resource=["*"],
-                Action=[ecs.CreateCluster, ecs.RegisterContainerInstance,
-                        ecs.DeregisterContainerInstance,
-                        ecs.DiscoverPollEndpoint, ecs.ECSAction("Submit*"),
-                        ecs.Poll, ecs.ECSAction("StartTelemetrySession")]
-            )
-        ]
-    )
+                Action=[
+                    ecs.CreateCluster,
+                    ecs.RegisterContainerInstance,
+                    ecs.DeregisterContainerInstance,
+                    ecs.DiscoverPollEndpoint,
+                    ecs.Action("Submit*"),
+                    ecs.Poll,
+                    ecs.Action("StartTelemetrySession")])])
     return p
 
 
@@ -30,26 +54,61 @@ def service_role_policy():
             Statement(
                 Effect=Allow,
                 Resource=["*"],
-                Action=[ec2.AuthorizeSecurityGroupIngress,
-                        Action("ec2", "Describe*"),
-                        elb.DeregisterInstancesFromLoadBalancer,
-                        Action("elasticloadbalancing", "Describe*"),
-                        elb.RegisterInstancesWithLoadBalancer]
-            )
-        ]
-    )
+                Action=[
+                    ec2.AuthorizeSecurityGroupIngress,
+                    Action("ec2", "Describe*"),
+                    elb.DeregisterInstancesFromLoadBalancer,
+                    Action("elasticloadbalancing", "Describe*"),
+                    elb.RegisterInstancesWithLoadBalancer])])
     return p
 
 
-def empire_policy():
+def empire_policy(resources):
     p = Policy(
         Statement=[
+            Statement(
+                Effect=Allow,
+                Resource=[resources['CustomResourcesTopic']],
+                Action=[sns.Publish]),
+            Statement(
+                Effect=Allow,
+                Resource=[resources['CustomResourcesQueue']],
+                Action=[sqs.ReceiveMessage, sqs.DeleteMessage]),
+            Statement(
+                Effect=Allow,
+                Resource=[resources['TemplateBucket']],
+                Action=[
+                    s3.PutObject,
+                    s3.PutObjectAcl,
+                    s3.PutObjectVersionAcl,
+                    s3.GetObject,
+                    s3.GetObjectVersion,
+                    s3.GetObjectAcl,
+                    s3.GetObjectVersionAcl]),
+            Statement(
+                Effect=Allow,
+                Resource=[
+                    Join('', [
+                        'arn:aws:cloudformation:', Ref('AWS::Region'), ':',
+                        Ref('AWS::AccountId'), ':stack/',
+                        resources['Environment'], '-*'])],
+                Action=[
+                    cloudformation.CreateStack,
+                    cloudformation.UpdateStack,
+                    cloudformation.DeleteStack,
+                    cloudformation.ListStackResources,
+                    cloudformation.DescribeStackResource,
+                    cloudformation.DescribeStacks]),
+            Statement(
+                Effect=Allow,
+                Resource=['*'],
+                Action=[cloudformation.ValidateTemplate]),
             Statement(
                 Effect=Allow,
                 Resource=["*"],
                 Action=[ecs.CreateService, ecs.DeleteService,
                         ecs.DeregisterTaskDefinition,
-                        ecs.ECSAction("Describe*"), ecs.ECSAction("List*"),
+                        ecs.Action("Describe*"), ecs.Action("List*"),
                         ecs.RegisterTaskDefinition, ecs.RunTask,
                         ecs.StartTask, ecs.StopTask, ecs.SubmitTaskStateChange,
                         ecs.UpdateService]),
@@ -60,7 +119,9 @@ def empire_policy():
                 Action=[elb.DeleteLoadBalancer, elb.CreateLoadBalancer,
                         elb.DescribeLoadBalancers, elb.DescribeTags,
                         elb.ConfigureHealthCheck,
-                        elb.ModifyLoadBalancerAttributes]),
+                        elb.ModifyLoadBalancerAttributes,
+                        elb.SetLoadBalancerListenerSSLCertificate,
+                        elb.SetLoadBalancerPoliciesOfListener]),
             Statement(
                 Effect=Allow,
                 Resource=["*"],
@@ -75,7 +136,9 @@ def empire_policy():
                 Action=[
                     Action("route53", "ListHostedZonesByName"),
                     route53.ChangeResourceRecordSets,
-                    route53.ListHostedZones, route53.GetHostedZone
+                    route53.ListHostedZones,
+                    route53.GetHostedZone,
+                    route53.GetChange,
                 ],
                 # TODO: Limit to specific zones
                 Resource=["*"]),
@@ -99,9 +162,7 @@ def sns_events_policy(topic_arn):
                 Effect=Allow,
                 Action=[sns.Publish],
                 Resource=[topic_arn],
-            )
-        ]
-    )
+            )])
 
     return p
 
@@ -117,7 +178,35 @@ def logstream_policy():
                     kinesis.CreateStream, kinesis.DescribeStream,
                     Action(kinesis.prefix, "AddTagsToStream"),
                     Action(kinesis.prefix, "PutRecords")
-                ])
-        ]
-    )
+                ])])
+    return p
+
+
+def runlogs_policy(log_group_ref):
+    """Policy needed for Empire -> Cloudwatch logs to record interactive runs."""
+    p = Policy(
+        Statement=[
+            Statement(
+                Effect=Allow,
+                Resource=[
+                    Join('', [
+                        'arn:aws:logs:*:*:log-group:',
+                        log_group_ref,
+                        ':log-stream:*'])],
+                Action=[
+                    logs.CreateLogStream,
+                    logs.PutLogEvents,
+                ])])
+    return p
+
+
+def sns_to_sqs_policy(topic):
+    p = Policy(
+        Statement=[
+            Statement(
+                Effect=Allow,
+                Principal=Principal('*'),
+                Action=[sqs.SendMessage],
+                Resource=["*"],
+                Condition=Condition(ArnEquals(SourceArn, topic)))])
     return p
