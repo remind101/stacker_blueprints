@@ -1,0 +1,16 @@
+#!/bin/bash
+
+# This script will read any values defined within a dev.env file and export
+# them as `--env` command line arguments when running stacker commands. This is
+# useful while developing the example empire blueprint because it allows us to
+# have an example.env file with placeholders and comments that will be filled
+# in with the developer's values.
+
+CMD="stacker $1 conf/empire/example.env conf/empire/empire.yaml ${@:2}"
+while read -r line || [[ -n "$line" ]]
+do
+    CMD="$CMD --env $line"
+done < "dev.env"
+
+echo $CMD
+$CMD
