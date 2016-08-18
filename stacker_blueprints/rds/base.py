@@ -197,6 +197,13 @@ class BaseRDS(Blueprint):
                 "default": "true",
                 "allowed_values": ["true", "false"]
             },
+            "ExistingSecurityGroup": {
+                "type": "String",
+                "description": "The ID of an existing security group to put "
+                               "the RDS instance in. If not specified, one "
+                               "will be created for you.",
+                "default": "",
+            },
         }
 
         parameters = self.extra_parameters(parameters)
@@ -248,6 +255,10 @@ class BaseRDS(Blueprint):
         t.add_condition(
             "HasDBSnapshotIdentifier",
             Not(Equals(Ref("DBSnapshotIdentifier"), "")))
+        t.add_contion(
+            "CreateSecurityGroup",
+            Equals(Ref("ExistingSecurityGroup"), "")
+        )
 
     def create_subnet_group(self):
         t = self.template
@@ -262,9 +273,15 @@ class BaseRDS(Blueprint):
         sg = t.add_resource(
             ec2.SecurityGroup(
                 SECURITY_GROUP,
+                Condition="CreateSecurityGroup",
                 GroupDescription="%s RDS security group" % self.name,
                 VpcId=Ref("VpcId")))
-        t.add_output(Output("SecurityGroup", Value=Ref(sg)))
+        self.security_group = If(
+            "CreateSecurityGroup",
+            Ref(sg),
+            Ref("ExistingSecurityGroup")
+        )
+        t.add_output(Output("SecurityGroup", Value=self.security_group))
 
     def get_db_endpoint(self):
         endpoint = GetAtt(DBINSTANCE, "Endpoint.Address")
@@ -427,7 +444,7 @@ class MasterInstance(BaseRDS):
             "PreferredBackupWindow": Ref("PreferredBackupWindow"),
             "PreferredMaintenanceWindow": Ref("PreferredMaintenanceWindow"),
             "StorageEncrypted": Ref("StorageEncrypted"),
-            "VPCSecurityGroups": [Ref(SECURITY_GROUP), ],
+            "VPCSecurityGroups": [self.security_group, ],
             "Tags": Tags(Name=self.name),
         }
 
@@ -454,5 +471,5 @@ class ReadReplica(BaseRDS):
             "EngineVersion": Ref("EngineVersion"),
             "OptionGroupName": Ref("OptionGroup"),
             "PreferredMaintenanceWindow": Ref("PreferredMaintenanceWindow"),
-            "VPCSecurityGroups": [Ref(SECURITY_GROUP), ],
+            "VPCSecurityGroups": [self.security_group, ],
         }
