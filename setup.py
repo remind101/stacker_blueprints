@@ -4,14 +4,14 @@ from setuptools import setup, find_packages
 src_dir = os.path.dirname(__file__)
 
 install_requires = [
-    "troposphere==1.7.0",
-    "awacs==0.6.0",
-    "stacker==0.6.3",
+    "troposphere~=1.8.0",
+    "awacs~=0.6.0",
+    "stacker~=0.6.3",
 ]
 
 tests_require = [
-    "nose>=1.0",
-    "mock==1.0.1",
+    "nose~=1.0",
+    "mock~=2.0.0",
 ]
 
 
