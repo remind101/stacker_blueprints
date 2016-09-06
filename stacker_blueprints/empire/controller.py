@@ -20,6 +20,16 @@ from awacs.helpers.trust import (
     get_default_assumerole_policy,
 )
 
+from stacker.blueprints.variables.types import (
+    CFNCommaDelimitedList,
+    CFNNumber,
+    CFNString,
+    EC2KeyPairKeyName,
+    EC2SecurityGroupId,
+    EC2SubnetIdList,
+    EC2VPCId,
+)
+
 from .base import EmpireBase
 
 from .policies import ecs_agent_policy
@@ -28,60 +38,60 @@ CLUSTER_SG_NAME = "EmpireControllerSecurityGroup"
 
 
 class EmpireController(EmpireBase):
-    PARAMETERS = {
+    VARIABLES = {
         "VpcId": {
-            "type": "AWS::EC2::VPC::Id",
+            "type": EC2VPCId,
             "description": "Vpc Id"},
         "DefaultSG": {
-            "type": "AWS::EC2::SecurityGroup::Id",
+            "type": EC2SecurityGroupId,
             "description": "Top level security group."},
         "PrivateSubnets": {
-            "type": "List<AWS::EC2::Subnet::Id>",
+            "type": EC2SubnetIdList,
             "description": "Subnets to deploy private instances in."},
         "AvailabilityZones": {
-            "type": "CommaDelimitedList",
+            "type": CFNCommaDelimitedList,
             "description": "Availability Zones to deploy instances in."},
         "InstanceType": {
-            "type": "String",
+            "type": CFNString,
             "description": "Empire AWS Instance Type",
             "default": "m3.medium"},
         "MinHosts": {
-            "type": "Number",
+            "type": CFNNumber,
             "description": "Minimum # of empire minion instances.",
             "default": "2"},
         "MaxHosts": {
-            "type": "Number",
+            "type": CFNNumber,
             "description": "Maximum # of empire minion instances.",
             "default": "3"},
         "SshKeyName": {
-            "type": "AWS::EC2::KeyPair::KeyName"},
+            "type": EC2KeyPairKeyName},
         "ImageName": {
-            "type": "String",
+            "type": CFNString,
             "description": (
                 "The image name to use from the AMIMap (usually found in the "
                 "config file.)"
             ),
             "default": "empire"},
         "DatabaseSecurityGroup": {
-            "type": "AWS::EC2::SecurityGroup::Id",
+            "type": EC2SecurityGroupId,
             "description": "Security group of Empire database."},
         "DockerRegistry": {
-            "type": "String",
+            "type": CFNString,
             "description": (
                 "Optional docker registry where private images are located."
             ),
             "default": "https://index.docker.io/v1/"},
         "DockerRegistryUser": {
-            "type": "String",
+            "type": CFNString,
             "description": "User for authentication with docker registry."},
         "DockerRegistryPassword": {
-            "type": "String",
+            "type": CFNString,
             "no_echo": True,
             "description": (
                 "Password for authentication with docker registry."
             )},
         "DockerRegistryEmail": {
-            "type": "String",
+            "type": CFNString,
             "description": "Email for authentication with docker registry."},
     }
 
