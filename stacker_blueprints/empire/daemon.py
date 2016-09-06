@@ -31,6 +31,14 @@ from awacs.helpers.trust import (
 )
 
 from stacker.blueprints.base import Blueprint
+from stacker.blueprints.variables.types import (
+    CFNCommaDelimitedList,
+    CFNNumber,
+    CFNString,
+    EC2SecurityGroupId,
+    EC2SubnetIdList,
+    EC2VPCId,
+)
 
 from .policies import (
     empire_policy,
@@ -47,28 +55,28 @@ RUN_LOGS = "RunLogs"
 
 
 class EmpireDaemon(Blueprint):
-    PARAMETERS = {
-        "VpcId": {"type": "AWS::EC2::VPC::Id", "description": "Vpc Id"},
+    VARIABLES = {
+        "VpcId": {"type": EC2VPCId, "description": "Vpc Id"},
         "DefaultSG": {
-            "type": "AWS::EC2::SecurityGroup::Id",
+            "type": EC2SecurityGroupId,
             "description": "Top level security group."},
         "ExternalDomain": {
-            "type": "String",
+            "type": CFNString,
             "description": "Base domain for the stack."},
         "PrivateSubnets": {
-            "type": "List<AWS::EC2::Subnet::Id>",
+            "type": EC2SubnetIdList,
             "description": "Subnets to deploy private instances in."},
         "PublicSubnets": {
-            "type": "List<AWS::EC2::Subnet::Id>",
+            "type": EC2SubnetIdList,
             "description": "Subnets to deploy public (elb) instances in."},
         "AvailabilityZones": {
-            "type": "CommaDelimitedList",
+            "type": CFNCommaDelimitedList,
             "description": "Availability Zones to deploy instances in."},
         "TrustedNetwork": {
-            "type": "String",
+            "type": CFNString,
             "description": "CIDR block allowed to connect to empire ELB."},
         "GitHubCIDR": {
-            "type": "String",
+            "type": CFNString,
             "description": (
                 "CIDR Network for for GitHub webhooks (https://goo.gl/D2kZKw)."
                 " NOTE: We'll only enable this on the ELB if ELBCertName is"
@@ -76,116 +84,116 @@ class EmpireDaemon(Blueprint):
             ),
             "default": "192.30.252.0/22"},
         "DatabaseHost": {
-            "type": "String",
+            "type": CFNString,
             "description": "Host for the Empire DB"},
         "DatabaseUser": {
-            "type": "String",
+            "type": CFNString,
             "description": "User for the Empire DB"},
         "DatabasePassword": {
-            "type": "String",
+            "type": CFNString,
             "description": "Password for the Empire DB"},
         "ELBCertName": {
-            "type": "String",
+            "type": CFNString,
             "description": (
                 "The SSL certificate name to use on the ELB. Note: If this is "
                 "set, non-HTTPS access is disabled."
             ),
             "default": ""},
         "ELBCertType": {
-            "type": "String",
+            "type": CFNString,
             "description": (
                 "The SSL certificate type to use on the ELB. Note: Can be "
                 "either acm or iam."
             ),
             "default": ""},
         "DesiredCount": {
-            "type": "Number",
+            "type": CFNNumber,
             "description": "The number of controller tasks to run.",
             "default": "2"},
         "InstanceSecurityGroup": {
-            "type": "String",
+            "type": CFNString,
             "description": "Security group of the controller instances."},
         "InstanceRole": {
-            "type": "String",
+            "type": CFNString,
             "description": "The IAM role to add permissions to."},
         "DockerImage": {
-            "type": "String",
+            "type": CFNString,
             "description": "The docker image to run for the Empire dameon",
             "default": "remind101/empire:master"},
         "Environment": {
-            "type": "String",
+            "type": CFNString,
             "description": "Environment used for Empire."},
         "GitHubClientId": {
-            "type": "String",
+            "type": CFNString,
             "description": "EMPIRE_GITHUB_CLIENT_ID",
             "default": ""},
         "GitHubClientSecret": {
-            "type": "String",
+            "type": CFNString,
             "description": "EMPIRE_GITHUB_CLIENT_SECRET",
             "default": ""},
         "GitHubOrganization": {
-            "type": "String",
+            "type": CFNString,
             "description": "EMPIRE_GITHUB_ORGANIZATION",
             "default": ""},
         "GitHubWebhooksSecret": {
-            "type": "String",
+            "type": CFNString,
             "description": "EMPIRE_GITHUB_WEBHOOKS_SECRET",
             "default": ""},
         "GitHubDeploymentsEnvironment": {
-            "type": "String",
+            "type": CFNString,
             "description": (
                 "Environment used for GitHub Deployments and honeybadger"
             ),
             "default": ""},
         "TokenSecret": {
-            "type": "String",
+            "type": CFNString,
             "description": "EMPIRE_TOKEN_SECRET",
             "default": ""},
         "TugboatUrl": {
-            "type": "String",
+            "type": CFNString,
             "description": "EMPIRE_TUGBOAT_URL",
             "default": ""},
         "ConveyorUrl": {
-            "type": "String",
+            "type": CFNString,
             "description": "EMPIRE_CONVEYOR_URL",
             "default": ""},
         "LogsStreamer": {
-            "type": "String",
+            "type": CFNString,
             "description": "EMPIRE_LOGS_STREAMER",
             "default": ""},
         "Reporter": {
-            "type": "String",
+            "type": CFNString,
             "description": "The reporter to use to report errors",
             "allowed_values": ["hb", ""],
             "default": ""},
         "InternalZoneId": {
-            "type": "String",
+            "type": CFNString,
             "description": "The ID for the route53 zone for internal DNS"},
         "PrivateAppELBSG": {
-            "type": "String",
+            "type": CFNString,
             "description": (
                 "Security group to attach to internal load balancers"
             ),
             "default": ""},
         "PublicAppELBSG": {
-            "type": "String",
+            "type": CFNString,
             "description": "Security group to attach to public load balancers",
             "default": ""},
         "MinionCluster": {
-            "type": "String",
+            "type": CFNString,
             "description": "ECS Cluster for the Minions.",
             "default": ""},
         "ControllerCluster": {
-            "type": "String",
+            "type": CFNString,
             "description": "ECS Cluster for the Controllers.",
             "default": ""},
         "RunLogsBackend": {
-            "type": "String",
+            "type": CFNString,
             "allowed_values": ["cloudwatch", "stdout"],
             "description": "The backend to use for empire run logs.",
             "default": "stdout"},
         "RunLogsCloudwatchGroup": {
-            "type": "String",
+            "type": CFNString,
             "description": (
                 "The cloudwatch log group to use for run logs if the "
                 "'RunLogsBackend' is set to 'cloudwatch'. If not provided, one "
@@ -193,7 +201,7 @@ class EmpireDaemon(Blueprint):
             ),
             "default": ""},
         "EventsBackend": {
-            "type": "String",
+            "type": CFNString,
             "allowed_values": ["sns", "stdout", ""],
             "description": (
                 "The backend to use for empire events. If 'sns' is specified, "
@@ -202,33 +210,33 @@ class EmpireDaemon(Blueprint):
             ),
             "default": "stdout"},
         "EventsSNSTopicName": {
-            "type": "String",
+            "type": CFNString,
             "description": (
                 "The SNS topic to use if the 'EventsBackend' is set to 'sns'. "
                 "If not provided, one will be created for the sns backend."
             ),
             "default": ""},
         "TaskMemory": {
-            "type": "Number",
+            "type": CFNNumber,
             "description": (
                 "The number of MiB to reserve for the empire daemon task."
             ),
             "default": "1024"},
         "AwsDebug": {
-            "type": "String",
+            "type": CFNString,
             "description": (
                 "Boolean for whether or not to enable AWS debug logs."
             ),
             "allowed_values": ["true", "false"],
             "default": "false"},
         "TaskCPU": {
-            "type": "Number",
+            "type": CFNNumber,
             "description": (
                 "The number of CPU units to reserve for the empire daemon task."
             ),
             "default": "1024"},
         "ServiceMaximumPercent": {
-            "type": "Number",
+            "type": CFNNumber,
             "description": (
                 "The maximum number of tasks, specified as a percentage of the "
                 "Amazon ECS service's DesiredCount value, that can run in a "
@@ -236,7 +244,7 @@ class EmpireDaemon(Blueprint):
             ),
             "default": "200"},
         "ServiceMinimumHealthyPercent": {
-            "type": "Number",
+            "type": CFNNumber,
             "description": (
                 "The minimum number of tasks, specified as a percentage of the "
                 "Amazon ECS service's DesiredCount value, that must continue "
