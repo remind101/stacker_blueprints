@@ -7,6 +7,12 @@ from troposphere.rds import (
 from troposphere.route53 import RecordSetType
 
 from stacker.blueprints.base import Blueprint
+from stacker.blueprints.variables.types import (
+    CFNNumber,
+    CFNString,
+    EC2SubnetIdList,
+    EC2VPCId,
+)
 
 RDS_ENGINES = ["MySQL", "oracle-se1", "oracle-se", "oracle-ee", "sqlserver-ee",
                "sqlserver-se", "sqlserver-ex", "sqlserver-web", "postgres"]
@@ -27,28 +33,120 @@ class BaseRDS(Blueprint):
     :class:`stacker.blueprints.rds.postgres.ReadReplica`.
     """
 
-    LOCAL_PARAMETERS = {
+    VARIABLES = {
         "DatabaseParameters": {
             "type": dict,
             "default": {},
+        },
+        "VpcId": {
+            "type": EC2VPCId,
+            "description": "Vpc Id"},
+        "Subnets": {
+            "type": EC2SubnetIdList,
+            "description": "Subnets to deploy RDS instance in."},
+        "InstanceType": {
+            "type": CFNString,
+            "description": "AWS RDS Instance Type",
+            "default": "db.m3.large"},
+        "AllowMajorVersionUpgrade": {
+            "type": CFNString,
+            "description": "Set to 'true' to allow major version "
+                           "upgrades.",
+            "default": "false",
+            "allowed_values": ["true", "false"]
+        },
+        "AutoMinorVersionUpgrade": {
+            "type": CFNString,
+            "description": "Set to 'true' to allow minor version upgrades "
+                           "during maintenance windows.",
+            "default": "false",
+            "allowed_values": ["true", "false"]
+        },
+        "StorageType": {
+            "type": CFNString,
+            "description": "Storage type for RDS instance. Defaults to "
+                           "standard unless IOPS is set, then it "
+                           "defaults to io1",
+            "default": "default",
+            "allowed_values": ["default", "standard", "gp2", "io1"]
+        },
+        "AllocatedStorage": {
+            "type": CFNNumber,
+            "description": "Space, in GB, to allocate to RDS instance. If "
+                           "IOPS is set below, this must be a minimum of "
+                           "100 and must be at least 1/10th the IOPs "
+                           "setting.",
+            "default": "10"},
+        "IOPS": {
+            "type": CFNNumber,
+            "description": "If set, uses provisioned IOPS for the "
+                           "database. Note: This must be no more than "
+                           "10x of AllocatedStorage. Minimum: 1000",
+            "max_value": "10000",
+            "default": "0"},
+        "InternalZoneId": {
+            "type": CFNString,
+            "default": "",
+            "description": "Internal zone Id, if you have one."},
+        "InternalZoneName": {
+            "type": CFNString,
+            "default": "",
+            "description": "Internal zone name, if you have one."},
+        "InternalHostname": {
+            "type": CFNString,
+            "default": "",
+            "description": "Internal domain name, if you have one."},
+        "PreferredMaintenanceWindow": {
+            "type": CFNString,
+            "description": "A (minimum 30 minute) window in "
+                           "DDD:HH:MM-DDD:HH:MM format in UTC for "
+                           "backups. Default: Sunday 3am-4am PST",
+            "default": "Sun:11:00-Sun:12:00"},
+        "DBSnapshotIdentifier": {
+            "type": CFNString,
+            "description": "The snapshot you want the db restored from.",
+            "default": "",
+        },
+        "EngineVersion": {
+            "type": CFNString,
+            "description": "Database engine version for the RDS Instance.",
+        },
+        "EngineMajorVersion": {
+            "type": CFNString,
+            "description": "Major Version for the engine. Basically the "
+                           "first two parts of the EngineVersion you "
+                           "choose."
+        },
+        "StorageEncrypted": {
+            "type": CFNString,
+            "description": "Set to 'false' to disable encrypted storage.",
+            "default": "true",
+            "allowed_values": ["true", "false"]
+        },
+        "ExistingSecurityGroup": {
+            "type": CFNString,
+            "description": "The ID of an existing security group to put "
+                           "the RDS instance in. If not specified, one "
+                           "will be created for you.",
+            "default": "",
         },
     }
 
     def engine(self):
         return None
 
-    def extra_parameters(self, parameters):
-        """Modify parameter list for subclasses.
+    def extra_variables(self, variables):
+        """Modify variables for subclasses.
 
-        Meant to be called from :func:`BaseRDS._get_parameters`
+        Meant to be called from :func:`BaseRDS.defined_variables`
 
         Args:
-            parameters(dict): A dictionary of parameters to modify.
+            variables (dict): A dictionary of variables to modify.
 
         Returns:
-            dict: The modified parameter dictionary.
+            dict: The modified variables dictionary.
         """
-        return parameters
+        return variables
 
     def get_engine_versions(self):
         """Used by engine specific subclasses - returns valid engine versions.
@@ -99,127 +197,35 @@ class BaseRDS(Blueprint):
             "sqlserver-web-10.50", "sqlserver-web-11.00"
         ]
 
-    def _get_parameters(self):
-        parameters = {
-            "VpcId": {
-                "type": "AWS::EC2::VPC::Id",
-                "description": "Vpc Id"},
-            "Subnets": {
-                "type": "List<AWS::EC2::Subnet::Id>",
-                "description": "Subnets to deploy RDS instance in."},
-            "InstanceType": {
-                "type": "String",
-                "description": "AWS RDS Instance Type",
-                "default": "db.m3.large"},
-            "AllowMajorVersionUpgrade": {
-                "type": "String",
-                "description": "Set to 'true' to allow major version "
-                               "upgrades.",
-                "default": "false",
-                "allowed_values": ["true", "false"]
-            },
-            "AutoMinorVersionUpgrade": {
-                "type": "String",
-                "description": "Set to 'true' to allow minor version upgrades "
-                               "during maintenance windows.",
-                "default": "false",
-                "allowed_values": ["true", "false"]
-            },
-            "StorageType": {
-                "type": "String",
-                "description": "Storage type for RDS instance. Defaults to "
-                               "standard unless IOPS is set, then it "
-                               "defaults to io1",
-                "default": "default",
-                "allowed_values": ["default", "standard", "gp2", "io1"]
-            },
-            "AllocatedStorage": {
-                "type": "Number",
-                "description": "Space, in GB, to allocate to RDS instance. If "
-                               "IOPS is set below, this must be a minimum of "
-                               "100 and must be at least 1/10th the IOPs "
-                               "setting.",
-                "default": "10"},
-            "IOPS": {
-                "type": "Number",
-                "description": "If set, uses provisioned IOPS for the "
-                               "database. Note: This must be no more than "
-                               "10x of AllocatedStorage. Minimum: 1000",
-                "max_value": "10000",
-                "default": "0"},
-            "InternalZoneId": {
-                "type": "String",
-                "default": "",
-                "description": "Internal zone Id, if you have one."},
-            "InternalZoneName": {
-                "type": "String",
-                "default": "",
-                "description": "Internal zone name, if you have one."},
-            "InternalHostname": {
-                "type": "String",
-                "default": "",
-                "description": "Internal domain name, if you have one."},
-            "PreferredMaintenanceWindow": {
-                "type": "String",
-                "description": "A (minimum 30 minute) window in "
-                               "DDD:HH:MM-DDD:HH:MM format in UTC for "
-                               "backups. Default: Sunday 3am-4am PST",
-                "default": "Sun:11:00-Sun:12:00"},
-            "DBFamily": {
-                "type": "String",
-                "description": "DBFamily for ParameterGroup.",
-                "allowed_values": self.get_db_families()},
-            "DBInstanceIdentifier": {
-                "type": "String",
-                "description": "Name of the database instance in RDS.",
-                "min_length": "1",
-                "max_length": "63",
-                "allowed_pattern": "[a-zA-Z][a-zA-Z0-9-]*",
-                "default": self.name},
-            "DBSnapshotIdentifier": {
-                "type": "String",
-                "description": "The snapshot you want the db restored from.",
-                "default": "",
-            },
-            "EngineVersion": {
-                "type": "String",
-                "description": "Database engine version for the RDS Instance.",
-            },
-            "EngineMajorVersion": {
-                "type": "String",
-                "description": "Major Version for the engine. Basically the "
-                               "first two parts of the EngineVersion you "
-                               "choose."
-            },
-            "StorageEncrypted": {
-                "type": "String",
-                "description": "Set to 'false' to disable encrypted storage.",
-                "default": "true",
-                "allowed_values": ["true", "false"]
-            },
-            "ExistingSecurityGroup": {
-                "type": "String",
-                "description": "The ID of an existing security group to put "
-                               "the RDS instance in. If not specified, one "
-                               "will be created for you.",
-                "default": "",
-            },
-        }
+    def defined_variables(self):
+        variables = super(BaseRDS, self).defined_variables()
+        variables["DBFamily"] = {
+            "type": CFNString,
+            "description": "DBFamily for ParameterGroup.",
+            "allowed_values": self.get_db_families()}
 
-        parameters = self.extra_parameters(parameters)
+        variables["DBInstanceIdentifier"] = {
+            "type": CFNString,
+            "description": "Name of the database instance in RDS.",
+            "min_length": "1",
+            "max_length": "63",
+            "allowed_pattern": "[a-zA-Z][a-zA-Z0-9-]*",
+            "default": self.name}
+
+        variables = self.extra_variables(variables)
 
         engine_versions = self.get_engine_versions()
         if engine_versions:
-            parameters['EngineVersion']['allowed_values'] = engine_versions
+            variables['EngineVersion']['allowed_values'] = engine_versions
 
         engine_major_versions = self.get_engine_major_versions()
         if engine_major_versions:
-            parameters['EngineMajorVersion']['allowed_values'] = \
+            variables['EngineMajorVersion']['allowed_values'] = \
                 engine_major_versions
 
         if not self.engine():
-            parameters['Engine'] = {
-                "type": "String",
+            variables['Engine'] = {
+                "type": CFNString,
                 "description": "Database engine for the RDS Instance.",
                 "allowed_values": RDS_ENGINES
             }
@@ -228,7 +234,7 @@ class BaseRDS(Blueprint):
                 raise ValueError("ENGINE must be one of: %s" %
                                  ", ".join(RDS_ENGINES))
 
-        return parameters
+        return variables
 
     def create_conditions(self):
         t = self.template
@@ -289,7 +295,8 @@ class BaseRDS(Blueprint):
 
     def create_parameter_group(self):
         t = self.template
-        params = self.local_parameters["DatabaseParameters"]
+        variables = self.get_variables()
+        params = variables["DatabaseParameters"]
         t.add_resource(
             DBParameterGroup(
                 "ParameterGroup",
@@ -377,7 +384,7 @@ class MasterInstance(BaseRDS):
     def extra_parameters(self, parameters):
         master_parameters = {
             "BackupRetentionPeriod": {
-                "type": "Number",
+                "type": CFNNumber,
                 "description": "Number of days to retain database backups.",
                 "min_value": "0",
                 "default": "7",
@@ -385,28 +392,28 @@ class MasterInstance(BaseRDS):
                 "constraint_description": "Must be between 0-35.",
             },
             "MasterUser": {
-                "type": "String",
+                "type": CFNString,
                 "description": "Name of the master user in the db.",
                 "default": "dbuser"},
             "MasterUserPassword": {
-                "type": "String",
+                "type": CFNString,
                 "no_echo": True,
                 "description": "Master user password."},
             "PreferredBackupWindow": {
-                "type": "String",
+                "type": CFNString,
                 "description": "A (minimum 30 minute) window in HH:MM-HH:MM "
                                "format in UTC for backups. Default: 4am-5am "
                                "PST",
                 "default": "12:00-13:00"},
             "DatabaseName": {
-                "type": "String",
+                "type": CFNString,
                 "description": "Initial db to create in database."},
             "MultiAZ": {
-                "type": "String",
+                "type": CFNString,
                 "description": "Set to 'false' to disable MultiAZ support.",
                 "default": "true"},
             "KmsKeyid": {
-                "type": "String",
+                "type": CFNString,
                 "description": "Requires that StorageEncrypted is true. "
                                "Should be an ARN to the KMS key that should "
                                "be used to encrypt the storage.",
@@ -453,7 +460,7 @@ class ReadReplica(BaseRDS):
     """Blueprint for a Read replica RDS Database Instance. """
     def extra_parameters(self, parameters):
         parameters['MasterDatabaseId'] = {
-            "type": "String",
+            "type": CFNString,
             "description": "ID of the master database to create a read "
                            "replica of."}
         return parameters
