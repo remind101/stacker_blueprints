@@ -11,6 +11,11 @@ from troposphere import ec2
 from troposphere.route53 import HostedZone, HostedZoneVPCs
 
 from stacker.blueprints.base import Blueprint
+from stacker.blueprints.variables.types import (
+    CFNCommaDelimitedList,
+    CFNString,
+    EC2KeyPairKeyName,
+)
 
 NAT_INSTANCE_NAME = 'NatInstance%s'
 NAT_GATEWAY_NAME = 'NatGateway%s'
@@ -23,49 +28,45 @@ NAT_SG = "NATSG"
 
 
 class VPC(Blueprint):
-    LOCAL_PARAMETERS = {
-        "AZCount":  {
+    VARIABLES = {
+        "AZCount": {
             "type": int,
             "default": 2,
-        }
-    }
-
-    PARAMETERS = {
+        },
         "PrivateSubnets": {
-            "type": "CommaDelimitedList",
+            "type": CFNCommaDelimitedList,
             "description": "Comma separated list of subnets to use for "
                            "non-public hosts. NOTE: Must have as many subnets "
                            "as AZCount"},
         "PublicSubnets": {
-            "type": "CommaDelimitedList",
+            "type": CFNCommaDelimitedList,
             "description": "Comma separated list of subnets to use for "
                            "public hosts. NOTE: Must have as many subnets "
                            "as AZCount"},
         "InstanceType": {
-            "type": "String",
+            "type": CFNString,
             "description": "NAT EC2 instance type.",
             "default": "m3.medium"},
-        "SshKeyName": {
-            "type": "AWS::EC2::KeyPair::KeyName"},
+        "SshKeyName": {"type": EC2KeyPairKeyName},
         "BaseDomain": {
-            "type": "String",
+            "type": CFNString,
             "default": "",
             "description": "Base domain for the stack."},
         "InternalDomain": {
-            "type": "String",
+            "type": CFNString,
             "default": "",
             "description": "Internal domain name, if you have one."},
         "CidrBlock": {
-            "type": "String",
+            "type": CFNString,
             "description": "Base CIDR block for subnets.",
             "default": "10.128.0.0/16"},
         "ImageName": {
-            "type": "String",
+            "type": CFNString,
             "description": "The image name to use from the AMIMap (usually "
                            "found in the config file.)",
             "default": "NAT"},
         "UseNatGateway": {
-            "type": "String",
+            "type": CFNString,
             "allowed_values": ["true", "false"],
             "description": "If set to true, will configure a NAT Gateway"
                            "instead of NAT instances.",
