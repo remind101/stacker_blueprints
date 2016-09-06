@@ -177,6 +177,7 @@ class VPC(Blueprint):
 
     def create_network(self):
         t = self.template
+        variables = self.get_variables()
         self.create_gateway()
         vpc_id = Ref("VPC")
         t.add_resource(ec2.NetworkAcl('DefaultACL',
@@ -186,7 +187,7 @@ class VPC(Blueprint):
         subnets = {'public': [], 'private': []}
         net_types = subnets.keys()
         zones = []
-        for i in range(self.local_parameters["AZCount"]):
+        for i in range(variables["AZCount"]):
             az = Select(i, GetAZs(""))
             zones.append(az)
             name_suffix = i
