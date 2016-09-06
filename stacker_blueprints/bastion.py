@@ -25,7 +25,7 @@ CLUSTER_SG_NAME = "BastionSecurityGroup"
 
 
 class Bastion(Blueprint):
-    PARAMETERS = {
+    VARIABLES = {
         "VpcId": {"type": EC2VPCId, "description": "Vpc Id"},
         "DefaultSG": {"type": EC2SecurityGroupId,
                       "description": "Top level security group."},
