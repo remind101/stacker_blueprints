@@ -135,19 +135,6 @@ class BaseRDS(Blueprint):
     def engine(self):
         return None
 
-    def extra_variables(self, variables):
-        """Modify variables for subclasses.
-
-        Meant to be called from :func:`BaseRDS.defined_variables`
-
-        Args:
-            variables (dict): A dictionary of variables to modify.
-
-        Returns:
-            dict: The modified variables dictionary.
-        """
-        return variables
-
     def get_engine_versions(self):
         """Used by engine specific subclasses - returns valid engine versions.
 
@@ -211,8 +198,6 @@ class BaseRDS(Blueprint):
             "max_length": "63",
             "allowed_pattern": "[a-zA-Z][a-zA-Z0-9-]*",
             "default": self.name}
-
-        variables = self.extra_variables(variables)
 
         engine_versions = self.get_engine_versions()
         if engine_versions:
@@ -381,8 +366,9 @@ class MasterInstance(BaseRDS):
     things like engine version.
     """
 
-    def extra_parameters(self, parameters):
-        master_parameters = {
+    def defined_variables(self):
+        variables = super(MasterInstance, self).defined_variables()
+        additional = {
             "BackupRetentionPeriod": {
                 "type": CFNNumber,
                 "description": "Number of days to retain database backups.",
@@ -420,9 +406,8 @@ class MasterInstance(BaseRDS):
                 "default": "",
             },
         }
-        parameters.update(master_parameters)
-
-        return parameters
+        variables.update(additional)
+        return variables
 
     def get_common_attrs(self):
         return {
@@ -457,13 +442,15 @@ class MasterInstance(BaseRDS):
 
 
 class ReadReplica(BaseRDS):
-    """Blueprint for a Read replica RDS Database Instance. """
-    def extra_parameters(self, parameters):
-        parameters['MasterDatabaseId'] = {
+    """Blueprint for a Read replica RDS Database Instance."""
+
+    def defined_variables(self):
+        variables = super(ReadReplica, self).defined_variables()
+        variables['MasterDatabaseId'] = {
             "type": CFNString,
             "description": "ID of the master database to create a read "
                            "replica of."}
-        return parameters
+        return variables
 
     def get_common_attrs(self):
         return {
