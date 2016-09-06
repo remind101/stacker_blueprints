@@ -14,6 +14,10 @@ import awacs.s3
 import awacs.kms
 from awacs import sts
 from stacker.blueprints.base import Blueprint
+from stacker.blueprints.variables.types import (
+    CFNCommaDelimitedList,
+    CFNString,
+)
 from troposphere import (
     iam,
     kms,
@@ -195,31 +199,31 @@ def kms_key_policy(key_use_arns, key_admin_arns):
 
 class Firehose(Blueprint):
 
-    PARAMETERS = {
+    VARIABLES = {
         "RoleNames": {
-            "type": "CommaDelimitedList",
+            "type": CFNCommaDelimitedList,
             "description": "A list of role names that should have access to "
                            "write to the firehose stream.",
             "default": "",
         },
         "GroupNames": {
-            "type": "CommaDelimitedList",
+            "type": CFNCommaDelimitedList,
             "description": "A list of group names that should have access to "
                            "write to the firehose stream.",
             "default": "",
         },
         "UserNames": {
-            "type": "CommaDelimitedList",
+            "type": CFNCommaDelimitedList,
             "description": "A list of user names that should have access to "
                            "write to the firehose stream.",
             "default": "",
         },
         "BucketName": {
-            "type": "String",
+            "type": CFNString,
             "description": "Name for the S3 Bucket",
         },
         "EncryptS3Bucket": {
-            "type": "String",
+            "type": CFNString,
             "description": "If set to true, a KMS key will be created to use "
                            "for encrypting the S3 Bucket's contents. If set "
                            "to false, no encryption will occur. Default: true",
@@ -227,32 +231,28 @@ class Firehose(Blueprint):
             "default": "true",
         },
         "EnableKeyRotation": {
-            "type": "String",
+            "type": CFNString,
             "description": "Whether to enable key rotation on the KMS key "
                            "generated if EncryptS3Bucket is set to true. "
                            "Default: true",
             "allowed_values": ["true", "false"],
             "default": "true",
         },
-    }
-
-    LOCAL_PARAMETERS = {
-        # A list of ARNs that need access to the KMS key created with
-        # EncryptS3Bucket
         "KeyUseArns": {
             "type": list,
             "default": [],
-        },
-        # A list of ARNs that need access to admin the KMS key created with
-        # EncryptS3Bucket
+            "description": "A list of ARNs that need access to the KMS key "
+                           "created with EncryptS3Bucket"},
         "KeyAdminArns": {
             "type": list,
             "default": [],
-        }
+            "description": "A list of ARNs that need access to admin the KMS "
+                           "key created with EncryptS3Bucket"},
     }
 
     def create_kms_key(self):
         t = self.template
+        variables = self.get_variables()
         t.add_condition(
             "EncryptS3Bucket",
             Not(Equals(Ref("EncryptS3Bucket"), "false"))
@@ -266,11 +266,11 @@ class Firehose(Blueprint):
             ]
         )
 
-        key_use_arns = self.local_parameters["KeyUseArns"]
+        key_use_arns = variables["KeyUseArns"]
         # auto add the created IAM Role
         key_use_arns.append(GetAtt(IAM_ROLE, "Arn"))
 
-        key_admin_arns = self.local_parameters["KeyAdminArns"]
+        key_admin_arns = variables["KeyAdminArns"]
 
         t.add_resource(
             kms.Key(
