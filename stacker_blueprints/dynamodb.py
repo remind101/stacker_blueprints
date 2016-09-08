@@ -1,5 +1,4 @@
 from stacker.blueprints.base import Blueprint
-from . import util
 
 from troposphere import (
     dynamodb2,
@@ -9,6 +8,10 @@ from troposphere import (
 )
 
 from troposphere.route53 import RecordSetType
+from . import util
+
+MAX_GSI_VALUE = 5
+
 
 def prep_schemata(config):
     try:
@@ -16,26 +19,29 @@ def prep_schemata(config):
         for schema in config["KeySchema"]:
             schemata.append(dynamodb2.KeySchema(**schema))
 
-    except IndexError:
-        raise IndexError(
+    except KeyError:
+        raise KeyError(
             "The key schema is required for the creation of a DynamoDB table."
         )
 
     return schemata
 
+
 def prep_projection(config):
     return dynamodb2.Projection(**config["Projection"])
+
 
 def prep_throughput(config):
     try:
         return dynamodb2.ProvisionedThroughput(
             **config["ProvisionedThroughput"]
         )
-    except IndexError:
-        raise IndexError(
+    except KeyError:
+        raise KeyError(
             "ProvisionedThroughput values are required for the creation of " +
             "a DynamoDB table or index."
         )
+
 
 def prep_config(raw_config):
     prepped_config = {}
@@ -63,16 +69,15 @@ def prep_config(raw_config):
             attributes.append(dynamodb2.AttributeDefinition(**attribute))
 
         prepped_config["AttributeDefinitions"] = attributes
-    except IndexError:
-        raise IndexError(
+    except KeyError:
+        raise KeyError(
             "Attribute definitions are required for the creation of a " +
             "DynamoDB table."
         )
 
-    # Global Secondary Index section.
     if "GlobalSecondaryIndexes" in raw_config:
         # AWS limits us to 5 GSIs.  Check for that and bail if there's more.
-        if len(raw_config["GlobalSecondaryIndexes"]) > 5:
+        if len(raw_config["GlobalSecondaryIndexes"]) > MAX_GSI_VALUE:
             raise ValueError(
                 "A DynamoDB table can only have a maximum of 5 GSIs."
             )
@@ -86,13 +91,11 @@ def prep_config(raw_config):
 
         prepped_config["GlobalSecondaryIndexes"] = gsis
 
-    # KeySchema section
     prepped_config["KeySchema"] = prep_schemata(raw_config)
 
-    # LocalSecondaryIndexes section
     if "LocalSecondaryIndexes" in raw_config:
         # Another limit of 5.  Check and bail if more than that.
-        if len(raw_config["LocalSecondaryIndexes"]) > 5:
+        if len(raw_config["LocalSecondaryIndexes"]) > MAX_GSI_VALUE:
             raise ValueError(
                 "A DynamoDB table can only have a maximum of 5 LSIs."
             )
@@ -106,18 +109,24 @@ def prep_config(raw_config):
 
         prepped_config["LocalSecondaryIndexes"] = lsis
 
-    # ProvisionedThroughput section.
     prepped_config["ProvisionedThroughput"] = prep_throughput(raw_config)
 
-    # StreamSpecification section
-    stream_enabled = False
     if "StreamSpecification" in raw_config:
-        stream_enabled = True
         prepped_config["StreamSpecification"] = dynamodb2.StreamSpecification(
             **raw_config["StreamSpecification"]
         )
 
-    return prepped_config, stream_enabled
+    return prepped_config
+
+
+def validate_tables(tables):
+    prepped_configs = {}
+    for table_name, table_config in tables.iteritems():
+        prepped_config = prep_config(table_config)
+        prepped_configs[table_name] = prepped_config
+
+    return prepped_configs
+
 
 class DynamoDB(Blueprint):
     """Manages the creation of DynamoDB tables."""
@@ -126,6 +135,7 @@ class DynamoDB(Blueprint):
         "Tables": {
             "type": dict,
             "description": "Dictionary of DynamoDB table definitions",
+            "validator": validate_tables,
         }
     }
 
@@ -133,7 +143,7 @@ class DynamoDB(Blueprint):
         variables = self.get_variables()
 
         for table_name, table_config in variables["Tables"].iteritems():
-            table_config, stream_enabled = prep_config(table_config)
+            stream_enabled = "StreamSpecification" in table_config
             self.create_table(table_name, table_config, stream_enabled)
 
     def create_table(self, table_name, table_config, stream_enabled):

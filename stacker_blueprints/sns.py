@@ -1,5 +1,4 @@
 from stacker.blueprints.base import Blueprint
-from . import util
 
 from troposphere import (
     sns,
@@ -8,7 +7,10 @@ from troposphere import (
     Output,
 )
 
-def check_topic(topic):
+from . import util
+
+
+def validate_topic(topic):
     sns_topic_properties = [
         "DisplayName",
         "Subscription",
@@ -25,6 +27,15 @@ def check_topic(topic):
 
     return topic
 
+
+def validate_topics(topics):
+    validated_topics = {}
+    for topic_name, topic_config in topics.iteritems():
+        validated_topics[topic_name] = validate_topic(topic_config)
+
+    return validated_topics
+
+
 class Topics(Blueprint):
     """Manages the creation of SNS topics."""
 
@@ -32,6 +43,7 @@ class Topics(Blueprint):
         "Topics": {
             "type": dict,
             "description": "Dictionary of SNS Topic definitions",
+            "validator": validate_topics,
         }
     }
 
@@ -39,7 +51,6 @@ class Topics(Blueprint):
         variables = self.get_variables()
 
         for topic_name, topic_config in variables["Topics"].iteritems():
-            topic_config = check_topic(topic_config)
             self.create_topic(topic_name, topic_config)
 
     def create_topic(self, topic_name, topic_config):

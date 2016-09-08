@@ -1,5 +1,4 @@
 from stacker.blueprints.base import Blueprint
-from . import util
 
 from troposphere import (
     sqs,
@@ -8,8 +7,9 @@ from troposphere import (
     Output,
 )
 
+from . import util
 
-def check_queue(queue):
+def validate_queue(queue):
     sqs_queue_properties = [
         "DelaySeconds",
         "MaximumMessageSize",
@@ -27,6 +27,14 @@ def check_queue(queue):
     return queue
 
 
+def validate_queues(queues):
+    validated_queues = {}
+    for queue_name, queue_config in queues.iteritems():
+        validated_queues[queue_name] = validate_queue(queue_config)
+
+    return validated_queues
+
+
 class Queues(Blueprint):
     """Manages the creation of SQS queues."""
 
@@ -34,6 +42,7 @@ class Queues(Blueprint):
         "Queues": {
             "type": dict,
             "description": "Dictionary of SQS queue definitions",
+            "validator": validate_queues,
         },
     }
 
@@ -41,7 +50,6 @@ class Queues(Blueprint):
         variables = self.get_variables()
 
         for name, queue_config in variables["Queues"].iteritems():
-            queue_config = check_queue(queue_config)
             self.create_queue(name, queue_config)
 
     def create_queue(self, queue_name, queue_config):
