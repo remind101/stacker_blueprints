@@ -1,4 +1,5 @@
 from stacker.blueprints.base import Blueprint
+from . import util
 
 from troposphere import (
     sqs,
@@ -18,17 +19,10 @@ def check_queue(queue):
         "VisibilityTimeout",
     ]
 
-    for key in queue.keys():
-        # Check to see if there are any keys not the properties list.
-        # If that's the case, bail since that could cause unexpected
-        # outcomes.
-        if key not in sqs_queue_properties:
-            raise ValueError(
-                "%s is not a valid SQS queue property" % key
-            )
+    util.check_properties(queue, sqs_queue_properties, "SQS")
 
-        if key == "RedrivePolicy":
-            queue["RedrivePolicy"] = sqs.RedrivePolicy(**queue["RedrivePolicy"])
+    if "RedrivePolicy" in queue:
+        queue["RedrivePolicy"] = sqs.RedrivePolicy(**queue["RedrivePolicy"])
 
     return queue
 
