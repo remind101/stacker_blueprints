@@ -40,7 +40,7 @@ class Queues(Blueprint):
     def create_template(self):
         variables = self.get_variables()
 
-        for name, queue_config in variables["Queues"].items():
+        for name, queue_config in variables["Queues"].iteritems():
             queue_config = check_queue(queue_config)
             self.create_queue(name, queue_config)
 

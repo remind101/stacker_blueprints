@@ -132,7 +132,7 @@ class DynamoDB(Blueprint):
     def create_template(self):
         variables = self.get_variables()
 
-        for table_name, table_config in variables["Tables"].items():
+        for table_name, table_config in variables["Tables"].iteritems():
             table_config, stream_enabled = prep_config(table_config)
             self.create_table(table_name, table_config, stream_enabled)
 

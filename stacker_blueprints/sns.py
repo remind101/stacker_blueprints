@@ -38,7 +38,7 @@ class Topics(Blueprint):
     def create_template(self):
         variables = self.get_variables()
 
-        for topic_name, topic_config in variables["Topics"].items():
+        for topic_name, topic_config in variables["Topics"].iteritems():
             topic_config = check_topic(topic_config)
             self.create_topic(topic_name, topic_config)
 
