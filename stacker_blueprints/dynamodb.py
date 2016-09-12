@@ -7,23 +7,24 @@ from troposphere import (
     Output,
 )
 
-from troposphere.route53 import RecordSetType
 from . import util
 
 MAX_GSI_VALUE = 5
+MAX_LSI_VALUE = 5
 
 
 def prep_schemata(config):
+    schemata = []
     try:
-        schemata = []
-        for schema in config["KeySchema"]:
-            schemata.append(dynamodb2.KeySchema(**schema))
-
+        schemas = config["KeySchema"]
     except KeyError:
         raise KeyError(
             "The key schema is required for the creation of a DynamoDB table."
         )
-
+    
+    for schema in schemas:
+        schemata.append(dynamodb2.KeySchema(**schema))
+    
     return schemata
 
 
@@ -61,25 +62,28 @@ def prep_config(raw_config):
         "DynamoDB",
     )
 
-    # AttributeDefinitions are required, so raise an IndexError if this
-    # doesn't work.
+    # AttributeDefinitions are required, so raise a KeyError if this doesn't
+    # work.
     try:
-        attributes = []
-        for attribute in raw_config["AttributeDefinitions"]:
-            attributes.append(dynamodb2.AttributeDefinition(**attribute))
-
-        prepped_config["AttributeDefinitions"] = attributes
+        config_attributes = raw_config["AttributeDefinitions"]
     except KeyError:
         raise KeyError(
             "Attribute definitions are required for the creation of a " +
             "DynamoDB table."
         )
 
+    attributes = []
+    for attribute in config_attributes:
+        attributes.append(dynamodb2.AttributeDefinition(**attribute))
+
+    prepped_config["AttributeDefinitions"] = attributes
+
     if "GlobalSecondaryIndexes" in raw_config:
         # AWS limits us to 5 GSIs.  Check for that and bail if there's more.
         if len(raw_config["GlobalSecondaryIndexes"]) > MAX_GSI_VALUE:
             raise ValueError(
-                "A DynamoDB table can only have a maximum of 5 GSIs."
+                "A DynamoDB table can only have a maximum of 5 global " +
+                "secondary indexes."
             )
 
         gsis = []
@@ -95,9 +99,10 @@ def prep_config(raw_config):
 
     if "LocalSecondaryIndexes" in raw_config:
         # Another limit of 5.  Check and bail if more than that.
-        if len(raw_config["LocalSecondaryIndexes"]) > MAX_GSI_VALUE:
+        if len(raw_config["LocalSecondaryIndexes"]) > MAX_LSI_VALUE:
             raise ValueError(
-                "A DynamoDB table can only have a maximum of 5 LSIs."
+                "A DynamoDB table can only have a maximum of 5 local " +
+                "secondary indexes."
             )
 
         lsis = []
