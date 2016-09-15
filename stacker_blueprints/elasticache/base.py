@@ -9,6 +9,13 @@ from troposphere.elasticache import (
 from troposphere.route53 import RecordSetType
 
 from stacker.blueprints.base import Blueprint
+from stacker.blueprints.variables.types import (
+    CFNCommaDelimitedList,
+    CFNNumber,
+    CFNString,
+    EC2SubnetIdList,
+    EC2VPCId,
+)
 
 # Resource name constants
 SUBNET_GROUP = "SubnetGroup"
@@ -25,11 +32,115 @@ class BaseReplicationGroup(Blueprint):
     """
 
     ALLOWED_ENGINES = ["redis"]
-
-    LOCAL_PARAMETERS = {
+    VARIABLES = {
         "ClusterParameters": {
             "type": dict,
             "default": {},
+        },
+        "VpcId": {
+            "type": EC2VPCId,
+            "description": "Vpc Id to place the Cluster in"
+        },
+        "Subnets": {
+            "type": EC2SubnetIdList,
+            "description": "Subnets to deploy the Cluster nodes in."
+        },
+        "AutomaticFailoverEnabled": {
+            "type": CFNString,
+            "description": "Specifies whether a read-only replica will be "
+                           "automatically promoted to read/write primary "
+                           "if the existing primary fails. If true, "
+                           "Multi-AZ is enabled for this replication "
+                           "group. If false, Multi-AZ is disabled for "
+                           "this replication group. If true, "
+                           "NumCacheClusters must be at least 2.",
+            "default": "true",
+            "allowed_values": ["true", "false"]
+        },
+        "AutoMinorVersionUpgrade": {
+            "type": CFNString,
+            "description": "Set to 'true' to allow minor version upgrades "
+                           "during maintenance windows.",
+            "default": "false",
+            "allowed_values": ["true", "false"]
+        },
+        "CacheNodeType": {
+            "type": CFNString,
+            "description": "AWS ElastiCache Cache Node Type",
+            "default": "cache.t2.medium"
+        },
+        "EngineVersion": {
+            "type": CFNString,
+            "description": "Engine version for the Cache Cluster.",
+        },
+        "NotificationTopicArn": {
+            "type": CFNString,
+            "description": "ARN of the SNS Topic to publish events to.",
+            "default": "",
+        },
+        "NumCacheClusters": {
+            "type": CFNNumber,
+            "description": "The number of cache clusters this replication "
+                           "group will initially have. If Multi-AZ "
+                           "(ie: the AutomaticFailoverEnabled Parameter) "
+                           "is enabled, the value of this parameter must "
+                           "be at least 2.",
+            "default": "2",
+            "min_value": "1",
+        },
+        "Port": {
+            "type": CFNNumber,
+            "description": "The port to run the cluster on.",
+            "default": "0",
+        },
+        "PreferredCacheClusterAZs": {
+            "type": CFNCommaDelimitedList,
+            "description": "Must match the # of nodes in "
+                           "NumCacheClusters.",
+            "default": "",
+        },
+        "PreferredMaintenanceWindow": {
+            "type": CFNString,
+            "description": "A (minimum 60 minute) window in "
+                           "DDD:HH:MM-DDD:HH:MM format in UTC for "
+                           "backups. Default: Sunday 3am-4am PST",
+            "default": "Sun:11:00-Sun:12:00"
+        },
+        "SnapshotArns": {
+            "type": CFNCommaDelimitedList,
+            "description": "A list of s3 ARNS where redis snapshots are "
+                           "stored that will be used to create the "
+                           "cluster.",
+            "default": "",
+        },
+        "SnapshotRetentionLimit": {
+            "type": CFNNumber,
+            "description": "The number of daily snapshots to retain. Only "
+                           "valid for clusters with the redis Engine.",
+            "default": "0",
+        },
+        "SnapshotWindow": {
+            "type": CFNString,
+            "description": "For Redis cache clusters, daily time range "
+                           "(in UTC) during which ElastiCache will begin "
+                           "taking a daily snapshot of your node group. "
+                           "For example, you can specify 05:00-09:00.",
+            "default": ""
+        },
+        "InternalZoneId": {
+            "type": CFNString,
+            "default": "",
+            "description": "Internal zone Id, if you have one."
+        },
+        "InternalZoneName": {
+            "type": CFNString,
+            "default": "",
+            "description": "Internal zone name, if you have one."
+        },
+        "InternalHostname": {
+            "type": CFNString,
+            "default": "",
+            "description": "Internal domain name, if you have one."
         },
     }
 
@@ -59,128 +170,21 @@ class BaseReplicationGroup(Blueprint):
         """
         return []
 
-    def _get_parameters(self):
-        parameters = {
-            "VpcId": {
-                "type": "AWS::EC2::VPC::Id",
-                "description": "Vpc Id to place the Cluster in"
-            },
-            "Subnets": {
-                "type": "List<AWS::EC2::Subnet::Id>",
-                "description": "Subnets to deploy the Cluster nodes in."
-            },
-            "ParameterGroupFamily": {
-                "type": "String",
-                "description": "The parametergroup family to use, dependent "
-                               "on the engine.",
-                "allowed_values": self.get_parameter_group_family()
-            },
-            "AutomaticFailoverEnabled": {
-                "type": "String",
-                "description": "Specifies whether a read-only replica will be "
-                               "automatically promoted to read/write primary "
-                               "if the existing primary fails. If true, "
-                               "Multi-AZ is enabled for this replication "
-                               "group. If false, Multi-AZ is disabled for "
-                               "this replication group. If true, "
-                               "NumCacheClusters must be at least 2.",
-                "default": "true",
-                "allowed_values": ["true", "false"]
-            },
-            "AutoMinorVersionUpgrade": {
-                "type": "String",
-                "description": "Set to 'true' to allow minor version upgrades "
-                               "during maintenance windows.",
-                "default": "false",
-                "allowed_values": ["true", "false"]
-            },
-            "CacheNodeType": {
-                "type": "String",
-                "description": "AWS ElastiCache Cache Node Type",
-                "default": "cache.t2.medium"
-            },
-            "EngineVersion": {
-                "type": "String",
-                "description": "Engine version for the Cache Cluster.",
-            },
-            "NotificationTopicArn": {
-                "type": "String",
-                "description": "ARN of the SNS Topic to publish events to.",
-                "default": "",
-            },
-            "NumCacheClusters": {
-                "type": "Number",
-                "description": "The number of cache clusters this replication "
-                               "group will initially have. If Multi-AZ "
-                               "(ie: the AutomaticFailoverEnabled Parameter) "
-                               "is enabled, the value of this parameter must "
-                               "be at least 2.",
-                "default": "2",
-                "min_value": "1",
-            },
-            "Port": {
-                "type": "Number",
-                "description": "The port to run the cluster on.",
-                "default": "0",
-            },
-            "PreferredCacheClusterAZs": {
-                "type": "CommaDelimitedList",
-                "description": "Must match the # of nodes in "
-                               "NumCacheClusters.",
-                "default": "",
-            },
-            "PreferredMaintenanceWindow": {
-                "type": "String",
-                "description": "A (minimum 60 minute) window in "
-                               "DDD:HH:MM-DDD:HH:MM format in UTC for "
-                               "backups. Default: Sunday 3am-4am PST",
-                "default": "Sun:11:00-Sun:12:00"
-            },
-            "SnapshotArns": {
-                "type": "CommaDelimitedList",
-                "description": "A list of s3 ARNS where redis snapshots are "
-                               "stored that will be used to create the "
-                               "cluster.",
-                "default": "",
-            },
-            "SnapshotRetentionLimit": {
-                "type": "Number",
-                "description": "The number of daily snapshots to retain. Only "
-                               "valid for clusters with the redis Engine.",
-                "default": "0",
-            },
-            "SnapshotWindow": {
-                "type": "String",
-                "description": "For Redis cache clusters, daily time range "
-                               "(in UTC) during which ElastiCache will begin "
-                               "taking a daily snapshot of your node group. "
-                               "For example, you can specify 05:00-09:00.",
-                "default": ""
-            },
-            "InternalZoneId": {
-                "type": "String",
-                "default": "",
-                "description": "Internal zone Id, if you have one."
-            },
-            "InternalZoneName": {
-                "type": "String",
-                "default": "",
-                "description": "Internal zone name, if you have one."
-            },
-            "InternalHostname": {
-                "type": "String",
-                "default": "",
-                "description": "Internal domain name, if you have one."
-            },
-        }
-
+    def defined_variables(self):
+        variables = super(BaseReplicationGroup, self).defined_variables()
+        variables["ParameterGroupFamily"] = {
+            "type": CFNString,
+            "description": "The parametergroup family to use, dependent "
+                           "on the engine.",
+            "allowed_values": self.get_parameter_group_family()
+        },
         engine_versions = self.get_engine_versions()
         if engine_versions:
-            parameters['EngineVersion']['allowed_values'] = engine_versions
+            variables['EngineVersion']['allowed_values'] = engine_versions
 
         if not self.engine():
-            parameters['Engine'] = {
-                "type": "String",
+            variables['Engine'] = {
+                "type": CFNString,
                 "description": "Database engine for the RDS Instance.",
                 "allowed_values": self.ALLOWED_ENGINES
             }
@@ -189,7 +193,7 @@ class BaseReplicationGroup(Blueprint):
                 raise ValueError("ENGINE must be one of: %s" %
                                  ", ".join(self.ALLOWED_ENGINES))
 
-        return parameters
+        return variables
 
     def create_conditions(self):
         t = self.template
@@ -228,7 +232,8 @@ class BaseReplicationGroup(Blueprint):
 
     def create_parameter_group(self):
         t = self.template
-        params = self.local_parameters["ClusterParameters"]
+        variables = self.get_variables()
+        params = variables["ClusterParameters"]
         t.add_resource(
             ParameterGroup(
                 PARAMETER_GROUP,
