@@ -1,3 +1,7 @@
+## 0.7.1 (2016-09-27)
+
+- Fix typo in RDS base blueprint introduced in GH-29 [GH-44]
+
 ## 0.7.0 (2016-09-23)
 
 This is the first release to include blueprints with the new Blueprint Variables
