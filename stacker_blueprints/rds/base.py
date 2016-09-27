@@ -255,7 +255,7 @@ class BaseRDS(Blueprint):
         t.add_condition(
             "HasDBSnapshotIdentifier",
             Not(Equals(Ref("DBSnapshotIdentifier"), "")))
-        t.add_contion(
+        t.add_condition(
             "CreateSecurityGroup",
             Equals(Ref("ExistingSecurityGroup"), "")
         )
