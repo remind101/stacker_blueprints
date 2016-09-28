@@ -14,9 +14,10 @@ from stacker.blueprints.variables.types import (
     CFNCommaDelimitedList,
     CFNNumber,
     CFNString,
-    EC2VPCId,
+    EC2KeyPairKeyName,
     EC2SecurityGroupId,
     EC2SubnetIdList,
+    EC2VPCId,
 )
 
 from .base import EmpireBase
@@ -51,8 +52,7 @@ class EmpireMinion(EmpireBase):
             "type": CFNNumber,
             "description": "Maximum # of empire minion instances.",
             "default": "20"},
-        "SshKeyName": {
-            "type": "AWS::EC2::KeyPair::KeyName"},
+        "SshKeyName": {"type": EC2KeyPairKeyName},
         "ImageName": {
             "type": CFNString,
             "description": (
