@@ -488,6 +488,9 @@ class EmpireDaemon(Blueprint):
                 Name="EMPIRE_ELB_SG_PUBLIC",
                 Value=Ref("PublicAppELBSG")),
             ecs.Environment(
+                Name="EMPIRE_ELB_VPC_ID",
+                Value=Ref("VpcId")),
+            ecs.Environment(
                 Name="EMPIRE_GITHUB_DEPLOYMENTS_IMAGE_BUILDER",
                 Value="conveyor"),
             ecs.Environment(
