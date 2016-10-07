@@ -36,7 +36,7 @@ DNS_RECORD = "ESDomainDNSRecord"
 POLICY_NAME = "ESDomainAccessPolicy"
 
 
-class Domain(Base):
+class Domain(Blueprint):
 
     VARIABLES = {
         "Roles": {
@@ -87,7 +87,8 @@ class Domain(Base):
                                                            "DomainEndpoint")))
 
     def create_policy(self):
-        variables = self.get-variables()
+        t = self.template
+        variables = self.get_variables()
         statements = [
             Statement(
                 Effect=Allow,
