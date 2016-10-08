@@ -45,16 +45,58 @@ class Domain(Blueprint):
                 "List of roles that should have access to the ES domain.")},
         "InternalZoneId": {
             "type": str,
-            "default": None,
+            "default": "",
             "description": "Internal zone id, if you have one."},
         "InternalZoneName": {
             "type": str,
-            "default": None,
+            "default": "",
             "description": "Internal zone name, if you have one."},
         "InternalHostName": {
             "type": str,
-            "default": None,
+            "default": "",
             "description": "Internal domain name, if you have one."},
+        "AdvancedOptions": {
+            "type": dict,
+            "default": {},
+            "description": (
+                "Additional options to specify for the Amazon ES domain"
+            )},
+        "DomainName": {
+            "type": str,
+            "default": "",
+            "description": "A name for the Amazon ES domain."},
+        "EBSOptions": {
+            "type": dict,
+            "default": {},
+            "description": (
+                "The configurations of Amazon Elastic Block Store (Amazon EBS) "
+                "volumes that are attached to data nodes in the Amazon ES "
+                "domain"
+            )},
+        "ElasticsearchClusterConfig": {
+            "type": dict,
+            "default": {},
+            "description": (
+                "The cluster configuration for the Amazon ES domain."
+            )},
+        "ElasticsearchVersion": {
+            "type": str,
+            "default": "2.3",
+            "description": "The version of Elasticsearch to use."},
+        "SnapshotOptions": {
+            "type": dict,
+            "default": {},
+            "description": (
+                "The automated snapshot configuration for the Amazon ES domain "
+                "indices."
+            )},
+        "Tags": {
+            "type": list,
+            "default": [],
+            "description": (
+                "An arbitrary set of tags (key-value pairs) to associate with "
+                "the Amazon ES domain."
+            )},
     }
 
     def create_dns_record(self):
@@ -81,7 +123,20 @@ class Domain(Blueprint):
 
     def create_domain(self):
         t = self.template
-        t.add_resource(elasticsearch.ElasticsearchDomain(ES_DOMAIN))
+        variables = self.get_variables()
+        params = {
+            "AdvancedOptions": variables["AdvancedOptions"],
+            "DomainName": variables["DomainName"],
+            "EBSOptions": variables["EBSOptions"],
+            "ElasticsearchClusterConfig": (
+                variables["ElasticsearchClusterConfig"]
+            ),
+            "ElasticsearchVersion": variables["ElasticsearchVersion"],
+            "SnapshotOptions": variables["SnapshotOptions"],
+            "Tags": variables["Tags"],
+        }
+        domain = elasticsearch.Domain.from_dict(ES_DOMAIN, params)
+        t.add_resource(domain)
         t.add_output(Output("DomainArn", Value=GetAtt(ES_DOMAIN, "DomainArn")))
         t.add_output(Output("DomainEndpoint", Value=GetAtt(ES_DOMAIN,
                                                            "DomainEndpoint")))
