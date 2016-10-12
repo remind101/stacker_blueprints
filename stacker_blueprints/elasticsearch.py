@@ -17,7 +17,10 @@ Example::
 import awacs.es
 from awacs.aws import (
     Allow,
+    Condition,
+    IpAddress,
     Policy,
+    SourceIp,
     Statement,
 )
 from stacker.blueprints.base import Blueprint
@@ -97,7 +100,18 @@ class Domain(Blueprint):
                 "An arbitrary set of tags (key-value pairs) to associate with "
                 "the Amazon ES domain."
             )},
+        "TrustedNetwork": {
+            "type": str,
+            "description": "CIDR block allowed to connect to the ES cluster",
+            "default": ""},
     }
+
+    def get_allowed_actions(self):
+        return [
+            awacs.es.Action("ESHttpGet"),
+            awacs.es.Action("ESHttpHead"),
+            awacs.es.Action("ESHttpPost"),
+            awacs.es.Action("ESHttpDelete")]
 
     def create_dns_record(self):
         t = self.template
@@ -125,33 +139,37 @@ class Domain(Blueprint):
         t = self.template
         variables = self.get_variables()
         params = {
-            "AdvancedOptions": variables["AdvancedOptions"],
-            "DomainName": variables["DomainName"],
-            "EBSOptions": variables["EBSOptions"],
-            "ElasticsearchClusterConfig": (
-                variables["ElasticsearchClusterConfig"]
-            ),
             "ElasticsearchVersion": variables["ElasticsearchVersion"],
-            "SnapshotOptions": variables["SnapshotOptions"],
-            "Tags": variables["Tags"],
         }
+
+        policy = self.create_access_policy()
+        if policy:
+            params["AccessPolicies"] = policy
+
+        # Add any optional keys to the params dict. ES didn't have great
+        # support for passing empty values for these keys when this was
+        # created.
+        optional_keys = ["AdvancedOptions", "DomainName", "EBSOptions",
+                         "SnapshotOptions", "Tags"]
+
+        for key in optional_keys:
+            optional = variables[key]
+            if optional:
+                params[key] = optional
+
         domain = elasticsearch.Domain.from_dict(ES_DOMAIN, params)
         t.add_resource(domain)
         t.add_output(Output("DomainArn", Value=GetAtt(ES_DOMAIN, "DomainArn")))
         t.add_output(Output("DomainEndpoint", Value=GetAtt(ES_DOMAIN,
                                                            "DomainEndpoint")))
 
-    def create_policy(self):
+    def create_roles_policy(self):
         t = self.template
         variables = self.get_variables()
         statements = [
             Statement(
                 Effect=Allow,
-                Action=[
-                    awacs.es.Action("HttpGet"),
-                    awacs.es.Action("HttpHead"),
-                    awacs.es.Action("HttpPost"),
-                    awacs.es.Action("HttpDelete")],
+                Action=self.get_allowed_actions(),
                 Resource=[Join("/", [GetAtt(ES_DOMAIN, "DomainArn"), "*"])])]
         t.add_resource(
             iam.PolicyType(
@@ -160,7 +178,25 @@ class Domain(Blueprint):
                 PolicyDocument=Policy(Statement=statements),
                 Roles=variables["Roles"]))
 
+    def create_access_policy(self):
+        policy = None
+        variables = self.get_variables()
+        trusted_network = variables["TrustedNetwork"]
+
+        statements = []
+        if trusted_network:
+            condition = Condition(IpAddress({SourceIp: trusted_network}))
+            statements.append(
+                Statement(
+                    Effect=Allow,
+                    Action=self.get_allowed_actions(),
+                    Condition=condition))
+
+        if statements:
+            policy = Policy(Statement=statements)
+        return policy
+
     def create_template(self):
         self.create_domain()
         self.create_dns_record()
-        self.create_policy()
+        self.create_roles_policy()
