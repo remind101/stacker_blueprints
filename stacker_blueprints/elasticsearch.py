@@ -20,6 +20,8 @@ from awacs.aws import (
     Condition,
     IpAddress,
     Policy,
+    Principal,
+    Everybody,
     SourceIp,
     Statement,
 )
@@ -190,7 +192,8 @@ class Domain(Blueprint):
                 Statement(
                     Effect=Allow,
                     Action=self.get_allowed_actions(),
-                    Condition=condition))
+                    Condition=condition,
+                    Principal=Principal(Everybody)))
 
         if statements:
             policy = Policy(Statement=statements)
