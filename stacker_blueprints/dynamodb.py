@@ -21,10 +21,10 @@ def prep_schemata(config):
         raise KeyError(
             "The key schema is required for the creation of a DynamoDB table."
         )
-    
+
     for schema in schemas:
         schemata.append(dynamodb2.KeySchema(**schema))
-    
+
     return schemata
 
 
@@ -162,6 +162,8 @@ class DynamoDB(Blueprint):
         )
 
         if stream_enabled:
-            t.add_output(Output(table_name + "StreamArn", Value=GetAtt(table_name, "StreamArn")))
-        
+            t.add_output(
+                Output(table_name + "StreamArn",
+                       Value=GetAtt(table_name, "StreamArn")))
+
         t.add_output(Output(table_name + "Name", Value=Ref(table_name)))

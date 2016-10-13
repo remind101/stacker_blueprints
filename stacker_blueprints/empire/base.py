@@ -1,10 +1,10 @@
 import logging
 
-logger = logging.getLogger(__name__)
-
 from troposphere import Base64, Join
 
 from stacker.blueprints.base import Blueprint
+
+logger = logging.getLogger(__name__)
 
 
 class EmpireBase(Blueprint):

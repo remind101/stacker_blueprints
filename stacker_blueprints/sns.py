@@ -63,5 +63,7 @@ class Topics(Blueprint):
             )
         )
 
-        t.add_output(Output(topic_name + "Name", Value=GetAtt(topic_name, "TopicName")))
+        t.add_output(
+            Output(topic_name + "Name", Value=GetAtt(topic_name, "TopicName"))
+        )
         t.add_output(Output(topic_name + "Arn", Value=Ref(topic_name)))
