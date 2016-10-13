@@ -1,8 +1,6 @@
 import logging
 import copy
 
-logger = logging.getLogger(__name__)
-
 from troposphere import Ref, Output, GetAtt, Tags, FindInMap, If, Equals
 from troposphere import ec2, autoscaling, ecs
 from troposphere.autoscaling import Tag as ASTag
@@ -15,6 +13,8 @@ from .base import EmpireBase
 from .policies import ecs_agent_policy, logstream_policy
 
 CLUSTER_SG_NAME = "EmpireMinionSecurityGroup"
+
+logger = logging.getLogger(__name__)
 
 
 class EmpireMinion(EmpireBase):

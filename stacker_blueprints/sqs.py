@@ -9,6 +9,7 @@ from troposphere import (
 
 from . import util
 
+
 def validate_queue(queue):
     sqs_queue_properties = [
         "DelaySeconds",
@@ -57,10 +58,12 @@ class Queues(Blueprint):
 
         t.add_resource(
             sqs.Queue(
-                queue_name, 
+                queue_name,
                 **queue_config
             )
         )
 
-        t.add_output(Output(queue_name + "Arn", Value=GetAtt(queue_name, "Arn")))
+        t.add_output(
+            Output(queue_name + "Arn", Value=GetAtt(queue_name, "Arn"))
+        )
         t.add_output(Output(queue_name + "Url", Value=Ref(queue_name)))

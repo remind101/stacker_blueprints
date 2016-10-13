@@ -1,7 +1,5 @@
 import logging
 
-logger = logging.getLogger(__name__)
-
 from awacs import (
     ecs,
     ec2,
@@ -29,6 +27,8 @@ from troposphere import (
     Ref,
     Join,
 )
+
+logger = logging.getLogger(__name__)
 
 
 def ecs_agent_policy():
@@ -183,7 +183,7 @@ def logstream_policy():
 
 
 def runlogs_policy(log_group_ref):
-    """Policy needed for Empire -> Cloudwatch logs to record interactive runs."""
+    """Policy needed for Empire -> Cloudwatch logs to record run output."""
     p = Policy(
         Statement=[
             Statement(

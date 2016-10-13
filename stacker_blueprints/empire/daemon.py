@@ -188,8 +188,8 @@ class EmpireDaemon(Blueprint):
             "type": "String",
             "description": (
                 "The cloudwatch log group to use for run logs if the "
-                "'RunLogsBackend' is set to 'cloudwatch'. If not provided, one "
-                "will be created for the run logs backend."
+                "'RunLogsBackend' is set to 'cloudwatch'. If not provided, "
+                "one will be created for the run logs backend."
             ),
             "default": ""},
         "EventsBackend": {
@@ -224,23 +224,24 @@ class EmpireDaemon(Blueprint):
         "TaskCPU": {
             "type": "Number",
             "description": (
-                "The number of CPU units to reserve for the empire daemon task."
+                "The number of CPU units to reserve for the empire daemon "
+                "task."
             ),
             "default": "1024"},
         "ServiceMaximumPercent": {
             "type": "Number",
             "description": (
-                "The maximum number of tasks, specified as a percentage of the "
-                "Amazon ECS service's DesiredCount value, that can run in a "
-                "service during a deployment."
+                "The maximum number of tasks, specified as a percentage of "
+                "the Amazon ECS service's DesiredCount value, that can run "
+                "in a service during a deployment."
             ),
             "default": "200"},
         "ServiceMinimumHealthyPercent": {
             "type": "Number",
             "description": (
-                "The minimum number of tasks, specified as a percentage of the "
-                "Amazon ECS service's DesiredCount value, that must continue "
-                "to run and remain healthy during a deployment."
+                "The minimum number of tasks, specified as a percentage of "
+                "the Amazon ECS service's DesiredCount value, that must "
+                "continue to run and remain healthy during a deployment."
             ),
             "default": "50"}
     }
@@ -517,7 +518,10 @@ class EmpireDaemon(Blueprint):
                         GetAtt("CustomResourcesQueue", "Arn")
                     ),
                     "TemplateBucket": (
-                        Join("", ["arn:aws:s3:::", Ref("TemplateBucket"), "/*"])
+                        Join(
+                            "",
+                            ["arn:aws:s3:::", Ref("TemplateBucket"), "/*"]
+                        )
                     )}),
                 Roles=[Ref("InstanceRole")]))
 
