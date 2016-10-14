@@ -61,7 +61,13 @@ def service_role_policy():
                     Action("ec2", "Describe*"),
                     elb.DeregisterInstancesFromLoadBalancer,
                     Action("elasticloadbalancing", "Describe*"),
-                    elb.RegisterInstancesWithLoadBalancer])])
+                    elb.RegisterInstancesWithLoadBalancer,
+                    elb.Action("RegisterTargets"),
+                    elb.Action("DeregisterTargets"),
+                ]
+            )
+        ]
+    )
     return p
 
 
@@ -143,12 +149,23 @@ def empire_policy(resources):
                 Effect=Allow,
                 # TODO: Limit to specific ELB?
                 Resource=["*"],
-                Action=[elb.DeleteLoadBalancer, elb.CreateLoadBalancer,
-                        elb.DescribeLoadBalancers, elb.DescribeTags,
-                        elb.ConfigureHealthCheck,
-                        elb.ModifyLoadBalancerAttributes,
-                        elb.SetLoadBalancerListenerSSLCertificate,
-                        elb.SetLoadBalancerPoliciesOfListener]),
+                Action=[
+                    elb.Action("Describe*"),
+                    elb.CreateLoadBalancer,
+                    elb.DescribeTags,
+                    elb.DeleteLoadBalancer,
+                    elb.ConfigureHealthCheck,
+                    elb.ModifyLoadBalancerAttributes,
+                    elb.SetLoadBalancerListenerSSLCertificate,
+                    elb.SetLoadBalancerPoliciesOfListener,
+                    elb.Action("CreateTargetGroup"),
+                    elb.Action("CreateListener"),
+                    elb.Action("DeleteListener"),
+                    elb.Action("DeleteTargetGroup"),
+                    elb.Action("ModifyTargetGroup"),
+                    elb.Action("ModifyTargetGroupAttributes"),
+                ]
+            ),
             Statement(
                 Effect=Allow,
                 Resource=["*"],
