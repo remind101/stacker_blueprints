@@ -214,13 +214,6 @@ class EmpireDaemon(Blueprint):
                 "The number of MiB to reserve for the empire daemon task."
             ),
             "default": "1024"},
-        "AwsDebug": {
-            "type": "String",
-            "description": (
-                "Boolean for whether or not to enable AWS debug logs."
-            ),
-            "allowed_values": ["true", "false"],
-            "default": "false"},
         "TaskCPU": {
             "type": "Number",
             "description": (
@@ -228,6 +221,13 @@ class EmpireDaemon(Blueprint):
                 "task."
             ),
             "default": "1024"},
+        "AwsDebug": {
+            "type": "String",
+            "description": (
+                "Boolean for whether or not to enable AWS debug logs."
+            ),
+            "allowed_values": ["true", "false"],
+            "default": "false"},
         "ServiceMaximumPercent": {
             "type": "Number",
             "description": (
@@ -474,6 +474,9 @@ class EmpireDaemon(Blueprint):
             ecs.Environment(
                 Name="EMPIRE_EC2_SUBNETS_PUBLIC",
                 Value=Join(",", Ref("PublicSubnets"))),
+            ecs.Environment(
+                Name='EMPIRE_ELB_VPC_ID',
+                Value=Ref('VpcId')),
             ecs.Environment(
                 Name="EMPIRE_ELB_SG_PRIVATE",
                 Value=Ref("PrivateAppELBSG")),

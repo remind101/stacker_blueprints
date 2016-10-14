@@ -1,8 +1,10 @@
 import logging
 
 from awacs import (
+    awslambda,
     ecs,
     ec2,
+    events,
     iam,
     route53,
     kinesis,
@@ -73,7 +75,11 @@ def empire_policy(resources):
             Statement(
                 Effect=Allow,
                 Resource=[resources['CustomResourcesQueue']],
-                Action=[sqs.ReceiveMessage, sqs.DeleteMessage]),
+                Action=[
+                    sqs.ReceiveMessage,
+                    sqs.DeleteMessage,
+                    sqs.ChangeMessageVisibility
+                ]),
             Statement(
                 Effect=Allow,
                 Resource=[resources['TemplateBucket']],
@@ -85,6 +91,27 @@ def empire_policy(resources):
                     s3.GetObjectVersion,
                     s3.GetObjectAcl,
                     s3.GetObjectVersionAcl]),
+            Statement(
+                Effect=Allow,
+                Resource=["*"],
+                Action=[
+                    awslambda.CreateFunction,
+                    awslambda.DeleteFunction,
+                    awslambda.UpdateFunctionCode,
+                    awslambda.GetFunctionConfiguration,
+                    awslambda.AddPermission,
+                    awslambda.RemovePermission]),
+            Statement(
+                Effect=Allow,
+                Resource=["*"],
+                Action=[
+                    events.PutRule,
+                    events.DeleteRule,
+                    events.DescribeRule,
+                    events.EnableRule,
+                    events.DisableRule,
+                    events.PutTargets,
+                    events.RemoveTargets]),
             Statement(
                 Effect=Allow,
                 Resource=[
@@ -147,7 +174,8 @@ def empire_policy(resources):
                 Action=[
                     kinesis.DescribeStream,
                     Action(kinesis.prefix, "Get*"),
-                    Action(kinesis.prefix, "List*")
+                    Action(kinesis.prefix, "List*"),
+                    kinesis.PutRecord,
                 ],
                 Resource=["*"]),
         ]

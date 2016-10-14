@@ -155,28 +155,39 @@ stacks:
     parameters:
       << : *vpc_parameters
       << : *docker_params
-      DesiredCount: 1
-      TaskMemory: 256
-      TaskCPU: 1024
-      InternalZoneId: vpc::InternalZoneId
       ExternalDomain: ${external_domain}
       TrustedNetwork: ${trusted_network_cidr}
-      ELBCertName: ${empire_controller_cert_name}
-      ELBCertType: ${empire_controller_cert_type}
+      DatabaseHost: empireDB::DBCname
+      DatabaseUser: ${empiredb_user}
+      DatabasePassword: ${empiredb_password}
+      ELBCertName: ${empire_daemon_cert_name}
+      ELBCertType: ${empire_daemon_cert_type}
+      DesiredCount: 1
+      InstanceSecurityGroup: empireController::SecurityGroup
+      InstanceRole: empireController::IAMRole
+      # If you change this, it may require blueprint changes as well to deal
+      # with changes to Environment variables the empire daemon expects/uses
+      DockerImage: remind101/empire:0.11.0
+      Environment: ${empire_environment}
+      GitHubClientId: ${empire_daemon_github_client_id}
+      GitHubClientSecret: ${empire_daemon_github_client_secret}
+      GitHubOrganization: ${empire_daemon_github_organization}
+      # Used for github deploy webhooks
+      GitHubWebhooksSecret: ${empire_daemon_github_webhooks_secret}
+      GitHubDeploymentsEnvironment: ${empire_daemon_github_deployments_environment}
+      TokenSecret: ${empire_daemon_token_secret}
+      LogStreamer: ${empire_daemon_log_streamer}
+      InternalZoneId: vpc::InternalZoneId
       PublicAppELBSG: empireMinion::PublicAppELBSG
       PrivateAppELBSG: empireMinion::PrivateAppELBSG
       MinionCluster: empireMinion::ECSCluster
       ControllerCluster: empireController::ECSCluster
-      DatabaseHost: empireDB::DBCname
-      DatabaseUser: ${empiredb_user}
-      DatabasePassword: ${empiredb_password}
-      GithubClientId: ${empire_controller_github_client_id}
-      GithubClientSecret: ${empire_controller_github_client_secret}
-      GithubOrganization: ${empire_controller_github_organization}
-      Environment: ${empire_environment}
-      InstanceRole: empireController::IAMRole
-      InstanceSecurityGroup: empireController::SecurityGroup
-      # Used for github deploy webhooks
-      GithubWebhooksSecret: ${empire_controller_github_webhooks_secret}
-      GithubDeploymentsEnvironment: ${empire_controller_github_deployments_environment}
-      TokenSecret: ${empire_controller_token_secret}
+      RunLogsBackend: ${empire_daemon_run_logs_backend}
+      RunLogsCloudwatchGroup: !!str
+      EventsBackend: ${empire_daemon_events_backend}
+      EventsSNSTopicName: ${empire_daemon_events_sns_topic_name}
+      TaskMemory: 256
+      TaskCPU: 1024
+      AwsDebug: ${empire_daemon_aws_debug}
+      ServiceMaximumPercent: 200
+      ServiceMinimumHealthyPercent: 50
