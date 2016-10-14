@@ -154,7 +154,6 @@ stacks:
     class_path: stacker_blueprints.empire.daemon.EmpireDaemon
     parameters:
       << : *vpc_parameters
-      << : *docker_params
       ExternalDomain: ${external_domain}
       TrustedNetwork: ${trusted_network_cidr}
       DatabaseHost: empireDB::DBCname
@@ -176,7 +175,7 @@ stacks:
       GitHubWebhooksSecret: ${empire_daemon_github_webhooks_secret}
       GitHubDeploymentsEnvironment: ${empire_daemon_github_deployments_environment}
       TokenSecret: ${empire_daemon_token_secret}
-      LogStreamer: ${empire_daemon_log_streamer}
+      LogsStreamer: ${empire_daemon_log_streamer}
       InternalZoneId: vpc::InternalZoneId
       PublicAppELBSG: empireMinion::PublicAppELBSG
       PrivateAppELBSG: empireMinion::PrivateAppELBSG
@@ -191,3 +190,4 @@ stacks:
       AwsDebug: ${empire_daemon_aws_debug}
       ServiceMaximumPercent: 200
       ServiceMinimumHealthyPercent: 50
+      RequireCommitMessages: ${empire_daemon_require_commit_messages}

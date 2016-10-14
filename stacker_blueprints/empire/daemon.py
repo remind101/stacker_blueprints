@@ -243,7 +243,13 @@ class EmpireDaemon(Blueprint):
                 "the Amazon ECS service's DesiredCount value, that must "
                 "continue to run and remain healthy during a deployment."
             ),
-            "default": "50"}
+            "default": "50"},
+        "RequireCommitMessages": {
+            "type": "String",
+            "description": "Enables requiring commit messages if set to "
+                           "'true'.",
+            'default': "false",
+        }
     }
 
     def create_template(self):
@@ -280,6 +286,9 @@ class EmpireDaemon(Blueprint):
         t.add_condition(
             "EnableAppEventStream",
             Equals(Ref("LogsStreamer"), "kinesis"))
+        t.add_condition(
+            "RequireCommitMessages",
+            Equals(Ref("RequireCommitMessages"), "true"))
 
     def create_security_groups(self):
         t = self.template
@@ -504,6 +513,11 @@ class EmpireDaemon(Blueprint):
                     "EnableCloudwatchLogs",
                     Ref(RUN_LOGS),
                     "AWS::NoValue")),
+            If(
+                'RequireCommitMessages',
+                ecs.Environment(Name='EMPIRE_MESSAGES_REQUIRED', Value='true'),
+                Ref('AWS::NoValue')
+            ),
         ]
 
     def create_ecs_resources(self):
