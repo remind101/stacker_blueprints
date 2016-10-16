@@ -168,6 +168,7 @@ stacks:
       # with changes to Environment variables the empire daemon expects/uses
       DockerImage: remind101/empire:0.11.0
       Environment: ${empire_environment}
+      EmpireScheduler: ${empire_daemon_scheduler}
       GitHubClientId: ${empire_daemon_github_client_id}
       GitHubClientSecret: ${empire_daemon_github_client_secret}
       GitHubOrganization: ${empire_daemon_github_organization}

@@ -115,6 +115,13 @@ class EmpireDaemon(Blueprint):
         "Environment": {
             "type": "String",
             "description": "Environment used for Empire."},
+        "EmpireScheduler": {
+            "type": "String",
+            "description": (
+                "The scheduler for Empire to use. Defaults to "
+                "cloudformation-migration"
+            ),
+            "default": "cloudformation-migration"},
         "GitHubClientId": {
             "type": "String",
             "description": "EMPIRE_GITHUB_CLIENT_ID",
@@ -414,7 +421,7 @@ class EmpireDaemon(Blueprint):
                 Value=Ref("Environment")),
             ecs.Environment(
                 Name="EMPIRE_SCHEDULER",
-                Value="cloudformation-migration"),
+                Value=Ref("EmpireScheduler")),
             ecs.Environment(
                 Name="EMPIRE_REPORTER",
                 Value=Ref("Reporter")),

@@ -151,6 +151,7 @@ def empire_policy(resources):
                 Resource=["*"],
                 Action=[
                     elb.Action("Describe*"),
+                    elb.AddTags,
                     elb.CreateLoadBalancer,
                     elb.DescribeTags,
                     elb.DeleteLoadBalancer,
