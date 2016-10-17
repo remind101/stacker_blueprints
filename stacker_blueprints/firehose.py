@@ -307,14 +307,15 @@ class Firehose(Blueprint):
 
     def generate_iam_policies(self):
         ns = self.context.namespace
+        name_prefix = "%s-%s" % (ns, self.name)
         s3_policy = iam.Policy(
             S3_WRITE_POLICY,
-            PolicyName='{}-s3-write'.format(ns),
+            PolicyName='{}-s3-write'.format(name_prefix),
             PolicyDocument=s3_write_policy(Ref('BucketName')),
         )
         logs_policy = iam.Policy(
             LOGS_WRITE_POLICY,
-            PolicyName='{}-logs-write'.format(ns),
+            PolicyName='{}-logs-write'.format(name_prefix),
             PolicyDocument=logs_write_policy(),
         )
         return [s3_policy, logs_policy]
@@ -346,6 +347,7 @@ class Firehose(Blueprint):
 
     def create_policy(self):
         ns = self.context.namespace
+        name_prefix = "%s-%s" % (ns, self.name)
         t = self.template
 
         t.add_condition(
@@ -373,7 +375,7 @@ class Firehose(Blueprint):
         t.add_resource(
             iam.PolicyType(
                 FIREHOSE_WRITE_POLICY,
-                PolicyName='{}-firehose'.format(ns),
+                PolicyName='{}-firehose'.format(name_prefix),
                 PolicyDocument=firehose_write_policy(),
                 Roles=If("ExternalRoles",
                          Ref("RoleNames"),
@@ -390,7 +392,7 @@ class Firehose(Blueprint):
         t.add_resource(
             iam.PolicyType(
                 LOGS_POLICY,
-                PolicyName='{}-logs'.format(ns),
+                PolicyName='{}-logs'.format(name_prefix),
                 PolicyDocument=logs_policy(),
                 Roles=If("ExternalRoles",
                          Ref("RoleNames"),
