@@ -144,7 +144,7 @@ class Domain(Blueprint):
             "ElasticsearchVersion": variables["ElasticsearchVersion"],
         }
 
-        policy = self.create_access_policy()
+        policy = self.get_access_policy()
         if policy:
             params["AccessPolicies"] = policy
 
@@ -180,7 +180,7 @@ class Domain(Blueprint):
                 PolicyDocument=Policy(Statement=statements),
                 Roles=variables["Roles"]))
 
-    def create_access_policy(self):
+    def get_access_policy(self):
         policy = None
         variables = self.get_variables()
         trusted_network = variables["TrustedNetwork"]
