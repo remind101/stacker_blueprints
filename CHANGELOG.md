@@ -1,3 +1,21 @@
+## 0.7.1 (2016-09-27)
+
+- Fix typo in RDS base blueprint introduced in GH-29 [GH-44]
+
+## 0.7.0 (2016-09-23)
+
+This is the first release to include blueprints with the new Blueprint Variables
+concept introduced in stacker 0.8.
+
+- output EmpireMinionRole [GH-18]
+- allow users & groups for firehose [GH-19]
+- KMS integration for firehose [GH-20]
+- Update empire stacks to use Empire Daemon [GH-22]
+- Add test helper for empire stacks [GH-26]
+- Allow use of existing security group with RDS [GH-29]
+- Move to compatible release versions for all dependencies [GH-30]
+- Add SNS, SQS, DynamoDB Blueprints [GH-43]
+
 ## 0.6.5 (2016-05-31)
 
 - Fix issue w/ firehose support relying on unreleased awacs features
