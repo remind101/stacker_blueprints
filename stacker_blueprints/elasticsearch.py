@@ -102,10 +102,12 @@ class Domain(Blueprint):
                 "An arbitrary set of tags (key-value pairs) to associate with "
                 "the Amazon ES domain."
             )},
-        "TrustedNetwork": {
-            "type": str,
-            "description": "CIDR block allowed to connect to the ES cluster",
-            "default": ""},
+        "TrustedNetworks": {
+            "type": list,
+            "description": (
+                "List of CIDR blocks allowed to connect to the ES cluster"
+            ),
+            "default": []},
     }
 
     def get_allowed_actions(self):
@@ -183,10 +185,9 @@ class Domain(Blueprint):
     def get_access_policy(self):
         policy = None
         variables = self.get_variables()
-        trusted_network = variables["TrustedNetwork"]
 
         statements = []
-        if trusted_network:
+        for trusted_network in variables["TrustedNetworks"]:
             condition = Condition(IpAddress({SourceIp: trusted_network}))
             statements.append(
                 Statement(
