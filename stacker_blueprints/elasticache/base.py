@@ -177,7 +177,7 @@ class BaseReplicationGroup(Blueprint):
             "description": "The parametergroup family to use, dependent "
                            "on the engine.",
             "allowed_values": self.get_parameter_group_family()
-        },
+        }
         engine_versions = self.get_engine_versions()
         if engine_versions:
             variables['EngineVersion']['allowed_values'] = engine_versions
