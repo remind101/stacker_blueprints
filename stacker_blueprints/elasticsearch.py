@@ -74,9 +74,9 @@ class Domain(Blueprint):
             "type": dict,
             "default": {},
             "description": (
-                "The configurations of Amazon Elastic Block Store (Amazon EBS) "
-                "volumes that are attached to data nodes in the Amazon ES "
-                "domain"
+                "The configurations of Amazon Elastic Block Store (Amazon "
+                "EBS) volumes that are attached to data nodes in the Amazon "
+                "ES domain"
             )},
         "ElasticsearchClusterConfig": {
             "type": dict,
@@ -92,8 +92,8 @@ class Domain(Blueprint):
             "type": dict,
             "default": {},
             "description": (
-                "The automated snapshot configuration for the Amazon ES domain "
-                "indices."
+                "The automated snapshot configuration for the Amazon ES "
+                "domain indices."
             )},
         "Tags": {
             "type": list,
