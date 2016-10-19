@@ -1,3 +1,10 @@
+## 0.7.2 (2016-10-19)
+
+- Add Elasticsearch Domain [GH-47]
+- Fix namespace issue in firehose blueprint [GH-48]
+- Setup flake8 in CI, cleanup bad pep8 blueprnts [GH-50]
+- Update empire blueprints to empire 0.11.0 & fix various bugs [GH-51]
+
 ## 0.7.1 (2016-09-27)
 
 - Fix typo in RDS base blueprint introduced in GH-29 [GH-44]
