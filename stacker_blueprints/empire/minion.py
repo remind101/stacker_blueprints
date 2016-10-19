@@ -140,6 +140,15 @@ class EmpireMinion(EmpireBase):
                     SourceSecurityGroupId=Ref(group_name),
                     GroupId=Ref(CLUSTER_SG_NAME)))
 
+            # When using Application Load Balancing, the port is chosen at
+            # random within an ephemeral port range.
+            t.add_resource(
+                ec2.SecurityGroupIngress(
+                    "Empire%sAppPort32768To61000" % elb.capitalize(),
+                    IpProtocol="tcp", FromPort=32768, ToPort=61000,
+                    SourceSecurityGroupId=Ref(group_name),
+                    GroupId=Ref(CLUSTER_SG_NAME)))
+
             # Allow anything to talk to the ELB
             # If internal only internal hosts will be able to talk to
             # the elb
