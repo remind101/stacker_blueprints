@@ -34,6 +34,7 @@ LOGS_POLICY = 'LogsPolicy'
 S3_WRITE_POLICY = 'S3WriteAccess'
 LOGS_WRITE_POLICY = 'LogsWriteAccess'
 KMS_KEY = "EncryptionKey"
+KEY_ALIAS = "KeyAlias"
 
 
 class FirehoseAction(Action):
@@ -132,58 +133,62 @@ def kms_key_policy(key_use_arns, key_admin_arns):
             Resource=["*"]
         )
     )
-    statements.append(
-        Statement(
-            Sid="Allow use of the key",
-            Effect=Allow,
-            Principal=AWSPrincipal(key_use_arns),
-            Action=[
-                awacs.kms.Encrypt,
-                awacs.kms.Decrypt,
-                awacs.kms.ReEncrypt,
-                awacs.kms.GenerateDataKey,
-                awacs.kms.GenerateDataKeyWithoutPlaintext,
-                awacs.kms.DescribeKey,
-            ],
-            Resource=["*"]
+    if key_use_arns:
+        statements.append(
+            Statement(
+                Sid="Allow use of the key",
+                Effect=Allow,
+                Principal=AWSPrincipal(key_use_arns),
+                Action=[
+                    awacs.kms.Encrypt,
+                    awacs.kms.Decrypt,
+                    awacs.kms.ReEncrypt,
+                    awacs.kms.GenerateDataKey,
+                    awacs.kms.GenerateDataKeyWithoutPlaintext,
+                    awacs.kms.DescribeKey,
+                ],
+                Resource=["*"]
+            )
         )
-    )
-    statements.append(
-        Statement(
-            Sid="Allow attachment of persistent resources",
-            Effect=Allow,
-            Principal=AWSPrincipal(key_use_arns),
-            Action=[
-                awacs.kms.CreateGrant,
-                awacs.kms.ListGrants,
-                awacs.kms.RevokeGrant,
-            ],
-            Resource=["*"],
-            Condition=Condition(Bool("kms:GrantIsForAWSResource", True))
+
+        statements.append(
+            Statement(
+                Sid="Allow attachment of persistent resources",
+                Effect=Allow,
+                Principal=AWSPrincipal(key_use_arns),
+                Action=[
+                    awacs.kms.CreateGrant,
+                    awacs.kms.ListGrants,
+                    awacs.kms.RevokeGrant,
+                ],
+                Resource=["*"],
+                Condition=Condition(Bool("kms:GrantIsForAWSResource", True))
+            )
         )
-    )
-    statements.append(
-        Statement(
-            Sid="Allow access for Key Administrators",
-            Effect=Allow,
-            Principal=AWSPrincipal(key_admin_arns),
-            Action=[
-                Action("kms", "Create*"),
-                Action("kms", "Describe*"),
-                Action("kms", "Enable*"),
-                Action("kms", "List*"),
-                Action("kms", "Put*"),
-                Action("kms", "Update*"),
-                Action("kms", "Revoke*"),
-                Action("kms", "Disable*"),
-                Action("kms", "Get*"),
-                Action("kms", "Delete*"),
-                Action("kms", "ScheduleKeyDeletion"),
-                Action("kms", "CancelKeyDeletion"),
-            ],
-            Resource=["*"],
+
+    if key_admin_arns:
+        statements.append(
+            Statement(
+                Sid="Allow access for Key Administrators",
+                Effect=Allow,
+                Principal=AWSPrincipal(key_admin_arns),
+                Action=[
+                    Action("kms", "Create*"),
+                    Action("kms", "Describe*"),
+                    Action("kms", "Enable*"),
+                    Action("kms", "List*"),
+                    Action("kms", "Put*"),
+                    Action("kms", "Update*"),
+                    Action("kms", "Revoke*"),
+                    Action("kms", "Disable*"),
+                    Action("kms", "Get*"),
+                    Action("kms", "Delete*"),
+                    Action("kms", "ScheduleKeyDeletion"),
+                    Action("kms", "CancelKeyDeletion"),
+                ],
+                Resource=["*"],
+            )
         )
-    )
 
     return Policy(Version="2012-10-17", Id="key-default-1",
                   Statement=statements)
@@ -212,6 +217,7 @@ class Firehose(Blueprint):
         "BucketName": {
             "type": str,
             "description": "Name for the S3 Bucket",
+            "default": "",
         },
         "EncryptS3Bucket": {
             "type": bool,
@@ -271,6 +277,15 @@ class Firehose(Blueprint):
                 KeyPolicy=kms_key_policy(key_use_arns, key_admin_arns),
             )
         )
+
+        t.add_resource(
+            kms.Alias(
+                KEY_ALIAS,
+                AliasName="alias/%s" % self.context.get_fqn(self.name),
+                TargetKeyId=Ref(KMS_KEY)
+            )
+        )
+
         key_arn = Join(
             "",
             [
@@ -284,12 +299,13 @@ class Firehose(Blueprint):
         )
         t.add_output(Output("KmsKeyArn", Value=key_arn))
         t.add_output(Output("KmsKeyId", Value=Ref(KMS_KEY)))
+        t.add_output(Output("KmsKeyAlias", Value=Ref(KEY_ALIAS)))
 
     def create_bucket(self):
         t = self.template
         variables = self.get_variables()
 
-        bucket_name = variables.get("BucketName", Ref("AWS::NoValue"))
+        bucket_name = variables.get("BucketName") or Ref("AWS::NoValue")
 
         t.add_resource(
             s3.Bucket(
@@ -300,8 +316,7 @@ class Firehose(Blueprint):
         t.add_output(Output('Bucket', Value=Ref(BUCKET)))
 
     def generate_iam_policies(self):
-        ns = self.context.namespace
-        name_prefix = "%s-%s" % (ns, self.name)
+        name_prefix = self.context.get_fqn(self.name)
         s3_policy = iam.Policy(
             S3_WRITE_POLICY,
             PolicyName='{}-s3-write'.format(name_prefix),
@@ -340,14 +355,13 @@ class Firehose(Blueprint):
         t.add_output(Output('RoleArn', Value=GetAtt(IAM_ROLE, 'Arn')))
 
     def create_policy(self):
-        ns = self.context.namespace
-        name_prefix = "%s-%s" % (ns, self.name)
+        name_prefix = self.context.get_fqn(self.name)
         t = self.template
         variables = self.get_variables()
 
-        external_roles = variables.get("RoleNames", Ref("AWS::NoValue"))
-        external_groups = variables.get("GroupNames", Ref("AWS::NoValue"))
-        external_users = variables.get("UserNames", Ref("AWS::NoValue"))
+        external_roles = variables.get("RoleNames") or Ref("AWS::NoValue")
+        external_groups = variables.get("GroupNames") or Ref("AWS::NoValue")
+        external_users = variables.get("UserNames") or Ref("AWS::NoValue")
 
         create_policy = any([
             variables["RoleNames"],
