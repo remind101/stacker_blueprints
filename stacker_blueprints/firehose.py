@@ -267,7 +267,7 @@ class Firehose(Blueprint):
                 KMS_KEY,
                 Description=key_description,
                 Enabled=True,
-                EnableKeyRotation=Ref("EnableKeyRotation"),
+                EnableKeyRotation=variables["EnableKeyRotation"],
                 KeyPolicy=kms_key_policy(key_use_arns, key_admin_arns),
             )
         )
@@ -283,6 +283,7 @@ class Firehose(Blueprint):
             ]
         )
         t.add_output(Output("KmsKeyArn", Value=key_arn))
+        t.add_output(Output("KmsKeyId", Value=Ref(KMS_KEY)))
 
     def create_bucket(self):
         t = self.template
@@ -344,14 +345,14 @@ class Firehose(Blueprint):
         t = self.template
         variables = self.get_variables()
 
-        external_roles = variables.get("ExternalRoles", Ref("AWS::NoValue"))
-        external_groups = variables.get("ExternalGroups", Ref("AWS::NoValue"))
-        external_users = variables.get("ExternalUsers", Ref("AWS::NoValue"))
+        external_roles = variables.get("RoleNames", Ref("AWS::NoValue"))
+        external_groups = variables.get("GroupNames", Ref("AWS::NoValue"))
+        external_users = variables.get("UserNames", Ref("AWS::NoValue"))
 
         create_policy = any([
-            variables["ExternalRoles"],
-            variables["ExternalGroups"],
-            variables["ExternalUsers"],
+            variables["RoleNames"],
+            variables["GroupNames"],
+            variables["UserNames"],
         ])
 
         if create_policy:
