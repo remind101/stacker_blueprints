@@ -1,5 +1,5 @@
 from troposphere import (
-    Ref, ec2, Output, GetAtt, Not, Equals, Condition, And, Join, If
+    Ref, ec2, Output, GetAtt, Not, Equals, Condition, And, Join
 )
 
 from troposphere.elasticache import (
@@ -9,13 +9,6 @@ from troposphere.elasticache import (
 from troposphere.route53 import RecordSetType
 
 from stacker.blueprints.base import Blueprint
-from stacker.blueprints.variables.types import (
-    CFNCommaDelimitedList,
-    CFNNumber,
-    CFNString,
-    EC2SubnetIdList,
-    EC2VPCId,
-)
 
 # Resource name constants
 SUBNET_GROUP = "SubnetGroup"
@@ -23,6 +16,8 @@ SECURITY_GROUP = "SecurityGroup"
 REPLICATION_GROUP = "ReplicationGroup"
 DNS_RECORD = "ReplicationGroupDnsRecord"
 PARAMETER_GROUP = "ParameterGroup"
+
+NOVALUE = Ref("AWS::NoValue")
 
 
 class BaseReplicationGroup(Blueprint):
@@ -32,21 +27,23 @@ class BaseReplicationGroup(Blueprint):
     """
 
     ALLOWED_ENGINES = ["redis"]
+
     VARIABLES = {
         "ClusterParameters": {
             "type": dict,
             "default": {},
         },
         "VpcId": {
-            "type": EC2VPCId,
+            "type": str,
             "description": "Vpc Id to place the Cluster in"
         },
         "Subnets": {
-            "type": EC2SubnetIdList,
-            "description": "Subnets to deploy the Cluster nodes in."
+            "type": str,
+            "description": "Comma separated list of subnets to deploy the "
+                           "Cluster nodes in."
         },
         "AutomaticFailoverEnabled": {
-            "type": CFNString,
+            "type": bool,
             "description": "Specifies whether a read-only replica will be "
                            "automatically promoted to read/write primary "
                            "if the existing primary fails. If true, "
@@ -54,73 +51,68 @@ class BaseReplicationGroup(Blueprint):
                            "group. If false, Multi-AZ is disabled for "
                            "this replication group. If true, "
                            "NumCacheClusters must be at least 2.",
-            "default": "true",
-            "allowed_values": ["true", "false"]
+            "default": True,
         },
         "AutoMinorVersionUpgrade": {
-            "type": CFNString,
+            "type": bool,
             "description": "Set to 'true' to allow minor version upgrades "
                            "during maintenance windows.",
-            "default": "false",
-            "allowed_values": ["true", "false"]
         },
         "CacheNodeType": {
-            "type": CFNString,
+            "type": str,
             "description": "AWS ElastiCache Cache Node Type",
-            "default": "cache.t2.medium"
         },
         "EngineVersion": {
-            "type": CFNString,
+            "type": str,
             "description": "Engine version for the Cache Cluster.",
         },
         "NotificationTopicArn": {
-            "type": CFNString,
+            "type": str,
             "description": "ARN of the SNS Topic to publish events to.",
             "default": "",
         },
         "NumCacheClusters": {
-            "type": CFNNumber,
+            "type": int,
             "description": "The number of cache clusters this replication "
                            "group will initially have. If Multi-AZ "
                            "(ie: the AutomaticFailoverEnabled Parameter) "
                            "is enabled, the value of this parameter must "
                            "be at least 2.",
-            "default": "2",
-            "min_value": "1",
+            "default": 2,
         },
         "Port": {
-            "type": CFNNumber,
+            "type": int,
             "description": "The port to run the cluster on.",
-            "default": "0",
+            "default": 0,
         },
         "PreferredCacheClusterAZs": {
-            "type": CFNCommaDelimitedList,
+            "type": list,
             "description": "Must match the # of nodes in "
                            "NumCacheClusters.",
-            "default": "",
+            "default": [],
         },
         "PreferredMaintenanceWindow": {
-            "type": CFNString,
+            "type": str,
             "description": "A (minimum 60 minute) window in "
                            "DDD:HH:MM-DDD:HH:MM format in UTC for "
                            "backups. Default: Sunday 3am-4am PST",
             "default": "Sun:11:00-Sun:12:00"
         },
         "SnapshotArns": {
-            "type": CFNCommaDelimitedList,
+            "type": list,
             "description": "A list of s3 ARNS where redis snapshots are "
                            "stored that will be used to create the "
                            "cluster.",
-            "default": "",
+            "default": [],
         },
         "SnapshotRetentionLimit": {
-            "type": CFNNumber,
+            "type": int,
             "description": "The number of daily snapshots to retain. Only "
                            "valid for clusters with the redis Engine.",
-            "default": "0",
+            "default": 0,
         },
         "SnapshotWindow": {
-            "type": CFNString,
+            "type": str,
             "description": "For Redis cache clusters, daily time range "
                            "(in UTC) during which ElastiCache will begin "
                            "taking a daily snapshot of your node group. "
@@ -128,19 +120,19 @@ class BaseReplicationGroup(Blueprint):
             "default": ""
         },
         "InternalZoneId": {
-            "type": CFNString,
+            "type": str,
+            "description": "Internal zone Id, if you have one.",
             "default": "",
-            "description": "Internal zone Id, if you have one."
         },
         "InternalZoneName": {
-            "type": CFNString,
+            "type": str,
+            "description": "Internal zone name, if you have one.",
             "default": "",
-            "description": "Internal zone name, if you have one."
         },
         "InternalHostname": {
-            "type": CFNString,
+            "type": str,
+            "description": "Internal domain name, if you have one.",
             "default": "",
-            "description": "Internal domain name, if you have one."
         },
     }
 
@@ -173,7 +165,7 @@ class BaseReplicationGroup(Blueprint):
     def defined_variables(self):
         variables = super(BaseReplicationGroup, self).defined_variables()
         variables["ParameterGroupFamily"] = {
-            "type": CFNString,
+            "type": str,
             "description": "The parametergroup family to use, dependent "
                            "on the engine.",
             "allowed_values": self.get_parameter_group_family()
@@ -182,16 +174,9 @@ class BaseReplicationGroup(Blueprint):
         if engine_versions:
             variables['EngineVersion']['allowed_values'] = engine_versions
 
-        if not self.engine():
-            variables['Engine'] = {
-                "type": CFNString,
-                "description": "Database engine for the RDS Instance.",
-                "allowed_values": self.ALLOWED_ENGINES
-            }
-        else:
-            if self.engine() not in self.ALLOWED_ENGINES:
-                raise ValueError("ENGINE must be one of: %s" %
-                                 ", ".join(self.ALLOWED_ENGINES))
+        if self.engine() not in self.ALLOWED_ENGINES:
+            raise ValueError("ENGINE must be one of: %s" %
+                             ", ".join(self.ALLOWED_ENGINES))
 
         return variables
 
@@ -249,7 +234,7 @@ class BaseReplicationGroup(Blueprint):
             SubnetGroup(
                 SUBNET_GROUP,
                 Description="%s subnet group." % self.name,
-                SubnetIds=Ref("Subnets")))
+                SubnetIds=self.get_variables()["Subnets"]))
 
     def create_security_group(self):
         t = self.template
@@ -257,42 +242,38 @@ class BaseReplicationGroup(Blueprint):
             ec2.SecurityGroup(
                 SECURITY_GROUP,
                 GroupDescription="%s security group" % self.name,
-                VpcId=Ref("VpcId")))
+                VpcId=self.get_variables()["VpcId"]))
         t.add_output(Output("SecurityGroup", Value=Ref(sg)))
 
     def create_replication_group(self):
         t = self.template
-        availability_zones = If("DefinedAvailabilityZones",
-                                Ref("PreferredCacheClusterAZs"),
-                                Ref("AWS::NoValue"))
+        variables = self.get_variables()
+        availability_zones = variables["PreferredCacheClusterAZs"] or NOVALUE
+        notification_topic_arn = variables["NotificationTopicArn"] or \
+            NOVALUE
+        port = variables["Port"] or NOVALUE
+        snapshot_arns = variables["SnapshotArns"] or NOVALUE
+        snapshot_window = variables["SnapshotWindow"] or NOVALUE
+
         t.add_resource(
             ReplicationGroup(
                 REPLICATION_GROUP,
-                AutomaticFailoverEnabled=Ref("AutomaticFailoverEnabled"),
-                AutoMinorVersionUpgrade=Ref("AutoMinorVersionUpgrade"),
-                CacheNodeType=Ref("CacheNodeType"),
+                AutomaticFailoverEnabled=variables["AutomaticFailoverEnabled"],
+                AutoMinorVersionUpgrade=variables["AutoMinorVersionUpgrade"],
+                CacheNodeType=variables["CacheNodeType"],
                 CacheParameterGroupName=Ref(PARAMETER_GROUP),
                 CacheSubnetGroupName=Ref(SUBNET_GROUP),
-                Engine=self.engine() or Ref("Engine"),
-                EngineVersion=Ref("EngineVersion"),
-                NotificationTopicArn=If("DefinedNotificationArn",
-                                        Ref("NotificationTopicArn"),
-                                        Ref("AWS::NoValue")),
-                NumCacheClusters=Ref("NumCacheClusters"),
-                Port=If("DefinedPort",
-                        Ref("Port"),
-                        Ref("AWS::NoValue")),
+                Engine=self.engine(),
+                EngineVersion=variables["EngineVersion"],
+                NotificationTopicArn=notification_topic_arn,
+                Port=port,
                 PreferredCacheClusterAZs=availability_zones,
                 PreferredMaintenanceWindow=Ref("PreferredMaintenanceWindow"),
                 ReplicationGroupDescription=self.name,
                 SecurityGroupIds=[Ref(SECURITY_GROUP), ],
-                SnapshotArns=If("DefinedSnapshotArns",
-                                Ref("SnapshotArns"),
-                                Ref("AWS::NoValue")),
-                SnapshotRetentionLimit=Ref("SnapshotRetentionLimit"),
-                SnapshotWindow=If("DefinedSnapshotWindow",
-                                  Ref("SnapshotWindow"),
-                                  Ref("AWS::NoValue")),
+                SnapshotArns=snapshot_arns,
+                SnapshotRetentionLimit=variables["SnapshotRetentionLimit"],
+                SnapshotWindow=snapshot_window,
             )
         )
 
@@ -302,21 +283,28 @@ class BaseReplicationGroup(Blueprint):
     def get_secondary_addresses(self):
         return GetAtt(REPLICATION_GROUP, "ReadEndPoint.Addresses.List")
 
+    def should_create_internal_cname(self):
+        variables = self.get_variables()
+        return all(variables["InternalZoneId"],
+                   variables["InternalZoneName"],
+                   variables["HasInternalHostname"])
+
     def create_dns_records(self):
         t = self.template
+        variables = self.get_variables()
         primary_endpoint = self.get_primary_address()
 
-        t.add_resource(
-            RecordSetType(
-                DNS_RECORD,
-                HostedZoneId=Ref("InternalZoneId"),
-                Comment="ReplicationGroup CNAME Record",
-                Name=Join(".", [Ref("InternalHostname"),
-                          Ref("InternalZoneName")]),
-                Type="CNAME",
-                TTL="120",
-                ResourceRecords=[primary_endpoint],
-                Condition="CreateInternalHostname"))
+        if self.should_create_internal_cname():
+            t.add_resource(
+                RecordSetType(
+                    DNS_RECORD,
+                    HostedZoneId=variables["InternalZoneId"],
+                    Comment="ReplicationGroup CNAME Record",
+                    Name=Join(".", [variables["InternalHostname"],
+                              variables["InternalZoneName"]]),
+                    Type="CNAME",
+                    TTL="120",
+                    ResourceRecords=[primary_endpoint]))
 
     def create_cluster_outputs(self):
         t = self.template
@@ -329,11 +317,11 @@ class BaseReplicationGroup(Blueprint):
                             Value=GetAtt(REPLICATION_GROUP,
                                          "PrimaryEndPoint.Port")))
         t.add_output(Output("ClusterId", Value=Ref(REPLICATION_GROUP)))
-        t.add_output(
-            Output(
-                "PrimaryCname",
-                Condition="CreateInternalHostname",
-                Value=Ref(DNS_RECORD)))
+        if self.should_create_internal_cname():
+            t.add_output(
+                Output(
+                    "PrimaryCname",
+                    Value=Ref(DNS_RECORD)))
 
     def create_template(self):
         self.create_conditions()
