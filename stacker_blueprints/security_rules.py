@@ -7,7 +7,7 @@ CLASS_MAP = {
 }
 
 
-class SecurityGroupRules(Blueprint):
+class Rules(Blueprint):
     """Used to add Ingress/Egress rules to existing security groups.
 
     This blueprint uses two variables:
@@ -23,7 +23,7 @@ class SecurityGroupRules(Blueprint):
     An example:
 
     name: mySecurityRules
-    class_path: stacker_blueprints.security_rules.SecurityGroupRules
+    class_path: stacker_blueprints.security_rules.Rules
     variables:
       IngressRules:
         All80ToWebserverGroup:
@@ -41,7 +41,8 @@ class SecurityGroupRules(Blueprint):
                            "name of the rule to create, and the value is "
                            "a dictionary of keys/values based on the "
                            "attributes of the "
-                           "troposphere.ec2.SecurityGroupIngress class.",
+                           ":class:`troposphere.ec2.SecurityGroupIngress` "
+                           "class.",
             "default": {},
         },
         "EgressRules": {
@@ -50,7 +51,8 @@ class SecurityGroupRules(Blueprint):
                            "name of the rule to create, and the value is "
                            "a dictionary of keys/values based on the "
                            "attributes of the "
-                           "troposphere.ec2.SecurityGroupEgress class.",
+                           ":class:`troposphere.ec2.SecurityGroupEgress` "
+                           "class.",
             "default": {},
         }
     }
