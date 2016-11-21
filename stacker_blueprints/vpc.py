@@ -265,13 +265,35 @@ class VPC(Blueprint):
                     )
 
         for net_type in net_types:
-            t.add_output(Output(
-                "%sSubnets" % net_type.capitalize(),
-                Value=Join(",",
-                           [Ref(sn) for sn in subnets[net_type]])))
+            t.add_output(
+                Output(
+                    "%sSubnets" % net_type.capitalize(),
+                    Value=Join(
+                        ",",
+                        [Ref(sn) for sn in subnets[net_type]]
+                    )
+                )
+            )
+
+            for i, sn in enumerate(subnets[net_type]):
+                t.add_output(
+                    Output(
+                        "%sSubnet%d" % (net_type.capitalize(), i),
+                        Value=Ref(sn)
+                    )
+                )
+
         self.template.add_output(Output(
             "AvailabilityZones",
             Value=Join(",", zones)))
+
+        for i, az in enumerate(zones):
+            t.add_output(
+                Output(
+                    "AvailabilityZone%d" % (i),
+                    Value=az
+                )
+            )
 
     def create_nat_security_groups(self):
         t = self.template
