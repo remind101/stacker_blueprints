@@ -89,7 +89,7 @@ class VPC(Blueprint):
             t.add_resource(
                 HostedZone(
                     "InternalZone",
-                    Name=Ref("InternalDomain"),
+                    Name=variables["InternalDomain"],
                     VPCs=[HostedZoneVPCs(
                         VPCId=VPC_ID,
                         VPCRegion=Ref("AWS::Region"))]
@@ -104,7 +104,7 @@ class VPC(Blueprint):
             t.add_output(
                 Output(
                     "InternalZoneName",
-                    Value=Ref("InternalDomain"),
+                    Value=variables["InternalDomain"],
                 )
             )
 
@@ -128,12 +128,19 @@ class VPC(Blueprint):
         variables = self.get_variables()
         return any([
             variables["BaseDomain"],
-            variables["InternalZone"]
+            variables["InternalDomain"]
         ])
 
     def create_dhcp_options(self):
         t = self.template
-        domain_name = Join(" ", [Ref("InternalDomain"), Ref("BaseDomain")])
+        variables = self.get_variables()
+        domain_name = Join(
+            " ",
+            [
+                variables["InternalDomain"],
+                variables["BaseDomain"]
+            ]
+        )
         if self.has_hosted_zones():
             dhcp_options = t.add_resource(
                 ec2.DHCPOptions(
@@ -200,7 +207,7 @@ class VPC(Blueprint):
                         AvailabilityZone=az,
                         VpcId=VPC_ID,
                         DependsOn=GW_ATTACH,
-                        CidrBlock=Select(i, Ref("%sSubnets" % name_prefix)),
+                        CidrBlock=variables.get("%sSubnets" % name_prefix)[i],
                         Tags=Tags(type=net_type)
                     )
                 )
@@ -298,11 +305,19 @@ class VPC(Blueprint):
         eip_name = "NATExternalIp%s" % suffix
 
         if variables["UseNatGateway"]:
+            gateway_name = NAT_GATEWAY_NAME % suffix
             t.add_resource(
                 ec2.NatGateway(
-                    NAT_GATEWAY_NAME % suffix,
+                    gateway_name,
                     AllocationId=GetAtt(eip_name, 'AllocationId'),
                     SubnetId=Ref(subnet_name),
+                )
+            )
+
+            t.add_output(
+                Output(
+                    gateway_name + "Id",
+                    Value=Ref(gateway_name)
                 )
             )
 
@@ -315,9 +330,10 @@ class VPC(Blueprint):
                 Ref("AWS::Region"),
                 Ref("ImageName")
             )
-            nat_instance = t.add_resource(
+            instance_name = NAT_INSTANCE_NAME % suffix
+            t.add_resource(
                 ec2.Instance(
-                    NAT_INSTANCE_NAME % suffix,
+                    instance_name,
                     Condition="UseNatInstances",
                     ImageId=image_id,
                     SecurityGroupIds=[Ref(DEFAULT_SG), Ref(NAT_SG)],
@@ -329,10 +345,22 @@ class VPC(Blueprint):
                     DependsOn=GW_ATTACH
                 )
             )
+            t.add_output(
+                Output(
+                    instance_name + "PublicHostname",
+                    Value=GetAtt(instance_name, "PublicDnsName")
+                )
+            )
+            t.add_output(
+                Output(
+                    instance_name + "InstanceId",
+                    Value=Ref(instance_name)
+                )
+            )
 
             # Since we're using NAT instances, go ahead and attach the EIP
             # to the NAT instance
-            eip_instance_id = Ref(nat_instance)
+            eip_instance_id = Ref(instance_name)
 
         t.add_resource(
             ec2.EIP(
@@ -343,10 +371,7 @@ class VPC(Blueprint):
             )
         )
 
-        return nat_instance
-
     def create_template(self):
-        self.create_conditions()
         self.create_vpc()
         self.create_internal_zone()
         self.create_default_security_group()
