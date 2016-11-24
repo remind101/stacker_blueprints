@@ -85,16 +85,20 @@ stacks:
       # Note: The minimum allowed AZCount is 2.
       AZCount: ${azcount}
       # Enough subnets for 4 AZs
-      PublicSubnets: 10.128.0.0/24,10.128.1.0/24,10.128.2.0/24,10.128.3.0/24
-      PrivateSubnets: 10.128.8.0/22,10.128.12.0/22,10.128.16.0/22,10.128.20.0/22
+      CidrBlock: 10.128.0.0/16
+      PublicSubnets:
+        - 10.128.0.0/24
+        - 10.128.1.0/24
+        - 10.128.2.0/24
+        - 10.128.3.0/24
+      PrivateSubnets: 
+        - 10.128.8.0/22
+        - 10.128.12.0/22
+        - 10.128.16.0/22
+        - 10.128.20.0/22
       # InstanceType used for NAT instances
-      InstanceType: ${nat_instance_type}
-      SshKeyName: ${ssh_key_name}
       BaseDomain: ${external_domain}
       InternalDomain: empire
-      # CidrBlock needs to be hold all of the Public & Private subnets above
-      CidrBlock: 10.128.0.0/16
-      ImageName: NAT
   - name: bastion
     class_path: stacker_blueprints.bastion.Bastion
     variables:
