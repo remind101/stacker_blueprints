@@ -1,3 +1,10 @@
+## 1.0.0a1 (2016-11-25)
+
+- New low-level security group rule blueprint [GH-56]
+- Update firehose blueprint to fully use variables [GH-57]
+- Update elasticache to fully use variables [GH-59]
+- Update VPC to fully use variables [GH-60]
+
 ## 0.7.2 (2016-10-19)
 
 - Add Elasticsearch Domain [GH-47]
