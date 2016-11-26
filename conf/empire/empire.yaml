@@ -181,6 +181,22 @@ stacks:
       InstanceRole: ${empireController::IAMRole}
       InstanceSecurityGroup: ${empireController::SecurityGroup}
       # Used for github deploy webhooks
-      GithubWebhooksSecret: ${empire_controller_github_webhooks_secret}
-      GithubDeploymentsEnvironment: ${empire_controller_github_deployments_environment}
-      TokenSecret: ${empire_controller_token_secret}
+      GitHubWebhooksSecret: ${empire_daemon_github_webhooks_secret}
+      GitHubDeploymentsEnvironment: ${empire_daemon_github_deployments_environment}
+      TokenSecret: ${empire_daemon_token_secret}
+      LogsStreamer: ${empire_daemon_log_streamer}
+      InternalZoneId: vpc::InternalZoneId
+      PublicAppELBSG: empireMinion::PublicAppELBSG
+      PrivateAppELBSG: empireMinion::PrivateAppELBSG
+      MinionCluster: empireMinion::ECSCluster
+      ControllerCluster: empireController::ECSCluster
+      RunLogsBackend: ${empire_daemon_run_logs_backend}
+      RunLogsCloudwatchGroup: !!str
+      EventsBackend: ${empire_daemon_events_backend}
+      EventsSNSTopicName: ${empire_daemon_events_sns_topic_name}
+      TaskMemory: 256
+      TaskCPU: 1024
+      AwsDebug: ${empire_daemon_aws_debug}
+      ServiceMaximumPercent: 200
+      ServiceMinimumHealthyPercent: 50
+      RequireCommitMessages: ${empire_daemon_require_commit_messages}
