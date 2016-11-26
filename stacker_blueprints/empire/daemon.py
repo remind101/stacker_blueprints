@@ -123,6 +123,13 @@ class EmpireDaemon(Blueprint):
         "Environment": {
             "type": CFNString,
             "description": "Environment used for Empire."},
+        "EmpireScheduler": {
+            "type": "String",
+            "description": (
+                "The scheduler for Empire to use. Defaults to "
+                "cloudformation-migration"
+            ),
+            "default": "cloudformation-migration"},
         "GitHubClientId": {
             "type": CFNString,
             "description": "EMPIRE_GITHUB_CLIENT_ID",
@@ -236,6 +243,13 @@ class EmpireDaemon(Blueprint):
                 "task."
             ),
             "default": "1024"},
+        "AwsDebug": {
+            "type": "String",
+            "description": (
+                "Boolean for whether or not to enable AWS debug logs."
+            ),
+            "allowed_values": ["true", "false"],
+            "default": "false"},
         "ServiceMaximumPercent": {
             "type": CFNNumber,
             "description": (
@@ -251,7 +265,13 @@ class EmpireDaemon(Blueprint):
                 "the Amazon ECS service's DesiredCount value, that must "
                 "continue to run and remain healthy during a deployment."
             ),
-            "default": "50"}
+            "default": "50"},
+        "RequireCommitMessages": {
+            "type": "String",
+            "description": "Enables requiring commit messages if set to "
+                           "'true'.",
+            'default': "false",
+        }
     }
 
     def create_template(self):
@@ -288,6 +308,9 @@ class EmpireDaemon(Blueprint):
         t.add_condition(
             "EnableAppEventStream",
             Equals(Ref("LogsStreamer"), "kinesis"))
+        t.add_condition(
+            "RequireCommitMessages",
+            Equals(Ref("RequireCommitMessages"), "true"))
 
     def create_security_groups(self):
         t = self.template
@@ -413,7 +436,7 @@ class EmpireDaemon(Blueprint):
                 Value=Ref("Environment")),
             ecs.Environment(
                 Name="EMPIRE_SCHEDULER",
-                Value="cloudformation-migration"),
+                Value=Ref("EmpireScheduler")),
             ecs.Environment(
                 Name="EMPIRE_REPORTER",
                 Value=Ref("Reporter")),
@@ -483,6 +506,9 @@ class EmpireDaemon(Blueprint):
                 Name="EMPIRE_EC2_SUBNETS_PUBLIC",
                 Value=Join(",", Ref("PublicSubnets"))),
             ecs.Environment(
+                Name='EMPIRE_ELB_VPC_ID',
+                Value=Ref('VpcId')),
+            ecs.Environment(
                 Name="EMPIRE_ELB_SG_PRIVATE",
                 Value=Ref("PrivateAppELBSG")),
             ecs.Environment(
@@ -512,6 +538,11 @@ class EmpireDaemon(Blueprint):
                     "EnableCloudwatchLogs",
                     Ref(RUN_LOGS),
                     "AWS::NoValue")),
+            If(
+                'RequireCommitMessages',
+                ecs.Environment(Name='EMPIRE_MESSAGES_REQUIRED', Value='true'),
+                Ref('AWS::NoValue')
+            ),
         ]
 
     def create_ecs_resources(self):
