@@ -1,3 +1,8 @@
+## 0.7.3 (2016-11-28)
+
+- Add low-level security group rule blueprint [GH-56]
+- Relax troposphere dependency [GH-64]
+
 ## 0.7.2 (2016-10-19)
 
 - Add Elasticsearch Domain [GH-47]
