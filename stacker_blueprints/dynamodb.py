@@ -40,7 +40,7 @@ class DynamoDB(Blueprint):
 
     VARIABLES = {
         "Tables": {
-            "type": TroposphereType([dynamodb2.Table]),
+            "type": TroposphereType(dynamodb2.Table, many=True),
             "description": "DynamoDB tables to create.",
         }
     }
