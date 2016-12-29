@@ -2,7 +2,7 @@ from stacker.blueprints.base import Blueprint
 from stacker.blueprints.variables.types import TroposphereType
 
 from troposphere import (
-    dynamodb2,
+    dynamodb,
     Ref,
     GetAtt,
     Output,
@@ -40,7 +40,7 @@ class DynamoDB(Blueprint):
 
     VARIABLES = {
         "Tables": {
-            "type": TroposphereType(dynamodb2.Table, many=True),
+            "type": TroposphereType(dynamodb.Table, many=True),
             "description": "DynamoDB tables to create.",
         }
     }
