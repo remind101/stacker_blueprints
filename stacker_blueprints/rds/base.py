@@ -92,7 +92,7 @@ class BaseRDS(Blueprint):
             "oracle-ee-11.2", "oracle-ee-12.1",
             "oracle-se-11.2", "oracle-se-12.1",
             "oracle-se1-11.2", "oracle-se1-12.1",
-            "postgres9.3", "postgres9.4", "postgres9.5",
+            "postgres9.3", "postgres9.4", "postgres9.5", "postgres9.6",
             "sqlserver-ee-10.50", "sqlserver-ee-11.00",
             "sqlserver-ex-10.50", "sqlserver-ex-11.00",
             "sqlserver-se-10.50", "sqlserver-se-11.00",
