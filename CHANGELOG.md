@@ -1,3 +1,7 @@
+## 0.7.4 (2017-01-06)
+
+- Remove version and family checking from RDS [GH-67]
+
 ## 0.7.3 (2016-11-28)
 
 - Add low-level security group rule blueprint [GH-56]
