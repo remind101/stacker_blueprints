@@ -50,55 +50,6 @@ class BaseRDS(Blueprint):
         """
         return parameters
 
-    def get_engine_versions(self):
-        """Used by engine specific subclasses - returns valid engine versions.
-
-        Should only be overridden if the class variable ENGINE is defined on
-        the class.
-
-        Return:
-            list: A list of valid engine versions for the given engine.
-        """
-        return []
-
-    def get_engine_major_versions(self):
-        """Used by engine specific subclasses. Returns major engine versions.
-
-        By default will attempt to figure out the right thing to return by
-        returning a list of the first two parts of each version returned by
-        get_engine_versions.
-
-        Return:
-            list: A list of valid engine versions for the given engine.
-        """
-        versions = self.get_engine_versions()
-        major_versions = []
-        for v in versions:
-            parts = v.split('.')
-            major_versions.append(".".join(parts[:2]))
-        return major_versions
-
-    def get_db_families(self):
-        """Returns available db families.
-
-        Should be overridden by engine specific subclasses to be more
-        specific.
-
-        Return:
-            list: A list of valid db families for a given db engine.
-        """
-        return [
-            "mysql5.1", "mysql5.5", "mysql5.6", "mysql5.7",
-            "oracle-ee-11.2", "oracle-ee-12.1",
-            "oracle-se-11.2", "oracle-se-12.1",
-            "oracle-se1-11.2", "oracle-se1-12.1",
-            "postgres9.3", "postgres9.4", "postgres9.5", "postgres9.6",
-            "sqlserver-ee-10.50", "sqlserver-ee-11.00",
-            "sqlserver-ex-10.50", "sqlserver-ex-11.00",
-            "sqlserver-se-10.50", "sqlserver-se-11.00",
-            "sqlserver-web-10.50", "sqlserver-web-11.00"
-        ]
-
     def _get_parameters(self):
         parameters = {
             "VpcId": {
@@ -168,7 +119,7 @@ class BaseRDS(Blueprint):
             "DBFamily": {
                 "type": "String",
                 "description": "DBFamily for ParameterGroup.",
-                "allowed_values": self.get_db_families()},
+            },
             "DBInstanceIdentifier": {
                 "type": "String",
                 "description": "Name of the database instance in RDS.",
@@ -207,15 +158,6 @@ class BaseRDS(Blueprint):
         }
 
         parameters = self.extra_parameters(parameters)
-
-        engine_versions = self.get_engine_versions()
-        if engine_versions:
-            parameters['EngineVersion']['allowed_values'] = engine_versions
-
-        engine_major_versions = self.get_engine_major_versions()
-        if engine_major_versions:
-            parameters['EngineMajorVersion']['allowed_values'] = \
-                engine_major_versions
 
         if not self.engine():
             parameters['Engine'] = {
