@@ -14,6 +14,7 @@ from awacs import (
     s3,
     cloudformation,
     elasticloadbalancing as elb,
+    ecr,
 )
 from awacs.aws import (
     Statement,
@@ -170,12 +171,14 @@ def empire_policy(resources):
             Statement(
                 Effect=Allow,
                 Resource=["*"],
-                Action=[ec2.DescribeSubnets, ec2.DescribeSecurityGroups]),
+                Action=[ec2.DescribeSubnets, ec2.DescribeSecurityGroups]
+            ),
             Statement(
                 Effect=Allow,
                 Action=[iam.GetServerCertificate, iam.UploadServerCertificate,
                         iam.DeleteServerCertificate, iam.PassRole],
-                Resource=["*"]),
+                Resource=["*"]
+            ),
             Statement(
                 Effect=Allow,
                 Action=[
@@ -186,7 +189,8 @@ def empire_policy(resources):
                     route53.GetChange,
                 ],
                 # TODO: Limit to specific zones
-                Resource=["*"]),
+                Resource=["*"]
+            ),
             Statement(
                 Effect=Allow,
                 Action=[
@@ -195,7 +199,18 @@ def empire_policy(resources):
                     Action(kinesis.prefix, "List*"),
                     kinesis.PutRecord,
                 ],
-                Resource=["*"]),
+                Resource=["*"]
+            ),
+            Statement(
+                Effect=Allow,
+                Action=[
+                    ecr.GetAuthorizationToken,
+                    ecr.BatchCheckLayerAvailability,
+                    ecr.GetDownloadUrlForLayer,
+                    ecr.BatchGetImage,
+                ],
+                Resource=["*"],
+            ),
         ]
     )
     return p
