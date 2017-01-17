@@ -47,7 +47,20 @@ def ecs_agent_policy():
                     ecs.DiscoverPollEndpoint,
                     ecs.Action("Submit*"),
                     ecs.Poll,
-                    ecs.Action("StartTelemetrySession")])])
+                    ecs.Action("StartTelemetrySession")]),
+            Statement(
+                Effect=Allow,
+                Action=[
+                    ecr.GetAuthorizationToken,
+                    ecr.BatchCheckLayerAvailability,
+                    ecr.GetDownloadUrlForLayer,
+                    ecr.BatchGetImage,
+                ],
+                Resource=["*"],
+            ),
+        ]
+    )
+
     return p
 
 

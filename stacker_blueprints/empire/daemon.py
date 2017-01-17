@@ -601,10 +601,13 @@ class EmpireDaemon(Blueprint):
                 Volumes=[
                     ecs.Volume(
                         Name="dockerSocket",
-                        Host=ecs.Host(SourcePath="/var/run/docker.sock")),
+                        Host=ecs.Host(SourcePath="/var/run/docker.sock")
+                    ),
                     ecs.Volume(
                         Name="dockerCfg",
-                        Host=ecs.Host(SourcePath="/root/.dockercfg"))],
+                        Host=ecs.Host(SourcePath="/root/.dockercfg")
+                    )
+                ],
                 ContainerDefinitions=[
                     ecs.ContainerDefinition(
                         Command=["server", "-automigrate=true"],
@@ -616,17 +619,26 @@ class EmpireDaemon(Blueprint):
                             ecs.MountPoint(
                                 SourceVolume="dockerSocket",
                                 ContainerPath="/var/run/docker.sock",
-                                ReadOnly=False),
+                                ReadOnly=False
+                            ),
                             ecs.MountPoint(
                                 SourceVolume="dockerCfg",
                                 ContainerPath="/root/.dockercfg",
-                                ReadOnly=False)],
+                                ReadOnly=False
+                            )
+                        ],
                         PortMappings=[
                             ecs.PortMapping(
                                 HostPort=8081,
-                                ContainerPort=8081)],
+                                ContainerPort=8081
+                            )
+                        ],
                         Cpu=Ref("TaskCPU"),
-                        Memory=Ref("TaskMemory"))]))
+                        Memory=Ref("TaskMemory")
+                    )
+                ]
+            )
+        )
 
         t.add_resource(
             Role(
