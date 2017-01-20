@@ -30,7 +30,7 @@ def queue_policy(sns_arn, sqs_arns):
                 Effect="Allow",
                 Principal=Principal("*"),
                 Action=[awacs.sqs.SendMessage],
-                Resource=arn,
+                Resource=[arn],
                 Condition=Condition(
                     ArnEquals({"aws:SourceArn": sns_arn})
                 )
