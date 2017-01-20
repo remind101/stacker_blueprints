@@ -1,3 +1,9 @@
+## 0.7.5 (2017-01-19)
+
+- Fix empire minion ECR access [GH-70]
+- Fix SQS Queue Policy issue w/ multiple SQS queues [GH-71]
+- Simple ECR repository blueprint [GH-72]
+
 ## 0.7.4 (2017-01-06)
 
 - Remove version and family checking from RDS [GH-67]
