@@ -1,4 +1,4 @@
-## 0.7.5 (2017-01-19)
+## 0.7.6 (2017-01-19)
 
 - Fix empire minion ECR access [GH-70]
 - Fix SQS Queue Policy issue w/ multiple SQS queues [GH-71]
