@@ -243,13 +243,6 @@ class EmpireDaemon(Blueprint):
                 "task."
             ),
             "default": "1024"},
-        "AwsDebug": {
-            "type": "String",
-            "description": (
-                "Boolean for whether or not to enable AWS debug logs."
-            ),
-            "allowed_values": ["true", "false"],
-            "default": "false"},
         "ServiceMaximumPercent": {
             "type": CFNNumber,
             "description": (
