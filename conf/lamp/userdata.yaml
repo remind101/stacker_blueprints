@@ -1,11 +1,148 @@
 #cloud-config
-users:
-  - name: demo
-    groups: sudo
-    shell: /bin/bash
-    sudo: ['ALL=(ALL) NOPASSWD:ALL']
-    ssh-authorized-keys:
-      - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDf0q4PyG0doiBQYV7OlOxbRjle026hJPBWD+eKHWuVXIpAiQlSElEBqQn0pOqNJZ3IBCvSLnrdZTUph4czNC4885AArS9NkyM7lK27Oo8RV888jWc8hsx4CD2uNfkuHL+NI5xPB/QT3Um2Zi7GRkIwIgNPN5uqUtXvjgA+i1CS0Ku4ld8vndXvr504jV9BMQoZrXEST3YlriOb8Wf7hYqphVMpF3b+8df96Pxsj0+iZqayS9wFcL8ITPApHi0yVwS8TjxEtI3FDpCbf7Y/DmTGOv49+AWBkFhS2ZwwGTX65L61PDlTSAzL+rPFmHaQBHnsli8U9N6E4XHDEOjbSMRX user@example.com
-      - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDcthLR0qW6y1eWtlmgUE/DveL4XCaqK6PQlWzi445v6vgh7emU4R5DmAsz+plWooJL40dDLCwBt9kEcO/vYzKY9DdHnX8dveMTJNU/OJAaoB1fV6ePvTOdQ6F3SlF2uq77xYTOqBiWjqF+KMDeB+dQ+eGyhuI/z/aROFP6pdkRyEikO9YkVMPyomHKFob+ZKPI4t7TwUi7x1rZB1GsKgRoFkkYu7gvGak3jEWazsZEeRxCgHgAV7TDm05VAWCrnX/+RzsQ/1DecwSzsP06DGFWZYjxzthhGTvH/W5+KFyMvyA+tZV4i1XM+CIv/Ma/xahwqzQkIaKUwsldPPu00jRN user@desktop
+
+# Automatically update all of the packages
+package_upgrade: true
+package_reboot_if_required: true
+
+write_files:
+  - path: /var/www/html/info.php
+    content: <?php phpinfo(); ?>
+    permissions: '0755'
+  - path: /var/www/html/sample.php
+    content: |
+      <?php
+      define('DB_SERVER', '{{DBEndPoint}}');
+      define('DB_USERNAME', '{{MasterUser}}');
+      define('DB_PASSWORD', '{{MasterUserPassword}}');
+      define('DB_DATABASE', '{{DatabaseName}}');
+      ?>
+
+      <html>
+      <body>
+      <h1>Sample page</h1>
+      <?php
+
+        /* Connect to MySQL and select the database. */
+        $connection = mysqli_connect(DB_SERVER, DB_USERNAME, DB_PASSWORD);
+
+        if (mysqli_connect_errno()) echo "Failed to connect to MySQL: " . mysqli_connect_error();
+
+        $database = mysqli_select_db($connection, DB_DATABASE);
+
+        /* Ensure that the Employees table exists. */
+        VerifyEmployeesTable($connection, DB_DATABASE); 
+
+        /* If input fields are populated, add a row to the Employees table. */
+        $employee_name = htmlentities($_POST['Name']);
+        $employee_address = htmlentities($_POST['Address']);
+
+        if (strlen($employee_name) || strlen($employee_address)) {
+          AddEmployee($connection, $employee_name, $employee_address);
+        }
+      ?>
+
+      <!-- Input form -->
+      <form action="<?PHP echo $_SERVER['SCRIPT_NAME'] ?>" method="POST">
+        <table border="0">
+          <tr>
+            <td>Name</td>
+            <td>Address</td>
+          </tr>
+          <tr>
+            <td>
+              <input type="text" name="Name" maxlength="45" size="30" />
+            </td>
+            <td>
+              <input type="text" name="Address" maxlength="90" size="60" />
+            </td>
+            <td>
+              <input type="submit" value="Add Data" />
+            </td>
+          </tr>
+        </table>
+      </form>
+
+      <!-- Display table data. -->
+      <table border="1" cellpadding="2" cellspacing="2">
+        <tr>
+          <td>ID</td>
+          <td>Name</td>
+          <td>Address</td>
+        </tr>
+
+      <?php
+
+      $result = mysqli_query($connection, "SELECT * FROM Employees"); 
+
+      while($query_data = mysqli_fetch_row($result)) {
+        echo "<tr>";
+        echo "<td>",$query_data[0], "</td>",
+             "<td>",$query_data[1], "</td>",
+             "<td>",$query_data[2], "</td>";
+        echo "</tr>";
+      }
+      ?>
+
+      </table>
+
+      <!-- Clean up. -->
+      <?php
+
+        mysqli_free_result($result);
+        mysqli_close($connection);
+
+      ?>
+
+      </body>
+      </html>
+
+
+      <?php
+
+        /* Add an employee to the table. */
+        function AddEmployee($connection, $name, $address) {
+           $n = mysqli_real_escape_string($connection, $name);
+           $a = mysqli_real_escape_string($connection, $address);
+
+           $query = "INSERT INTO `Employees` (`Name`, `Address`) VALUES ('$n', '$a');";
+
+           if(!mysqli_query($connection, $query)) echo("<p>Error adding employee data.</p>");
+        }
+
+        /* Check whether the table exists and, if not, create it. */
+        function VerifyEmployeesTable($connection, $dbName) {
+          if(!TableExists("Employees", $connection, $dbName)) 
+          { 
+             $query = "CREATE TABLE `Employees` (
+                 `ID` int(11) NOT NULL AUTO_INCREMENT,
+                 `Name` varchar(45) DEFAULT NULL,
+                 `Address` varchar(90) DEFAULT NULL,
+                 PRIMARY KEY (`ID`),
+                 UNIQUE KEY `ID_UNIQUE` (`ID`)
+               ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=latin1";
+
+             if(!mysqli_query($connection, $query)) echo("<p>Error creating table.</p>");
+          }
+        }
+
+        /* Check for the existence of a table. */
+        function TableExists($tableName, $connection, $dbName) {
+          $t = mysqli_real_escape_string($connection, $tableName);
+          $d = mysqli_real_escape_string($connection, $dbName);
+
+          $checktable = mysqli_query($connection, 
+              "SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_NAME = '$t' AND TABLE_SCHEMA = '$d'");
+
+          if(mysqli_num_rows($checktable) > 0) return true;
+
+          return false;
+        }
+      ?>
+    permissions: '0755'
+
 runcmd:
-  - touch /test.txt
+  - sudo apt-get -y update
+  - sudo apt-get install -y apache2
+  - sudo /etc/init.d/apache2 start
+  - sudo apt-get install -y php5 libapache2-mod-php5 php5-mcrypt php5-mysql
+  - sudo /etc/init.d/apache2 restart
