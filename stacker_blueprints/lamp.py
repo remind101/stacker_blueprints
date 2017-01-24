@@ -1,12 +1,3 @@
-# Lamp Stack
-#
-# This stack configures our lamp host(s).
-# http://en.wikipedia.org/wiki/Lamp_host
-#
-# These hosts are the only SSH entrypoint into the VPC. To SSH to a host inside
-# the VPC you must first SSH to a lamp host, and then SSH from that host to
-# another inside the VPC.
-
 from troposphere import Ref, ec2, FindInMap, Output, \
     GetAtt, Base64, Select
 from stacker.blueprints.base import Blueprint
@@ -66,7 +57,7 @@ class Lamp(Blueprint):
             "description": "The password for the database"
         },
         "DatabaseName": {
-            "type": CFNString,
+            "type": str,
             "description": "The name of the database"
         }
     }

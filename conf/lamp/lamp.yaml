@@ -18,11 +18,11 @@ mappings:
       lamp: ami-98aa1cf0
 
 vpc_variables: &vpc_variables
-  VpcId: ${vpc::VpcId}
-  DefaultSG: ${vpc::DefaultSG}
-  PublicSubnets: ${vpc::PublicSubnets}
-  PrivateSubnets: ${vpc::PrivateSubnets}
-  AvailabilityZones: ${vpc::AvailabilityZones}
+  VpcId: ${output vpc::VpcId}
+  DefaultSG: ${output vpc::DefaultSG}
+  PublicSubnets: ${output vpc::PublicSubnets}
+  PrivateSubnets: ${output vpc::PrivateSubnets}
+  AvailabilityZones: ${output vpc::AvailabilityZones}
 
 stacks:
   - name: vpc
@@ -59,14 +59,14 @@ stacks:
     class_path: stacker_blueprints.rds.mysql.MasterInstance
     variables:
       << : *vpc_variables
-      Subnets: ${vpc::PrivateSubnets}
+      Subnets: ${output vpc::PrivateSubnets}
       InstanceType: ${db_instance_type}
       AllowMajorVersionUpgrade: "false"
       AutoMinorVersionUpgrade: "false"
       AllocatedStorage: ${storage_size}
       IOPS: ${iops}
-      InternalZoneName: ${vpc::InternalZoneName}
-      InternalZoneId: ${vpc::InternalZoneId}
+      InternalZoneName: ${output vpc::InternalZoneName}
+      InternalZoneId: ${output vpc::InternalZoneId}
       InternalHostname: ${master_name}
       DBInstanceIdentifier: ${master_name}
       DBFamily: ${db_family}
