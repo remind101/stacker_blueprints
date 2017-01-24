@@ -55,6 +55,7 @@ def validate_backup_retention_period(value):
 
 
 class BaseRDS(Blueprint):
+
     """Base Blueprint for all RDS blueprints.
 
     Should not be used directly. Either use :class:`MasterInstance` or
@@ -72,7 +73,7 @@ class BaseRDS(Blueprint):
             "type": str,
             "description": "Vpc Id"},
         "Subnets": {
-            "type": str,
+            "type": list,
             "description": "A comma separated list of subnet ids."},
         "InstanceType": {
             "type": str,
@@ -232,7 +233,7 @@ class BaseRDS(Blueprint):
             DBSubnetGroup(
                 SUBNET_GROUP,
                 DBSubnetGroupDescription="%s VPC subnet group." % self.name,
-                SubnetIds=variables["Subnets"].split(",")
+                SubnetIds=variables["Subnets"]
             )
         )
 
@@ -338,6 +339,7 @@ class BaseRDS(Blueprint):
 
 
 class MasterInstance(BaseRDS):
+
     """Blueprint for a generic Master RDS Database Instance.
 
     Subclasses should be created for each RDS engine for better validation of
@@ -417,6 +419,7 @@ class MasterInstance(BaseRDS):
 
 
 class ReadReplica(BaseRDS):
+
     """Blueprint for a Read replica RDS Database Instance."""
 
     def defined_variables(self):

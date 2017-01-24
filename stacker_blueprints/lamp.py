@@ -11,32 +11,26 @@ from stacker.blueprints.variables.types import (
 
 class Lamp(Blueprint):
     VARIABLES = {
-        "SshKeyName": {"type": EC2KeyPairKeyName},
+        "SshKeyName": {
+            "type": str
+        },
         "InstanceType": {
-            "type": CFNString,
+            "type": str,
             "description": "EC2 Instance Type",
             "default": "m3.medium"
         },
         "ImageName": {
-            "type": CFNString,
+            "type": str,
             "description": "The image name to use from the AMIMap (usually "
                            "found in the config file.)",
             "default": "lamp"
         },
-        "OfficeNetwork": {
-            "type": CFNString,
-            "description": "CIDR block allowed to access the ec2 hosts"
-        },
         "VpcId": {
-            "type": CFNString,
+            "type": str,
             "description": "Id of the VPC"
         },
-        "DefaultSG": {
-            "type": EC2SecurityGroupId,
-            "description": "Default Security Group"
-        },
         "Subnets": {
-            "type": EC2SubnetIdList,
+            "type": list,
             "description": "Subnets to deploy RDS instance in."
         },
         "UserData": {
@@ -57,7 +51,7 @@ class Lamp(Blueprint):
             "description": "The password for the database"
         },
         "DatabaseName": {
-            "type": str,
+            "type": CFNString,
             "description": "The name of the database"
         }
     }
@@ -65,10 +59,12 @@ class Lamp(Blueprint):
     def create_security_group(self):
         t = self.template
 
+        variables = self.get_variables()
+
         t.add_resource(ec2.SecurityGroup(
             'ServerSecurityGroup',
             GroupDescription='Server Security Group',
-            VpcId=Ref("VpcId"))
+            VpcId=variables["VpcId"])
         )
 
     def create_ec2_instance(self):
@@ -80,16 +76,16 @@ class Lamp(Blueprint):
             ec2.Instance(
                 "LampInstance",
                 ImageId=FindInMap(
-                    'AmiMap', Ref("AWS::Region"), Ref("ImageName")),
-                InstanceType=Ref("InstanceType"),
+                    'AmiMap', Ref("AWS::Region"), variables["ImageName"]),
+                InstanceType=variables["InstanceType"],
                 NetworkInterfaces=[
                     ec2.NetworkInterfaceProperty(
                         DeviceIndex=0,
                         AssociatePublicIpAddress=True,
                         GroupSet=[Ref('ServerSecurityGroup')],
-                        SubnetId=Select(0, Ref('Subnets')))],
+                        SubnetId=Select(0, variables['Subnets']))],
                 Tags=[ec2.Tag('Name', 'lamp-ec2-instance')],
-                KeyName=Ref('SshKeyName'),
+                KeyName=variables['SshKeyName'],
                 UserData=variables["UserData"],
             ),
         )

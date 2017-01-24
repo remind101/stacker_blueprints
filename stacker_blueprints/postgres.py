@@ -122,7 +122,7 @@ class PostgresRDS(Blueprint):
                 HostedZoneId=Ref("InternalZoneId"),
                 Comment='RDS DB CNAME Record',
                 Name=Join(".", [Ref("InternalHostname"),
-                          Ref("InternalZoneName")]),
+                                Ref("InternalZoneName")]),
                 Type='CNAME',
                 TTL='120',
                 ResourceRecords=[endpoint],

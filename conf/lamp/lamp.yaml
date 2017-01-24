@@ -59,7 +59,7 @@ stacks:
     class_path: stacker_blueprints.rds.mysql.MasterInstance
     variables:
       << : *vpc_variables
-      Subnets: ${output vpc::PrivateSubnets}
+      Subnets: ${split ,::${output vpc::PrivateSubnets}}
       InstanceType: ${db_instance_type}
       AllowMajorVersionUpgrade: "false"
       AutoMinorVersionUpgrade: "false"
@@ -93,7 +93,7 @@ stacks:
       MasterUserPassword: ${db_passwd}
       DatabaseName: ${db_name}
       ImageName: lamp
-      Subnets: ${vpc::PublicSubnets}
+      Subnets: ${split ,::${output vpc::PublicSubnets}}
       UserData: ${file parameterized-b64:file://userdata.yaml}
   - name: securityRules
     class_path: stacker_blueprints.security_rules.Rules
