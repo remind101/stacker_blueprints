@@ -3,9 +3,6 @@ from troposphere import Ref, ec2, FindInMap, Output, \
 from stacker.blueprints.base import Blueprint
 from stacker.blueprints.variables.types import (
     CFNString,
-    EC2KeyPairKeyName,
-    EC2SecurityGroupId,
-    EC2SubnetIdList,
 )
 
 
