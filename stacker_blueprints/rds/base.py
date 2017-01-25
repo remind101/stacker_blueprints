@@ -12,7 +12,8 @@ from stacker.blueprints.base import Blueprint
 from stacker.blueprints.variables.types import CFNString
 
 RDS_ENGINES = ["MySQL", "oracle-se1", "oracle-se", "oracle-ee", "sqlserver-ee",
-               "sqlserver-se", "sqlserver-ex", "sqlserver-web", "postgres"]
+               "sqlserver-se", "sqlserver-ex", "sqlserver-web", "postgres",
+               "aurora"]
 
 # Resource name constants
 SUBNET_GROUP = "RDSSubnetGroup"
@@ -104,7 +105,7 @@ class BaseRDS(Blueprint):
                            "IOPS is set below, this must be a minimum of "
                            "100 and must be at least 1/10th the IOPs "
                            "setting.",
-            "default": 10
+            "default": 0
         },
         "IOPS": {
             "type": int,
@@ -135,10 +136,6 @@ class BaseRDS(Blueprint):
                            "backups. Default: Sunday 3am-4am PST",
             "default": "Sun:11:00-Sun:12:00"
         },
-        "DBFamily": {
-            "type": str,
-            "description": "DBFamily for ParameterGroup.",
-        },
         "DBInstanceIdentifier": {
             "type": str,
             "description": "Name of the database instance in RDS.",
@@ -148,21 +145,6 @@ class BaseRDS(Blueprint):
             "type": str,
             "description": "The snapshot you want the db restored from.",
             "default": "",
-        },
-        "EngineVersion": {
-            "type": str,
-            "description": "Database engine version for the RDS Instance.",
-        },
-        "EngineMajorVersion": {
-            "type": str,
-            "description": "Major Version for the engine. Basically the "
-                           "first two parts of the EngineVersion you "
-                           "choose."
-        },
-        "StorageEncrypted": {
-            "type": bool,
-            "description": "Set to 'false' to disable encrypted storage.",
-            "default": True,
         },
         "ExistingSecurityGroup": {
             "type": str,
@@ -328,8 +310,13 @@ class BaseRDS(Blueprint):
                     Value=Ref(DNS_RECORD)))
 
     def create_template(self):
-        self.create_parameter_group()
-        self.create_option_group()
+        variables = self.get_variables()
+        if variables.get("DBFamily"):
+            self.create_parameter_group()
+
+        if variables.get("EngineMajorVersion"):
+            self.create_option_group()
+
         self.create_subnet_group()
         self.create_security_group()
         self.create_rds()
@@ -367,14 +354,17 @@ class MasterInstance(BaseRDS):
                 "description": "A (minimum 30 minute) window in HH:MM-HH:MM "
                                "format in UTC for backups. Default: 4am-5am "
                                "PST",
-                "default": "12:00-13:00"},
+                "default": "12:00-13:00"
+            },
             "DatabaseName": {
                 "type": str,
-                "description": "Initial db to create in database."},
+                "description": "Initial db to create in database."
+            },
             "MultiAZ": {
                 "type": bool,
                 "description": "Set to 'false' to disable MultiAZ support.",
-                "default": True},
+                "default": True
+            },
             "KmsKeyid": {
                 "type": str,
                 "description": "Requires that StorageEncrypted is true. "
@@ -382,6 +372,26 @@ class MasterInstance(BaseRDS):
                                "be used to encrypt the storage.",
                 "default": "",
             },
+            "EngineMajorVersion": {
+                "type": str,
+                "description": "Major Version for the engine. Basically the "
+                               "first two parts of the EngineVersion you "
+                               "choose."
+            },
+            "EngineVersion": {
+                "type": str,
+                "description": "Database engine version for the RDS Instance.",
+            },
+            "DBFamily": {
+                "type": str,
+                "description": "DBFamily for ParameterGroup.",
+            },
+            "StorageEncrypted": {
+                "type": bool,
+                "description": "Set to 'false' to disable encrypted storage.",
+                "default": True,
+            },
+
         }
         variables.update(additional)
         return variables
@@ -421,10 +431,33 @@ class ReadReplica(BaseRDS):
 
     def defined_variables(self):
         variables = super(ReadReplica, self).defined_variables()
-        variables['MasterDatabaseId'] = {
-            "type": CFNString,
-            "description": "ID of the master database to create a read "
-                           "replica of."}
+        additional = {
+            "MasterDatabaseId": {
+                "type": str,
+                "description": "ID of the master database to create a read "
+                               "replica of."
+            },
+            "EngineMajorVersion": {
+                "type": str,
+                "description": "Major Version for the engine. Basically the "
+                               "first two parts of the EngineVersion you "
+                               "choose."
+            },
+            "EngineVersion": {
+                "type": str,
+                "description": "Database engine version for the RDS Instance.",
+            },
+            "DBFamily": {
+                "type": str,
+                "description": "DBFamily for ParameterGroup.",
+            },
+            "StorageEncrypted": {
+                "type": bool,
+                "description": "Set to 'false' to disable encrypted storage.",
+                "default": True,
+            },
+        }
+        variables.update(additional)
         return variables
 
     def get_common_attrs(self):
@@ -444,5 +477,35 @@ class ReadReplica(BaseRDS):
             "PreferredMaintenanceWindow":
                 variables["PreferredMaintenanceWindow"],
             "VPCSecurityGroups": [self.security_group, ],
+            "Tags": self.get_tags(),
+        }
+
+
+class ClusterInstance(BaseRDS):
+    """Blueprint for an DBCluster Instance."""
+
+    def defined_variables(self):
+        variables = super(ClusterInstance, self).defined_variables()
+        variables["DBClusterIdentifier"] = {
+            "type": str,
+            "description": "The database cluster id to join this instance to."
+        }
+        return variables
+
+    def create_subnet_group(self):
+        return
+
+    def get_common_attrs(self):
+        variables = self.get_variables()
+
+        return {
+            "DBClusterIdentifier": variables["DBClusterIdentifier"],
+            "AllowMajorVersionUpgrade": variables["AllowMajorVersionUpgrade"],
+            "AutoMinorVersionUpgrade": variables["AutoMinorVersionUpgrade"],
+            "DBInstanceClass": variables["InstanceType"],
+            "DBInstanceIdentifier": variables["DBInstanceIdentifier"],
+            "DBSnapshotIdentifier": self.get_db_snapshot_identifier(),
+            "Engine": self.engine() or variables["Engine"],
+            "LicenseModel": Ref("AWS::NoValue"),
             "Tags": self.get_tags(),
         }
