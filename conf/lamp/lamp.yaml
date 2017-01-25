@@ -94,7 +94,7 @@ stacks:
       DatabaseName: ${db_name}
       ImageName: lamp
       Subnets: ${split ,::${output vpc::PublicSubnets}}
-      UserData: ${file parameterized-b64:file://userdata.yaml}
+      UserData: ${file plain:file://userdata.yaml}
   - name: securityRules
     class_path: stacker_blueprints.security_rules.Rules
     variables:

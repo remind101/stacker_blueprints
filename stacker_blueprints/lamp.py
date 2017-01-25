@@ -31,24 +31,24 @@ class Lamp(Blueprint):
             "description": "Subnets to deploy RDS instance in."
         },
         "UserData": {
-            "type": Base64,
+            "type": str,
             "description": "The user - data file that will "
                            "be provided to the user"
         },
         "DBEndPoint": {
-            "type": CFNString,
+            "type": str,
             "description": "The name of the database"
         },
         "MasterUser": {
-            "type": CFNString,
+            "type": str,
             "description": "The name of the user"
         },
         "MasterUserPassword": {
-            "type": CFNString,
+            "type": str,
             "description": "The password for the database"
         },
         "DatabaseName": {
-            "type": CFNString,
+            "type": str,
             "description": "The name of the database"
         }
     }
@@ -83,7 +83,7 @@ class Lamp(Blueprint):
                         SubnetId=Select(0, variables['Subnets']))],
                 Tags=[ec2.Tag('Name', 'lamp-ec2-instance')],
                 KeyName=variables['SshKeyName'],
-                UserData=variables["UserData"],
+                UserData=self.parse_user_data(variables["UserData"]),
             ),
         )
 
