@@ -48,7 +48,7 @@ class Lamp(Blueprint):
             "description": "The password for the database"
         },
         "DatabaseName": {
-            "type": str,
+            "type": CFNString,
             "description": "The name of the database"
         }
     }
