@@ -23,19 +23,21 @@ from awacs.aws import (
 
 
 def queue_policy(sns_arn, sqs_arns):
-    return Policy(
-        Statement=[
+    stmts = []
+    for arn in sqs_arns:
+        stmts.append(
             Statement(
                 Effect="Allow",
                 Principal=Principal("*"),
                 Action=[awacs.sqs.SendMessage],
-                Resource=sqs_arns,
+                Resource=[arn],
                 Condition=Condition(
                     ArnEquals({"aws:SourceArn": sns_arn})
                 )
             )
-        ]
-    )
+        )
+
+    return Policy(Statement=stmts)
 
 
 def validate_topic(topic):
