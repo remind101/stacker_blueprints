@@ -1,7 +1,7 @@
 from stacker.blueprints.base import Blueprint
 
 from troposphere import (
-    dynamodb2,
+    dynamodb,
     Ref,
     GetAtt,
     Output,
@@ -23,18 +23,18 @@ def prep_schemata(config):
         )
 
     for schema in schemas:
-        schemata.append(dynamodb2.KeySchema(**schema))
+        schemata.append(dynamodb.KeySchema(**schema))
 
     return schemata
 
 
 def prep_projection(config):
-    return dynamodb2.Projection(**config["Projection"])
+    return dynamodb.Projection(**config["Projection"])
 
 
 def prep_throughput(config):
     try:
-        return dynamodb2.ProvisionedThroughput(
+        return dynamodb.ProvisionedThroughput(
             **config["ProvisionedThroughput"]
         )
     except KeyError:
@@ -74,7 +74,7 @@ def prep_config(raw_config):
 
     attributes = []
     for attribute in config_attributes:
-        attributes.append(dynamodb2.AttributeDefinition(**attribute))
+        attributes.append(dynamodb.AttributeDefinition(**attribute))
 
     prepped_config["AttributeDefinitions"] = attributes
 
@@ -91,7 +91,7 @@ def prep_config(raw_config):
             gsi["KeySchema"] = prep_schemata(gsi)
             gsi["Projection"] = prep_projection(gsi)
             gsi["ProvisionedThroughput"] = prep_throughput(gsi)
-            gsis.append(dynamodb2.GlobalSecondaryIndex(**gsi))
+            gsis.append(dynamodb.GlobalSecondaryIndex(**gsi))
 
         prepped_config["GlobalSecondaryIndexes"] = gsis
 
@@ -110,14 +110,14 @@ def prep_config(raw_config):
             lsi["KeySchema"] = prep_schemata(lsi)
             lsi["Projection"] = prep_projection(lsi)
             lsi["ProvisionedThroughput"] = prep_throughput(lsi)
-            lsis.append(dynamodb2.LocalSecondaryIndex(**lsi))
+            lsis.append(dynamodb.LocalSecondaryIndex(**lsi))
 
         prepped_config["LocalSecondaryIndexes"] = lsis
 
     prepped_config["ProvisionedThroughput"] = prep_throughput(raw_config)
 
     if "StreamSpecification" in raw_config:
-        prepped_config["StreamSpecification"] = dynamodb2.StreamSpecification(
+        prepped_config["StreamSpecification"] = dynamodb.StreamSpecification(
             **raw_config["StreamSpecification"]
         )
 
@@ -155,7 +155,7 @@ class DynamoDB(Blueprint):
         t = self.template
 
         t.add_resource(
-            dynamodb2.Table(
+            dynamodb.Table(
                 table_name,
                 **table_config
             )
