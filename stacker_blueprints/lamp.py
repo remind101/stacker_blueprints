@@ -83,7 +83,7 @@ class Lamp(Blueprint):
                         SubnetId=Select(0, variables['Subnets']))],
                 Tags=[ec2.Tag('Name', 'lamp-ec2-instance')],
                 KeyName=variables['SshKeyName'],
-                UserData=self.parse_user_data(variables["UserData"]),
+                UserData=self.read_user_data(variables["UserData"]),
             ),
         )
 
