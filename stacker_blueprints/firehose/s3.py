@@ -1,28 +1,24 @@
-from troposphere import firehose
+from troposphere import firehose, Ref, GetAtt
 
-from stacker.blueprints.base import Blueprint
+from .base import Base
 
 
-class S3Firehose(Blueprint):
-    VARIABLES = {
-        'StreamName': {
-            'type': str,
-            'description': 'The name of the firehose stream'
-        },
-        'KMSKey': {
-            'type': str,
-            'description': 'KMS key used for the firehose stream'},
-        'Role': {
-            'type': str,
-            'description': 'IAM role for the firehose stream '
-                           'stream to assume'},
-        'Bucket': {
-            'type': str,
-            'description': 'The ARN of the bucket to '
-                           'store events'}
-    }
+class S3Firehose(Base):
 
-    def create_template(self):
+    def defined_variables(self):
+        variables = super(S3Firehose, self).defined_variables()
+
+        additional = {
+            'StreamName': {
+                'type': str,
+                'description': 'The name of the firehose stream'
+            }
+        }
+
+        variables.update(additional)
+        return variables
+
+    def create_delivery_stream(self):
         t = self.template
         variables = self.get_variables()
         prefix = self.context.get_fqn(self.name)
@@ -30,12 +26,15 @@ class S3Firehose(Blueprint):
         stream_name = "%s_r101_etl_%s" % (
             prefix, variables['StreamName'])
 
+        key_arn = self.get_kms_key_arn()
+        bucket_arn = self.s3_arn(Ref('S3Bucket'))
+
         t.add_resource(firehose.DeliveryStream(
             'S3Firehose',
             DeliveryStreamName=stream_name,
             S3DestinationConfiguration=firehose.S3DestinationConfiguration(
-                BucketARN="arn:aws:s3:::%s" % variables['Bucket'],
-                RoleARN=variables['Role'],
+                BucketARN=bucket_arn,
+                RoleARN=GetAtt('IAMRole', 'Arn'),
                 CompressionFormat='GZIP',
                 BufferingHints=firehose.BufferingHints(
                     IntervalInSeconds=600,
@@ -43,8 +42,8 @@ class S3Firehose(Blueprint):
                 Prefix='/',
                 EncryptionConfiguration=firehose.EncryptionConfiguration(
                     KMSEncryptionConfig=firehose.KMSEncryptionConfig(
-                        AWSKMSKeyARN=variables['KMSKey'])),
+                        AWSKMSKeyARN=key_arn)),
                 CloudWatchLoggingOptions=firehose.CloudWatchLoggingOptions(
                     Enabled=True,
-                    LogGroupName='/aws/kinesisfirehose/%s' % stream_name,
+                    LogGroupName='/aws/kinesisfirehose/%s' % (stream_name),
                     LogStreamName='S3Delivery'))))

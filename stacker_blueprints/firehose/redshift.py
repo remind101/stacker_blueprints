@@ -11,51 +11,43 @@ from troposphere.firehose import (
 
 from troposphere.logs import LogStream, LogGroup
 
-from stacker.blueprints.base import Blueprint
-
+from .base import Base
 
 S3_LOG_STREAM = 'S3Delivery'
 REDSHIFT_LOG_STREAM = 'RedshiftDelivery'
 
 
-def s3_arn(Bucket):
-    return 'arn:aws:s3:::{}'.format(Bucket)
+class RedshiftFirehose(Base):
 
+    def defined_variables(self):
+        variables = super(RedshiftFirehose, self).defined_variables()
 
-class RedshiftFirehose(Blueprint):
-    VARIABLES = {
-        'StreamName': {
-            'type': str,
-            'description': 'The name of the firehose stream'
-        },
-        'KMSKey': {
-            'type': str,
-            'description': 'KMS key used for the firehose stream'},
-        'Role': {
-            'type': str,
-            'description': 'IAM role for the firehose stream '
-                           'stream to assume'},
-        'Bucket': {
-            'type': str,
-            'description': 'The ARN of the bucket to '
-                           'store events'},
-        'JDBCURL': {
-            'type': str,
-            'description': 'The URL used to connext to redshift'
-        },
-        'Username': {
-            'type': str,
-            'description': 'The user for the redshift table'
-        },
-        'Password': {
-            'type': str,
-            'description': 'The password for the redshift user'
-        },
-        'TableName': {
-            'type': str,
-            'description': 'The redshift table'
+        additional = {
+            'StreamName': {
+                'type': str,
+                'description': 'The name of the firehose stream'
+            },
+            'JDBCURL': {
+                'type': str,
+                'description': 'The URL used to connext to redshift'
+            },
+            'Username': {
+                'type': str,
+                'description': 'The user for the redshift table'
+            },
+            'Password': {
+                'type': str,
+                'description': 'The password for the redshift user'
+            },
+            'TableName': {
+                'type': str,
+                'description': 'The redshift table'
+            }
         }
-    }
+
+        variables.update(additional)
+
+        return variables
 
     def create_log_group(self, stream_name, log_group_name):
         t = self.template
@@ -87,6 +79,9 @@ class RedshiftFirehose(Blueprint):
         prefix = '{}/'.format(variables['TableName'])
         compression = 'GZIP'
 
+        key_arn = self.get_kms_key_arn()
+        bucket_arn = self.s3_arn(Ref('S3Bucket'))
+
         s3_logging_options = CloudWatchLoggingOptions(
             Enabled=True,
             LogGroupName=log_group_name,
@@ -108,7 +103,7 @@ class RedshiftFirehose(Blueprint):
         )
 
         redshift_config = RedshiftDestinationConfiguration(
-            RoleARN=variables['Role'],
+            RoleARN=GetAtt('IAMRole', 'Arn'),
             ClusterJDBCURL=variables['JDBCURL'],
             CopyCommand=CopyCommand(
                 CopyOptions=copy_options,
@@ -117,8 +112,8 @@ class RedshiftFirehose(Blueprint):
             Username=variables['Username'],
             Password=variables['Password'],
             S3Configuration=S3Configuration(
-                RoleARN=variables['Role'],
-                BucketARN=s3_arn(variables['Bucket']),
+                RoleARN=GetAtt('IAMRole', 'Arn'),
+                BucketARN=bucket_arn,
                 Prefix=prefix,
                 BufferingHints=BufferingHints(
                     SizeInMBs=50,
@@ -139,7 +134,7 @@ class RedshiftFirehose(Blueprint):
             )
         )
 
-    def create_template(self):
+    def create_delivery_stream(self):
         variables = self.get_variables()
         prefix = self.context.get_fqn(self.name)
 

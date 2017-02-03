@@ -56,6 +56,7 @@ def validate_backup_retention_period(value):
 
 
 class BaseRDS(Blueprint):
+
     """Base Blueprint for all RDS blueprints.
 
     Should not be used directly. Either use :class:`MasterInstance` or
@@ -325,6 +326,7 @@ class BaseRDS(Blueprint):
 
 
 class MasterInstance(BaseRDS):
+
     """Blueprint for a generic Master RDS Database Instance.
 
     Subclasses should be created for each RDS engine for better validation of
@@ -427,6 +429,7 @@ class MasterInstance(BaseRDS):
 
 
 class ReadReplica(BaseRDS):
+
     """Blueprint for a Read replica RDS Database Instance."""
 
     def defined_variables(self):
@@ -482,6 +485,7 @@ class ReadReplica(BaseRDS):
 
 
 class ClusterInstance(BaseRDS):
+
     """Blueprint for an DBCluster Instance."""
 
     def defined_variables(self):
