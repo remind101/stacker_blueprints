@@ -81,8 +81,8 @@ class RedshiftFirehose(Blueprint):
         t = self.template
         variables = self.get_variables()
 
-        copy_options = "SON \'auto\' ACCEPTINVCHARS BLANKSASNULL "
-        copy_options += "EMPTYASNULL GZIP STATUPDATE OFF COMPUPDATE OFF"
+        copy_options = 'JSON \'auto\' ACCEPTINVCHARS BLANKSASNULL '
+        copy_options += 'EMPTYASNULL GZIP STATUPDATE OFF COMPUPDATE OFF'
 
         prefix = '{}/'.format(variables['TableName'])
         compression = 'GZIP'

@@ -232,7 +232,7 @@ def kms_key_policy(key_use_arns, key_admin_arns):
                   Statement=statements)
 
 
-class Firehose(Blueprint):
+class FirehosePolicies(Blueprint):
 
     VARIABLES = {
         "RoleNames": {
