@@ -42,6 +42,9 @@ S3_CLIENT_POLICY = "S3ClientPolicy"
 
 
 def logs_policy_statements():
+    """Statements to allow profile to create and logs and 
+    log streams 
+    """
     return [
         Statement(
             Effect=Allow,
@@ -133,58 +136,63 @@ def kms_key_policy(key_use_arns, key_admin_arns):
             Resource=["*"]
         )
     )
-    statements.append(
-        Statement(
-            Sid="Allow use of the key",
-            Effect=Allow,
-            Principal=AWSPrincipal(key_use_arns),
-            Action=[
-                awacs.kms.Encrypt,
-                awacs.kms.Decrypt,
-                awacs.kms.ReEncrypt,
-                awacs.kms.GenerateDataKey,
-                awacs.kms.GenerateDataKeyWithoutPlaintext,
-                awacs.kms.DescribeKey,
-            ],
-            Resource=["*"]
+
+    if key_use_arns:
+        statements.append(
+            Statement(
+                Sid="Allow use of the key",
+                Effect=Allow,
+                Principal=AWSPrincipal(key_use_arns),
+                Action=[
+                    awacs.kms.Encrypt,
+                    awacs.kms.Decrypt,
+                    awacs.kms.ReEncrypt,
+                    awacs.kms.GenerateDataKey,
+                    awacs.kms.GenerateDataKeyWithoutPlaintext,
+                    awacs.kms.DescribeKey,
+                ],
+                Resource=["*"]
+            )
         )
-    )
-    statements.append(
-        Statement(
-            Sid="Allow attachment of persistent resources",
-            Effect=Allow,
-            Principal=AWSPrincipal(key_use_arns),
-            Action=[
-                awacs.kms.CreateGrant,
-                awacs.kms.ListGrants,
-                awacs.kms.RevokeGrant,
-            ],
-            Resource=["*"],
-            Condition=Condition(Bool("kms:GrantIsForAWSResource", True))
+
+        statements.append(
+            Statement(
+                Sid="Allow attachment of persistent resources",
+                Effect=Allow,
+                Principal=AWSPrincipal(key_use_arns),
+                Action=[
+                    awacs.kms.CreateGrant,
+                    awacs.kms.ListGrants,
+                    awacs.kms.RevokeGrant,
+                ],
+                Resource=["*"],
+                Condition=Condition(Bool("kms:GrantIsForAWSResource", True))
+            )
         )
-    )
-    statements.append(
-        Statement(
-            Sid="Allow access for Key Administrators",
-            Effect=Allow,
-            Principal=AWSPrincipal(key_admin_arns),
-            Action=[
-                Action("kms", "Create*"),
-                Action("kms", "Describe*"),
-                Action("kms", "Enable*"),
-                Action("kms", "List*"),
-                Action("kms", "Put*"),
-                Action("kms", "Update*"),
-                Action("kms", "Revoke*"),
-                Action("kms", "Disable*"),
-                Action("kms", "Get*"),
-                Action("kms", "Delete*"),
-                Action("kms", "ScheduleKeyDeletion"),
-                Action("kms", "CancelKeyDeletion"),
-            ],
-            Resource=["*"],
+
+    if key_admin_arns:
+        statements.append(
+            Statement(
+                Sid="Allow access for Key Administrators",
+                Effect=Allow,
+                Principal=AWSPrincipal(key_admin_arns),
+                Action=[
+                    Action("kms", "Create*"),
+                    Action("kms", "Describe*"),
+                    Action("kms", "Enable*"),
+                    Action("kms", "List*"),
+                    Action("kms", "Put*"),
+                    Action("kms", "Update*"),
+                    Action("kms", "Revoke*"),
+                    Action("kms", "Disable*"),
+                    Action("kms", "Get*"),
+                    Action("kms", "Delete*"),
+                    Action("kms", "ScheduleKeyDeletion"),
+                    Action("kms", "CancelKeyDeletion"),
+                ],
+                Resource=["*"],
+            )
         )
-    )
 
     return Policy(Version="2012-10-17", Id="key-default-1",
                   Statement=statements)
@@ -215,7 +223,7 @@ class Base(Blueprint):
             "type": str,
             "description": "Name of the existing bucket"
         },
-        "EncryptS3Bucket": {
+        "EncryptBucketData": {
             "type": bool,
             "description": "If set to true, a KMS key will be created to use "
                            "for encrypting the S3 Bucket's contents. If set "
@@ -225,33 +233,38 @@ class Base(Blueprint):
         "EnableKeyRotation": {
             "type": bool,
             "description": "Whether to enable key rotation on the KMS key "
-                           "generated if EncryptS3Bucket is set to true. "
+                           "generated if EncryptBucketData is set to true. "
                            "Default: true",
             "default": True,
         },
-        "KeyUserArns": {
+        "KeyUseArns": {
             "type": list,
+            "description": "A list profile ARNs allowed to use KMS Key"
             "default": []
         },
         "KeyAdminArns": {
             "type": list,
+            "description": "A list of profile ARNs that are KMS Key superusers"
             "default": [],
         },
         "SizeInMBs": {
             "type": int,
-            "description": "Size in MBs for buffering hints"
+            "description": "Size in MBs for buffering hints for the Firehose "
+                           "Delivery Stream"
         },
         "IntervalInSeconds": {
             "type": int,
-            "description": "Buffering interval in seconds"
+            "description": "Buffering interval in seconds hints for the "
+                           "Firehose Delivery Stream"
         },
         "CompressionFormat": {
             "type": str,
-            "description": "Type of compression to use for S3 bucket"
+            "description": "The compression format used by the Firehose "
+                           "Delivery Stream when storing data in the S3 bucket"
         },
         "S3Prefix": {
             "type": str,
-            "description": "The prefix for the s3 bucket",
+            "description": "The prefix for folder in the S3 bucket",
             "default": ""
         }
     }
@@ -261,7 +274,7 @@ class Base(Blueprint):
         return variables
 
     def create_delivery_stream(self):
-        raise NotImplementedError("Create delivery stream must be implemented "
+        raise NotImplementedError("create_delivery_stream must be implemented "
                                   "by a subclass")
 
     def get_kms_key_arn(self):
@@ -291,13 +304,13 @@ class Base(Blueprint):
             ]
         )
 
-        key_use_arns = variables["KeyUserArns"]
+        key_use_arns = variables["KeyUseArns"]
         # auto add the created IAM Role
         key_use_arns.append(GetAtt(IAM_ROLE, "Arn"))
 
         key_admin_arns = variables["KeyAdminArns"]
 
-        if variables['EncryptS3Bucket']:
+        if variables['EncryptBucketData']:
             t.add_resource(
                 kms.Key(
                     KMS_KEY,
@@ -311,11 +324,10 @@ class Base(Blueprint):
         t.add_output(Output("KmsKeyArn", Value=self.get_kms_key_arn()))
 
     def get_firehose_bucket(self):
-        variables = self.get_variables()
-        return variables['ExistingBucketName']
+        return self.get_variables()['ExistingBucketName']
 
     def generate_iam_policies(self):
-        name_prefix = self.context.get_fqn()
+        name_prefix = self.context.get_fqn(self.name)
 
         s3_policy = iam.Policy(
             S3_WRITE_POLICY,
