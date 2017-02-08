@@ -13,8 +13,11 @@ from troposphere.logs import LogStream, LogGroup
 
 from .base import Base
 
+from stacker_blueprints.policies import (s3_arn)
+
 S3_LOG_STREAM = 'S3Delivery'
 REDSHIFT_LOG_STREAM = 'RedshiftDelivery'
+LOG_GROUP = 'LogGroup'
 
 
 class RedshiftFirehose(Base):
@@ -23,10 +26,6 @@ class RedshiftFirehose(Base):
         variables = super(RedshiftFirehose, self).defined_variables()
 
         additional = {
-            'StreamName': {
-                'type': str,
-                'description': 'The name of the firehose stream'
-            },
             'JDBCURL': {
                 'type': str,
                 'description': 'The URL used to connext to redshift'
@@ -49,24 +48,29 @@ class RedshiftFirehose(Base):
 
         return variables
 
-    def create_log_group(self, stream_name, log_group_name):
+    def create_log_group(self, log_group_name):
         t = self.template
+        prefix = self.context.get_fqn()
+        s3_stream_name = "%s-%s" % (prefix, S3_LOG_STREAM)
+        redshift_stream_name = "%s-%s" % (prefix, REDSHIFT_LOG_STREAM)
 
         t.add_resource(LogGroup(
-            'LogGroup',
+            LOG_GROUP,
             LogGroupName=log_group_name
         ))
 
         t.add_resource(LogStream(
             'S3LogStream',
             LogGroupName=log_group_name,
-            LogStreamName=S3_LOG_STREAM
+            LogStreamName=s3_stream_name,
+            DependsOn=LOG_GROUP
         ))
 
         t.add_resource(LogStream(
             'RedshiftLogStream',
             LogGroupName=log_group_name,
-            LogStreamName=REDSHIFT_LOG_STREAM
+            LogStreamName=redshift_stream_name,
+            DependsOn=LOG_GROUP
         ))
 
     def create_redshift_firehose(self, stream_name, log_group_name):
@@ -76,11 +80,13 @@ class RedshiftFirehose(Base):
         copy_options = 'JSON \'auto\' ACCEPTINVCHARS BLANKSASNULL '
         copy_options += 'EMPTYASNULL GZIP STATUPDATE OFF COMPUPDATE OFF'
 
-        prefix = '{}/'.format(variables['TableName'])
-        compression = 'GZIP'
+        default_s3_prefix = '%s/' % (variables['TableName'])
+
+        s3_prefix = variables['S3Prefix'] or default_s3_prefix
 
         key_arn = self.get_kms_key_arn()
-        bucket_arn = self.s3_arn(Ref('S3Bucket'))
+        bucket_arn = s3_arn(self.get_firehose_bucket())
+        role_arn = self.get_role_arn()
 
         s3_logging_options = CloudWatchLoggingOptions(
             Enabled=True,
@@ -98,12 +104,12 @@ class RedshiftFirehose(Base):
 
         encryption_config = EncryptionConfiguration(
             KMSEncryptionConfig=KMSEncryptionConfig(
-                AWSKMSKeyARN=variables['KMSKey']
+                AWSKMSKeyARN=key_arn
             )
         )
 
         redshift_config = RedshiftDestinationConfiguration(
-            RoleARN=GetAtt('IAMRole', 'Arn'),
+            RoleARN=role_arn,
             ClusterJDBCURL=variables['JDBCURL'],
             CopyCommand=CopyCommand(
                 CopyOptions=copy_options,
@@ -112,14 +118,14 @@ class RedshiftFirehose(Base):
             Username=variables['Username'],
             Password=variables['Password'],
             S3Configuration=S3Configuration(
-                RoleARN=GetAtt('IAMRole', 'Arn'),
+                RoleARN=role_arn,
                 BucketARN=bucket_arn,
-                Prefix=prefix,
+                Prefix=s3_prefix,
                 BufferingHints=BufferingHints(
-                    SizeInMBs=50,
-                    IntervalInSeconds=600
+                    SizeInMBs=variables['SizeInMBs'],
+                    IntervalInSeconds=variables['IntervalInSeconds']
                 ),
-                CompressionFormat=compression,
+                CompressionFormat=variables['CompressionFormat'],
                 CloudWatchLoggingOptions=s3_logging_options,
                 EncryptionConfiguration=encryption_config
             ),
@@ -128,20 +134,18 @@ class RedshiftFirehose(Base):
 
         t.add_resource(
             DeliveryStream(
-                'RedshiftFirhose',
+                'RedshiftFirehose',
                 DeliveryStreamName=stream_name,
                 RedshiftDestinationConfiguration=redshift_config
             )
         )
 
     def create_delivery_stream(self):
-        variables = self.get_variables()
         prefix = self.context.get_fqn(self.name)
 
-        stream_name = "%s_r101_etl_%s" % (
-            prefix, variables['StreamName'])
+        stream_name = prefix
 
         log_group_name = '/aws/kinesisfirehose/%s' % (stream_name)
 
-        self.create_log_group(stream_name, log_group_name)
+        self.create_log_group(log_group_name)
         self.create_redshift_firehose(stream_name, log_group_name)
