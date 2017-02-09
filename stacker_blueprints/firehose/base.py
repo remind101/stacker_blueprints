@@ -40,80 +40,6 @@ KMS_KEY = "EncryptionKey"
 S3_CLIENT_POLICY = "S3ClientPolicy"
 
 
-# def logs_policy_statements():
-#     """Statements to allow profile to create and logs and
-#     log streams
-#     """
-#     return [
-#         Statement(
-#             Effect=Allow,
-#             Action=[
-#                 awacs.logs.CreateLogStream,
-#                 awacs.logs.CreateLogGroup,
-#             ],
-#             Resource=['*'],
-#         ),
-#     ]
-
-
-# def logs_policy():
-#     return Policy(Statement=logs_policy_statements())
-
-
-# def firehose_write_policy_statements():
-#     return [
-#         Statement(
-#             Effect=Allow,
-#             Action=[
-#                 awacs.firehose.CreateDeliveryStream,
-#                 awacs.firehose.DeleteDeliveryStream,
-#                 awacs.firehose.DescribeDeliveryStream,
-#                 awacs.firehose.PutRecord,
-#                 awacs.firehose.PutRecordBatch
-#             ],
-#             Resource=['*'],
-#         ),
-#     ]
-
-
-# def firehose_write_policy():
-#     return Policy(Statement=firehose_write_policy_statements())
-
-
-# def logs_write_policy():
-#     statements = [
-#         Statement(
-#             Effect=Allow,
-#             Action=[
-#                 awacs.logs.PutLogEvents,
-#             ],
-#             Resource=['*'],
-#         ),
-#     ]
-#     return Policy(Statement=statements)
-
-
-# def s3_write_policy(bucket):
-#     statements = [
-#         Statement(
-#             Effect=Allow,
-#             Action=[
-#                 awacs.s3.AbortMultipartUpload,
-#                 awacs.s3.GetBucketLocation,
-#                 awacs.s3.GetObject,
-#                 awacs.s3.ListBucket,
-#                 awacs.s3.ListBucketMultipartUploads,
-#                 awacs.s3.PutObject,
-#             ],
-#             Resource=[
-#                 s3_arn(bucket),
-#                 s3_arn(Join("/", [bucket, "*"]))
-#             ],
-#         ),
-#     ]
-#     return Policy(Statement=statements)
-
-
 def kms_key_policy(key_use_arns, key_admin_arns):
     """ Creates a key policy for use of a KMS Key.
 
@@ -200,24 +126,6 @@ def kms_key_policy(key_use_arns, key_admin_arns):
 class Base(Blueprint):
 
     VARIABLES = {
-        # "RoleNames": {
-        #     "type": list,
-        #     "description": "A list of role names that should have access to "
-        #                    "write to the firehose stream.",
-        #     "default": [],
-        # },
-        # "GroupNames": {
-        #     "type": list,
-        #     "description": "A list of group names that should have access to"
-        #                    "write to the firehose stream.",
-        #     "default": [],
-        # },
-        # "UserNames": {
-        #     "type": list,
-        #     "description": "A list of user names that should have access to "
-        #                    "write to the firehose stream.",
-        #     "default": [],
-        # },
         "ExistingBucketName": {
             "type": str,
             "description": "Name of the existing bucket"
@@ -379,38 +287,7 @@ class Base(Blueprint):
         t.add_output(Output('Role', Value=Ref(IAM_ROLE)))
         t.add_output(Output('RoleArn', Value=GetAtt(IAM_ROLE, 'Arn')))
 
-    # def create_policy(self):
-    #     t = self.template
-    #     variables = self.get_variables()
-
-    #     statements = firehose_write_policy_statements() + \
-    #         logs_policy_statements() + \
-    #         read_write_s3_bucket_policy_statements(
-    #             [self.get_firehose_bucket()])
-
-    #     roles = variables['RoleNames'] or Ref("AWS::NoValue")
-
-    #     groups = variables['GroupNames'] or Ref("AWS::NoValue")
-
-    #     users = variables['UserNames'] or Ref("AWS::NoValue")
-
-    #     createPolicy = variables['RoleNames'] or variables[
-    #         'GroupNames'] or variables['UserNames']
-
-    #     if createPolicy:
-    #         t.add_resource(
-    #             iam.ManagedPolicy(
-    #                 'ClientPolicy',
-    #                 PolicyDocument=Policy(
-    #                     Version='2012-10-17',
-    #                     Statement=statements),
-    #                 Roles=roles,
-    #                 Groups=groups,
-    #                 Users=users)
-    #         )
-
     def create_template(self):
         self.create_kms_key()
-        # self.create_policy()
         self.create_role()
         self.create_delivery_stream()
