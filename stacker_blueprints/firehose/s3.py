@@ -34,10 +34,8 @@ class S3Firehose(Base):
         variables = self.get_variables()
         prefix = self.context.get_fqn(self.name)
 
-        stream_name = prefix
-
+        stream_name = variables['StreamName'] or prefix
         log_group_name = '/aws/kinesisfirehose/%s' % (stream_name)
-
         self.create_log_group(log_group_name)
 
         key_arn = self.get_kms_key_arn()

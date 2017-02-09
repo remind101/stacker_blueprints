@@ -7,6 +7,8 @@ from awacs import (
     s3
 )
 
+import awacs
+
 
 def s3_arn(bucket):
     """ Returns the arn for an s3 bucket. """
@@ -67,6 +69,81 @@ def read_write_s3_bucket_policy_statements(buckets):
             Resource=object_buckets,
         ),
     ]
+
+
+def logs_policy_statements():
+    """Statements to allow profile to create and logs and
+    log streams
+    """
+    return [
+        Statement(
+            Effect=Allow,
+            Action=[
+                awacs.logs.CreateLogStream,
+                awacs.logs.CreateLogGroup,
+            ],
+            Resource=['*'],
+        ),
+    ]
+
+
+def logs_policy():
+    return Policy(Statement=logs_policy_statements())
+
+
+def firehose_write_policy_statements():
+    return [
+        Statement(
+            Effect=Allow,
+            Action=[
+                awacs.firehose.CreateDeliveryStream,
+                awacs.firehose.DeleteDeliveryStream,
+                awacs.firehose.DescribeDeliveryStream,
+                awacs.firehose.PutRecord,
+                awacs.firehose.PutRecordBatch
+            ],
+            Resource=['*'],
+        ),
+    ]
+
+
+def firehose_write_policy():
+    return Policy(Statement=firehose_write_policy_statements())
+
+
+def logs_write_policy():
+    statements = [
+        Statement(
+            Effect=Allow,
+            Action=[
+                awacs.logs.PutLogEvents,
+            ],
+            Resource=['*'],
+        ),
+    ]
+    return Policy(Statement=statements)
+
+
+def s3_write_policy(bucket):
+
+    statements = [
+        Statement(
+            Effect=Allow,
+            Action=[
+                awacs.s3.AbortMultipartUpload,
+                awacs.s3.GetBucketLocation,
+                awacs.s3.GetObject,
+                awacs.s3.ListBucket,
+                awacs.s3.ListBucketMultipartUploads,
+                awacs.s3.PutObject,
+            ],
+            Resource=[
+                s3_arn(bucket),
+                s3_arn(Join("/", [bucket, "*"]))
+            ],
+        ),
+    ]
+    return Policy(Statement=statements)
 
 
 def read_write_s3_bucket_policy(buckets):

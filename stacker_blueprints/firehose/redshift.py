@@ -141,7 +141,10 @@ class RedshiftFirehose(Base):
         )
 
     def create_delivery_stream(self):
+        variables = self.get_variables()
         prefix = self.context.get_fqn(self.name)
-        log_group_name = '/aws/kinesisfirehose/%s' % (prefix)
+        stream_name = variables['StreamName'] or prefix
+        log_group_name = '/aws/kinesisfirehose/%s' % (stream_name)
+
         self.create_log_group(log_group_name)
-        self.create_redshift_firehose(prefix, log_group_name)
+        self.create_redshift_firehose(stream_name, log_group_name)
