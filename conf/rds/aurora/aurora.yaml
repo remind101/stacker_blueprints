@@ -33,46 +33,45 @@ stacks:
       # CidrBlock needs to be hold all of the Public & Private subnets above
       CidrBlock: 10.128.0.0/16
       UseNatGateway: true
-  - name: postgresMaster
-    class_path: stacker_blueprints.rds.postgres.MasterInstance
+  - name: auroraCluster
+    class_path: stacker_blueprints.rds.aurora.base.AuroraCluster
     variables:
       << : *vpc_variables
+      DatabaseName: ${cluster_database_name}
+      DBFamily: ${cluster_database_family}
       Subnets: ${output vpc::PrivateSubnets}
-      InstanceType: ${master_db_instance_type}
-      AllowMajorVersionUpgrade: ${master_allow_major_version_upgrade}
-      AutoMinorVersionUpgrade: ${master_auto_minor_version_upgrade}
-      AllocatedStorage: ${master_storage_size}
-      IOPS: ${master_iops}
+      EngineVersion: 5.6.10a
+      MasterUser: ${cluster_master_user}
+      MasterUserPassword: ${cluster_master_user_password}
+      StorageEncrypted: ${cluster_storage_encrypted}
       InternalZoneName: ${output vpc::InternalZoneName}
       InternalZoneId: ${output vpc::InternalZoneId}
-      InternalHostname: ${master_name}
-      DBInstanceIdentifier: ${master_name}
-      DBFamily: ${master_db_family}
-      EngineVersion: ${master_engine_version}
-      EngineMajorVersion: ${master_engine_major_version}
-      StorageEncrypted: ${master_storage_encrypted}
-      # MasterInstance specific
-      MasterUser: ${master_db_user}
-      MasterUserPassword: ${master_db_passwd}
-      DatabaseName: ${master_db_name}
-      MultiAZ: ${master_multi_az}
-  - name: postgresReplica
-    class_path: stacker_blueprints.rds.postgres.ReadReplica
+      InternalHostname: ${cluster_hostname}
+  - name: auroraInstance1
+    class_path: stacker_blueprints.rds.base.ClusterInstance
     variables:
       << : *vpc_variables
+      Engine: aurora
+      DBClusterIdentifier: ${output auroraCluster::Cluster}
       Subnets: ${output vpc::PrivateSubnets}
-      InstanceType: ${replica_db_instance_type}
-      AllowMajorVersionUpgrade: ${replica_allow_major_version_upgrade}
-      AutoMinorVersionUpgrade: ${replica_auto_minor_version_upgrade}
-      AllocatedStorage: ${replica_storage_size}
-      IOPS: ${replica_iops}
+      InstanceType: ${instance1_db_instance_type}
+      AllowMajorVersionUpgrade: ${instance1_allow_major_version_upgrade}
+      AutoMinorVersionUpgrade: ${instance1_auto_minor_version_upgrade}
       InternalZoneName: ${output vpc::InternalZoneName}
       InternalZoneId: ${output vpc::InternalZoneId}
-      InternalHostname: ${replica_name}
-      DBInstanceIdentifier: ${replica_name}
-      DBFamily: ${replica_db_family}
-      EngineVersion: ${replica_engine_version}
-      EngineMajorVersion: ${replica_engine_major_version}
-      StorageEncrypted: ${replica_replica_storage_encrypted}
-      # ReadReplica Specific
-      MasterDatabaseId: ${output postgresMaster::DBInstance}
+      InternalHostname: ${instance1_name}
+      DBInstanceIdentifier: ${instance1_name}
+  - name: auroraInstance2
+    class_path: stacker_blueprints.rds.base.ClusterInstance
+    variables:
+      << : *vpc_variables
+      Engine: aurora
+      DBClusterIdentifier: ${output auroraCluster::Cluster}
+      Subnets: ${output vpc::PrivateSubnets}
+      InstanceType: ${instance2_db_instance_type}
+      AllowMajorVersionUpgrade: ${instance2_allow_major_version_upgrade}
+      AutoMinorVersionUpgrade: ${instance2_auto_minor_version_upgrade}
+      InternalZoneName: ${output vpc::InternalZoneName}
+      InternalZoneId: ${output vpc::InternalZoneId}
+      InternalHostname: ${instance2_name}
+      DBInstanceIdentifier: ${instance2_name}

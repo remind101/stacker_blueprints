@@ -63,6 +63,5 @@ vm_setup.sh
 dev.yaml
 dev.env
 
-# Mac bullshit
+# Mac
 .DS_Store
-

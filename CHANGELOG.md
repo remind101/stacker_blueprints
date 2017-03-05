@@ -1,3 +1,16 @@
+## 1.0.0 (2016-03-04)
+
+- New low-level security group rule blueprint [GH-56]
+- Update firehose blueprint to fully use variables [GH-57]
+- convert dynamodb to TroposphereType [GH-58]
+- Update elasticache to fully use variables [GH-59]
+- Update VPC to fully use variables [GH-60]
+- give empire daemon access to ECR [GH-70]
+- simple ECS repo blueprint [GH-72]
+- update RDS to fully use variables [GH-76]
+- Initial aurora blueprints [GH-77]
+- s3 blueprint [GH-80]
+
 ## 0.7.6 (2017-01-19)
 
 - Fix empire minion ECR access [GH-70]

@@ -5,6 +5,12 @@ from troposphere.rds import DBInstance, DBSubnetGroup
 from troposphere.route53 import RecordSetType
 
 from stacker.blueprints.base import Blueprint
+from stacker.blueprints.variables.types import (
+    CFNNumber,
+    CFNString,
+    EC2SubnetIdList,
+    EC2VPCId,
+)
 
 RDS_INSTANCE_NAME = "PostgresRDS%s"
 RDS_SUBNET_GROUP = "%sSubnetGroup"
@@ -12,41 +18,41 @@ RDS_SG_NAME = "RdsSG%s"
 
 
 class PostgresRDS(Blueprint):
-    PARAMETERS = {
-        'VpcId': {'type': 'AWS::EC2::VPC::Id', 'description': 'Vpc Id'},
-        'PrivateSubnets': {'type': 'List<AWS::EC2::Subnet::Id>',
+    VARIABLES = {
+        'VpcId': {'type': EC2VPCId, 'description': 'Vpc Id'},
+        'PrivateSubnets': {'type': EC2SubnetIdList,
                            'description': 'Subnets to deploy private '
                                           'instances in.'},
-        'InstanceType': {'type': 'String',
+        'InstanceType': {'type': CFNString,
                          'description': 'AWS RDS Instance Type',
                          'default': 'db.m3.large'},
-        'AllocatedStorage': {'type': 'Number',
+        'AllocatedStorage': {'type': CFNNumber,
                              'description': 'Space, in GB, to allocate to RDS '
                                             'instance.',
                              'default': '10'},
-        'MasterUser': {'type': 'String',
+        'MasterUser': {'type': CFNString,
                        'description': 'Name of the master user in the db.',
                        'default': 'dbuser'},
-        'MasterUserPassword': {'type': 'String',
+        'MasterUserPassword': {'type': CFNString,
                                'description': 'Master user password.'},
         'PreferredBackupWindow': {
-            'type': 'String',
+            'type': CFNString,
             'description': 'A (minimum 30 minute) window in HH:MM-HH:MM '
                            'format in UTC for backups. Default: 3am-4am',
             'default': '11:00-12:00'},
         'DBName': {
-            'type': 'String',
+            'type': CFNString,
             'description': 'Initial db to create in database.'},
         "InternalZoneId": {
-            "type": "String",
+            "type": CFNString,
             "default": "",
             "description": "Internal zone Id, if you have one."},
         "InternalZoneName": {
-            "type": "String",
+            "type": CFNString,
             "default": "",
             "description": "Internal zone name, if you have one."},
         "InternalHostname": {
-            "type": "String",
+            "type": CFNString,
             "default": "",
             "description": "Internal domain name, if you have one."},
     }

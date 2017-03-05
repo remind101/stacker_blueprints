@@ -9,6 +9,15 @@ from troposphere.autoscaling import Tag as ASTag
 from troposphere.route53 import RecordSetType
 
 from stacker.blueprints.base import Blueprint
+from stacker.blueprints.variables.types import (
+    CFNCommaDelimitedList,
+    CFNNumber,
+    CFNString,
+    EC2VPCId,
+    EC2KeyPairKeyName,
+    EC2SecurityGroupId,
+    EC2SubnetIdList,
+)
 
 CLUSTER_SG_NAME = "%sSG"
 ELB_SG_NAME = "%sElbSG"
@@ -16,48 +25,48 @@ ELB_NAME = "%sLoadBalancer"
 
 
 class AutoscalingGroup(Blueprint):
-    PARAMETERS = {
-        'VpcId': {'type': 'AWS::EC2::VPC::Id', 'description': 'Vpc Id'},
-        'DefaultSG': {'type': 'AWS::EC2::SecurityGroup::Id',
+    VARIABLES = {
+        'VpcId': {'type': EC2VPCId, 'description': 'Vpc Id'},
+        'DefaultSG': {'type': EC2SecurityGroupId,
                       'description': 'Top level security group.'},
         'BaseDomain': {
-            'type': 'String',
+            'type': CFNString,
             'default': '',
             'description': 'Base domain for the stack.'},
-        'PrivateSubnets': {'type': 'List<AWS::EC2::Subnet::Id>',
+        'PrivateSubnets': {'type': EC2SubnetIdList,
                            'description': 'Subnets to deploy private '
                                           'instances in.'},
-        'PublicSubnets': {'type': 'List<AWS::EC2::Subnet::Id>',
+        'PublicSubnets': {'type': EC2SubnetIdList,
                           'description': 'Subnets to deploy public (elb) '
                                          'instances in.'},
-        'AvailabilityZones': {'type': 'CommaDelimitedList',
+        'AvailabilityZones': {'type': CFNCommaDelimitedList,
                               'description': 'Availability Zones to deploy '
                                              'instances in.'},
-        'InstanceType': {'type': 'String',
+        'InstanceType': {'type': CFNString,
                          'description': 'EC2 Instance Type',
                          'default': 'm3.medium'},
-        'MinSize': {'type': 'Number',
+        'MinSize': {'type': CFNNumber,
                     'description': 'Minimum # of instances.',
                     'default': '1'},
-        'MaxSize': {'type': 'Number',
+        'MaxSize': {'type': CFNNumber,
                     'description': 'Maximum # of instances.',
                     'default': '5'},
-        'SshKeyName': {'type': 'AWS::EC2::KeyPair::KeyName'},
+        'SshKeyName': {'type': EC2KeyPairKeyName},
         'ImageName': {
-            'type': 'String',
+            'type': CFNString,
             'description': 'The image name to use from the AMIMap (usually '
                            'found in the config file.)'},
         'ELBHostName': {
-            'type': 'String',
+            'type': CFNString,
             'description': 'A hostname to give to the ELB. If not given '
                            'no ELB will be created.',
             'default': ''},
         'ELBCertName': {
-            'type': 'String',
+            'type': CFNString,
             'description': 'The SSL certificate name to use on the ELB.',
             'default': ''},
         'ELBCertType': {
-            'type': 'String',
+            'type': CFNString,
             'description': 'The SSL certificate type to use on the ELB.',
             'default': ''},
     }

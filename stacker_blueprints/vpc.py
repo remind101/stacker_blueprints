@@ -4,8 +4,8 @@ This includes the VPC, it's subnets, availability zones, etc.
 """
 
 from troposphere import (
-    Ref, Output, Join, FindInMap, Select, GetAZs, Not, Equals, Tags, Or,
-    Condition, GetAtt, If
+    Ref, Output, Join, FindInMap, Select, GetAZs, Tags,
+    GetAtt
 )
 from troposphere import ec2
 from troposphere.route53 import HostedZone, HostedZoneVPCs
@@ -21,85 +21,61 @@ VPC_ID = Ref(VPC_NAME)
 DEFAULT_SG = "DefaultSG"
 NAT_SG = "NATSG"
 
+NOVALUE = Ref("AWS::NoValue")
+
 
 class VPC(Blueprint):
-    LOCAL_PARAMETERS = {
-        "AZCount":  {
+    VARIABLES = {
+        "AZCount": {
             "type": int,
             "default": 2,
-        }
-    }
-
-    PARAMETERS = {
+        },
         "PrivateSubnets": {
-            "type": "CommaDelimitedList",
-            "description": "Comma separated list of subnets to use for "
-                           "non-public hosts. NOTE: Must have as many subnets "
-                           "as AZCount"},
+            "type": list,
+            "description": "List of subnets to use for non-public hosts. "
+                           "NOTE: Must have as many subnets as AZCount"},
         "PublicSubnets": {
-            "type": "CommaDelimitedList",
-            "description": "Comma separated list of subnets to use for "
-                           "public hosts. NOTE: Must have as many subnets "
-                           "as AZCount"},
-        "InstanceType": {
-            "type": "String",
-            "description": "NAT EC2 instance type.",
-            "default": "m3.medium"},
-        "SshKeyName": {
-            "type": "AWS::EC2::KeyPair::KeyName"},
+            "type": list,
+            "description": "List of subnets to use for public hosts. NOTE: "
+                           "Must have as many subnets as AZCount"},
         "BaseDomain": {
-            "type": "String",
+            "type": str,
             "default": "",
             "description": "Base domain for the stack."},
         "InternalDomain": {
-            "type": "String",
+            "type": str,
             "default": "",
             "description": "Internal domain name, if you have one."},
         "CidrBlock": {
-            "type": "String",
+            "type": str,
             "description": "Base CIDR block for subnets.",
             "default": "10.128.0.0/16"},
+        "UseNatGateway": {
+            "type": bool,
+            "description": "If set to false, will configure NAT Instances"
+                           "instead of NAT gateways.",
+            "default": True},
         "ImageName": {
-            "type": "String",
+            "type": str,
             "description": "The image name to use from the AMIMap (usually "
                            "found in the config file.)",
             "default": "NAT"},
-        "UseNatGateway": {
-            "type": "String",
-            "allowed_values": ["true", "false"],
-            "description": "If set to true, will configure a NAT Gateway"
-                           "instead of NAT instances.",
-            "default": "false"},
+        "InstanceType": {
+            "type": str,
+            "description": "If using NAT Instances, the instance type to use.",
+            "default": "m3.medium"},
+        "SshKeyName": {
+            "type": str,
+            "description": "If using NAT Instances, the SSH key to install "
+                           "on those instances.",
+            "default": ""},
     }
-
-    def create_conditions(self):
-        self.template.add_condition(
-            "HasInternalDomain",
-            Not(Equals(Ref("InternalDomain"), "")))
-        self.template.add_condition(
-            "HasExternalDomain",
-            Not(Equals(Ref("BaseDomain"), "")))
-        self.template.add_condition(
-            "HasHostedZones",
-            Or(
-                Condition("HasInternalDomain"),
-                Condition("HasExternalDomain")
-            ))
-        self.template.add_condition(
-            "NoHostedZones",
-            Not(Condition("HasHostedZones")))
-        self.template.add_condition(
-            "UseNatGateway",
-            Equals(Ref("UseNatGateway"), "true"))
-        self.template.add_condition(
-            "UseNatInstances",
-            Not(Condition("UseNatGateway")))
 
     def create_vpc(self):
         t = self.template
         t.add_resource(ec2.VPC(
             VPC_NAME,
-            CidrBlock=Ref("CidrBlock"), EnableDnsSupport=True,
+            CidrBlock=self.get_variables()["CidrBlock"], EnableDnsSupport=True,
             EnableDnsHostnames=True))
 
         # Just about everything needs this, so storing it on the object
@@ -107,85 +83,117 @@ class VPC(Blueprint):
 
     def create_internal_zone(self):
         t = self.template
-        t.add_resource(
-            HostedZone(
-                "InternalZone",
-                Name=Ref("InternalDomain"),
-                VPCs=[HostedZoneVPCs(
-                    VPCId=VPC_ID,
-                    VPCRegion=Ref("AWS::Region"))],
-                Condition="HasInternalDomain"))
-        t.add_output(
-            Output(
-                "InternalZoneId",
-                Value=Ref("InternalZone"),
-                Condition="HasInternalDomain"))
-        t.add_output(
-            Output(
-                "InternalZoneName",
-                Value=Ref("InternalDomain"),
-                Condition="HasInternalDomain"))
+        variables = self.get_variables()
+
+        if variables["InternalDomain"]:
+            t.add_resource(
+                HostedZone(
+                    "InternalZone",
+                    Name=variables["InternalDomain"],
+                    VPCs=[HostedZoneVPCs(
+                        VPCId=VPC_ID,
+                        VPCRegion=Ref("AWS::Region"))]
+                )
+            )
+            t.add_output(
+                Output(
+                    "InternalZoneId",
+                    Value=Ref("InternalZone"),
+                )
+            )
+            t.add_output(
+                Output(
+                    "InternalZoneName",
+                    Value=variables["InternalDomain"],
+                )
+            )
 
     def create_default_security_group(self):
         t = self.template
-        t.add_resource(ec2.SecurityGroup(
-            DEFAULT_SG,
-            VpcId=VPC_ID,
-            GroupDescription='Default Security Group'))
+        t.add_resource(
+            ec2.SecurityGroup(
+                DEFAULT_SG,
+                VpcId=VPC_ID,
+                GroupDescription='Default Security Group'
+            )
+        )
         t.add_output(
-            Output('DefaultSG',
-                   Value=Ref(DEFAULT_SG)))
+            Output(
+                'DefaultSG',
+                Value=Ref(DEFAULT_SG)
+            )
+        )
 
-    def _dhcp_options_hosted_zones(self):
-        t = self.template
-        domain_name = Join(" ", [Ref("InternalDomain"), Ref("BaseDomain")])
-        dhcp_options = t.add_resource(ec2.DHCPOptions(
-            'DHCPOptionsWithDNS',
-            DomainName=domain_name,
-            DomainNameServers=['AmazonProvidedDNS', ],
-            Condition="HasHostedZones"))
-        t.add_resource(ec2.VPCDHCPOptionsAssociation(
-            'DHCPAssociationWithDNS',
-            VpcId=VPC_ID,
-            DhcpOptionsId=Ref(dhcp_options),
-            Condition="HasHostedZones"))
-
-    def _dhcp_options_no_hosted_zones(self):
-        t = self.template
-        dhcp_options = t.add_resource(ec2.DHCPOptions(
-            'DHCPOptionsNoDNS',
-            DomainNameServers=['AmazonProvidedDNS', ],
-            Condition="NoHostedZones"))
-        t.add_resource(ec2.VPCDHCPOptionsAssociation(
-            'DHCPAssociationNoDNS',
-            VpcId=VPC_ID,
-            DhcpOptionsId=Ref(dhcp_options),
-            Condition="NoHostedZones"))
+    def has_hosted_zones(self):
+        variables = self.get_variables()
+        return any([
+            variables["BaseDomain"],
+            variables["InternalDomain"]
+        ])
 
     def create_dhcp_options(self):
-        self._dhcp_options_hosted_zones()
-        self._dhcp_options_no_hosted_zones()
+        t = self.template
+        variables = self.get_variables()
+        domain_name = Join(
+            " ",
+            [
+                variables["InternalDomain"],
+                variables["BaseDomain"]
+            ]
+        )
+        if self.has_hosted_zones():
+            dhcp_options = t.add_resource(
+                ec2.DHCPOptions(
+                    'DHCPOptions',
+                    DomainName=domain_name,
+                    DomainNameServers=['AmazonProvidedDNS', ],
+                )
+            )
+            t.add_resource(
+                ec2.VPCDHCPOptionsAssociation(
+                    'DHCPAssociation',
+                    VpcId=VPC_ID,
+                    DhcpOptionsId=Ref(dhcp_options),
+                )
+            )
+        else:
+            dhcp_options = t.add_resource(
+                ec2.DHCPOptions(
+                    'DHCPOptions',
+                    DomainNameServers=['AmazonProvidedDNS', ],
+                )
+            )
+            t.add_resource(
+                ec2.VPCDHCPOptionsAssociation(
+                    'DHCPAssociation',
+                    VpcId=VPC_ID,
+                    DhcpOptionsId=Ref(dhcp_options),
+                )
+            )
 
     def create_gateway(self):
         t = self.template
         t.add_resource(ec2.InternetGateway(GATEWAY))
-        t.add_resource(ec2.VPCGatewayAttachment(
-            GW_ATTACH,
-            VpcId=VPC_ID,
-            InternetGatewayId=Ref(GATEWAY)))
+        t.add_resource(
+            ec2.VPCGatewayAttachment(
+                GW_ATTACH,
+                VpcId=VPC_ID,
+                InternetGatewayId=Ref(GATEWAY)
+            )
+        )
 
     def create_network(self):
         t = self.template
+        variables = self.get_variables()
         self.create_gateway()
-        vpc_id = Ref("VPC")
         t.add_resource(ec2.NetworkAcl('DefaultACL',
-                                      VpcId=vpc_id))
+                                      VpcId=VPC_ID))
 
         self.create_nat_security_groups()
         subnets = {'public': [], 'private': []}
         net_types = subnets.keys()
         zones = []
-        for i in range(self.local_parameters["AZCount"]):
+        for i in range(variables["AZCount"]):
             az = Select(i, GetAZs(""))
             zones.append(az)
             name_suffix = i
@@ -193,112 +201,199 @@ class VPC(Blueprint):
                 name_prefix = net_type.capitalize()
                 subnet_name = "%sSubnet%s" % (name_prefix, name_suffix)
                 subnets[net_type].append(subnet_name)
-                t.add_resource(ec2.Subnet(
-                    subnet_name,
-                    AvailabilityZone=az,
-                    VpcId=vpc_id,
-                    DependsOn=GW_ATTACH,
-                    CidrBlock=Select(i, Ref("%sSubnets" % name_prefix)),
-                    Tags=Tags(type=net_type)))
+                t.add_resource(
+                    ec2.Subnet(
+                        subnet_name,
+                        AvailabilityZone=az,
+                        VpcId=VPC_ID,
+                        DependsOn=GW_ATTACH,
+                        CidrBlock=variables.get("%sSubnets" % name_prefix)[i],
+                        Tags=Tags(type=net_type)
+                    )
+                )
+
                 route_table_name = "%sRouteTable%s" % (name_prefix,
                                                        name_suffix)
-                t.add_resource(ec2.RouteTable(
-                    route_table_name,
-                    VpcId=vpc_id,
-                    Tags=[ec2.Tag('type', net_type)]))
-                t.add_resource(ec2.SubnetRouteTableAssociation(
-                    "%sRouteTableAssociation%s" % (name_prefix, name_suffix),
-                    SubnetId=Ref(subnet_name),
-                    RouteTableId=Ref(route_table_name)))
+                t.add_resource(
+                    ec2.RouteTable(
+                        route_table_name,
+                        VpcId=VPC_ID,
+                        Tags=[ec2.Tag('type', net_type)]
+                    )
+                )
+                t.add_resource(
+                    ec2.SubnetRouteTableAssociation(
+                        "%sRouteTableAssociation%s" % (name_prefix,
+                                                       name_suffix),
+                        SubnetId=Ref(subnet_name),
+                        RouteTableId=Ref(route_table_name)
+                    )
+                )
 
                 route_name = '%sRoute%s' % (name_prefix, name_suffix)
                 if net_type == 'public':
                     # the public subnets are where the NAT instances live,
                     # so their default route needs to go to the AWS
                     # Internet Gateway
-                    t.add_resource(ec2.Route(
-                        route_name,
-                        RouteTableId=Ref(route_table_name),
-                        DestinationCidrBlock="0.0.0.0/0",
-                        GatewayId=Ref(GATEWAY)))
+                    t.add_resource(
+                        ec2.Route(
+                            route_name,
+                            RouteTableId=Ref(route_table_name),
+                            DestinationCidrBlock="0.0.0.0/0",
+                            GatewayId=Ref(GATEWAY)
+                        )
+                    )
                     self.create_nat_instance(i, subnet_name)
                 else:
                     # Private subnets are where actual instances will live
                     # so their gateway needs to be through the nat instances
-                    t.add_resource(ec2.Route(
-                        route_name,
-                        RouteTableId=Ref(route_table_name),
-                        DestinationCidrBlock='0.0.0.0/0',
-                        InstanceId=If(
-                            "UseNatInstances",
-                            Ref(NAT_INSTANCE_NAME % name_suffix),
-                            Ref("AWS::NoValue")),
-                        NatGatewayId=If(
-                            "UseNatGateway",
-                            Ref(NAT_GATEWAY_NAME % name_suffix),
-                            Ref("AWS::NoValue"))))
+                    if variables["UseNatGateway"]:
+                        instance_id = NOVALUE
+                        nat_gateway_id = Ref(NAT_GATEWAY_NAME % name_suffix)
+                    else:
+                        instance_id = Ref(NAT_INSTANCE_NAME % name_suffix)
+                        nat_gateway_id = NOVALUE
+
+                    t.add_resource(
+                        ec2.Route(
+                            route_name,
+                            RouteTableId=Ref(route_table_name),
+                            DestinationCidrBlock='0.0.0.0/0',
+                            InstanceId=instance_id,
+                            NatGatewayId=nat_gateway_id,
+                        )
+                    )
 
         for net_type in net_types:
-            t.add_output(Output(
-                "%sSubnets" % net_type.capitalize(),
-                Value=Join(",",
-                           [Ref(sn) for sn in subnets[net_type]])))
+            t.add_output(
+                Output(
+                    "%sSubnets" % net_type.capitalize(),
+                    Value=Join(
+                        ",",
+                        [Ref(sn) for sn in subnets[net_type]]
+                    )
+                )
+            )
+
+            for i, sn in enumerate(subnets[net_type]):
+                t.add_output(
+                    Output(
+                        "%sSubnet%d" % (net_type.capitalize(), i),
+                        Value=Ref(sn)
+                    )
+                )
+
         self.template.add_output(Output(
             "AvailabilityZones",
             Value=Join(",", zones)))
 
+        for i, az in enumerate(zones):
+            t.add_output(
+                Output(
+                    "AvailabilityZone%d" % (i),
+                    Value=az
+                )
+            )
+
     def create_nat_security_groups(self):
         t = self.template
-        # First setup the NAT Security Group Rules
-        nat_private_in_all_rule = ec2.SecurityGroupRule(
-            IpProtocol='-1', FromPort='-1', ToPort='-1',
-            SourceSecurityGroupId=Ref(DEFAULT_SG))
+        variables = self.get_variables()
 
-        nat_public_out_all_rule = ec2.SecurityGroupRule(
-            IpProtocol='-1', FromPort='-1', ToPort='-1', CidrIp='0.0.0.0/0')
+        # Only create security group if NAT Instances are being used.
+        if not variables["UseNatGateway"]:
+            nat_private_in_all_rule = ec2.SecurityGroupRule(
+                IpProtocol='-1', FromPort='-1', ToPort='-1',
+                SourceSecurityGroupId=Ref(DEFAULT_SG)
+            )
 
-        return t.add_resource(ec2.SecurityGroup(
-            NAT_SG,
-            VpcId=VPC_ID,
-            Condition="UseNatInstances",
-            GroupDescription='NAT Instance Security Group',
-            SecurityGroupIngress=[nat_private_in_all_rule],
-            SecurityGroupEgress=[nat_public_out_all_rule, ]))
+            nat_public_out_all_rule = ec2.SecurityGroupRule(
+                IpProtocol='-1', FromPort='-1', ToPort='-1', CidrIp='0.0.0.0/0'
+            )
+
+            return t.add_resource(
+                ec2.SecurityGroup(
+                    NAT_SG,
+                    VpcId=VPC_ID,
+                    GroupDescription='NAT Instance Security Group',
+                    SecurityGroupIngress=[nat_private_in_all_rule],
+                    SecurityGroupEgress=[nat_public_out_all_rule, ]
+                )
+            )
 
     def create_nat_instance(self, zone_id, subnet_name):
         t = self.template
+        variables = self.get_variables()
         suffix = zone_id
-        nat_instance = t.add_resource(ec2.Instance(
-            NAT_INSTANCE_NAME % suffix,
-            Condition="UseNatInstances",
-            ImageId=FindInMap('AmiMap', Ref("AWS::Region"), Ref("ImageName")),
-            SecurityGroupIds=[Ref(DEFAULT_SG), Ref(NAT_SG)],
-            SubnetId=Ref(subnet_name),
-            InstanceType=Ref('InstanceType'),
-            SourceDestCheck=False,
-            KeyName=Ref('SshKeyName'),
-            Tags=[ec2.Tag('Name', 'nat-gw%s' % suffix)],
-            DependsOn=GW_ATTACH))
+        eip_name = "NATExternalIp%s" % suffix
 
-        eip = t.add_resource(ec2.EIP(
-            'NATExternalIp%s' % suffix,
-            Domain='vpc',
-            InstanceId=If("UseNatInstances",
-                          Ref(nat_instance),
-                          Ref("AWS::NoValue")),
-            DependsOn=GW_ATTACH))
+        if variables["UseNatGateway"]:
+            gateway_name = NAT_GATEWAY_NAME % suffix
+            t.add_resource(
+                ec2.NatGateway(
+                    gateway_name,
+                    AllocationId=GetAtt(eip_name, 'AllocationId'),
+                    SubnetId=Ref(subnet_name),
+                )
+            )
 
-        t.add_resource(ec2.NatGateway(
-            NAT_GATEWAY_NAME % suffix,
-            Condition="UseNatGateway",
-            AllocationId=GetAtt(eip, 'AllocationId'),
-            SubnetId=Ref(subnet_name),
-        ))
+            t.add_output(
+                Output(
+                    gateway_name + "Id",
+                    Value=Ref(gateway_name)
+                )
+            )
 
-        return nat_instance
+            # Using NAT Gateways, leave the EIP unattached - it gets allocated
+            # to the NAT Gateway in that resource above
+            eip_instance_id = Ref("AWS::NoValue")
+        else:
+            image_id = FindInMap(
+                'AmiMap',
+                Ref("AWS::Region"),
+                Ref("ImageName")
+            )
+            instance_name = NAT_INSTANCE_NAME % suffix
+            t.add_resource(
+                ec2.Instance(
+                    instance_name,
+                    Condition="UseNatInstances",
+                    ImageId=image_id,
+                    SecurityGroupIds=[Ref(DEFAULT_SG), Ref(NAT_SG)],
+                    SubnetId=Ref(subnet_name),
+                    InstanceType=variables["InstanceType"],
+                    SourceDestCheck=False,
+                    KeyName=variables["SshKeyName"],
+                    Tags=[ec2.Tag('Name', 'nat-gw%s' % suffix)],
+                    DependsOn=GW_ATTACH
+                )
+            )
+            t.add_output(
+                Output(
+                    instance_name + "PublicHostname",
+                    Value=GetAtt(instance_name, "PublicDnsName")
+                )
+            )
+            t.add_output(
+                Output(
+                    instance_name + "InstanceId",
+                    Value=Ref(instance_name)
+                )
+            )
+
+            # Since we're using NAT instances, go ahead and attach the EIP
+            # to the NAT instance
+            eip_instance_id = Ref(instance_name)
+
+        t.add_resource(
+            ec2.EIP(
+                eip_name,
+                Domain='vpc',
+                InstanceId=eip_instance_id,
+                DependsOn=GW_ATTACH
+            )
+        )
 
     def create_template(self):
-        self.create_conditions()
         self.create_vpc()
         self.create_internal_zone()
         self.create_default_security_group()

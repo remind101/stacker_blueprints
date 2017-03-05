@@ -1,36 +1,14 @@
-# Hooks require a path.
-# If the build should stop when a hook fails, set required to true.
-# pre_build happens before the build
-# post_build happens after the build
-#pre_build:
-#  - path: stacker.hooks.route53.create_domain
-#    required: true
-    # Additional args can be passed as a dict of key/value pairs in kwargs
-    # kwargs:
-# post_build:
-
-mappings:
-  AmiMap:
-    us-east-1:
-      NAT: ami-ad227cc4
-      ubuntu1404: ami-74e27e1c
-      bastion: ami-74e27e1c
-    us-west-2:
-      NAT: ami-290f4119
-      ubuntu1404: ami-5189a661
-      bastion: ami-5189a661
-
-vpc_parameters: &vpc_parameters
-  VpcId: vpc::VpcId # parametrs with ::'s in them refer to <stack>::<Output>
-  DefaultSG: vpc::DefaultSG
-  PublicSubnets: vpc::PublicSubnets
-  PrivateSubnets: vpc::PrivateSubnets
-  AvailabilityZones: vpc::AvailabilityZones
+vpc_variables: &vpc_variables
+  VpcId: ${output vpc::VpcId}
+  DefaultSG: ${output vpc::DefaultSG}
+  PublicSubnets: ${output vpc::PublicSubnets}
+  PrivateSubnets: ${output vpc::PrivateSubnets}
+  AvailabilityZones: ${output vpc::AvailabilityZones}
 
 stacks:
   - name: vpc
     class_path: stacker_blueprints.vpc.VPC
-    parameters:
+    variables:
       # AZCount is the # of AvailabilityZones to attempt to build in. You
       # should build in as many as you can afford in order to provide for
       # better fault tolerance. Note: Since this is all done in a VPC, you
@@ -41,55 +19,60 @@ stacks:
       # Note: The minimum allowed AZCount is 2.
       AZCount: ${azcount}
       # Enough subnets for 4 AZs
-      PublicSubnets: 10.128.0.0/24,10.128.1.0/24,10.128.2.0/24,10.128.3.0/24
-      PrivateSubnets: 10.128.8.0/22,10.128.12.0/22,10.128.16.0/22,10.128.20.0/22
-      # InstanceType used for NAT instances
-      InstanceType: ${nat_instance_type}
-      SshKeyName: ${ssh_key_name}
+      PublicSubnets:
+        - 10.128.0.0/24
+        - 10.128.1.0/24
+        - 10.128.2.0/24
+        - 10.128.3.0/24
+      PrivateSubnets:
+        - 10.128.8.0/22
+        - 10.128.12.0/22
+        - 10.128.16.0/22
+        - 10.128.20.0/22
       InternalDomain: internal
       # CidrBlock needs to be hold all of the Public & Private subnets above
       CidrBlock: 10.128.0.0/16
-      ImageName: NAT
+      UseNatGateway: true
   - name: mysqlMaster
     class_path: stacker_blueprints.rds.mysql.MasterInstance
-    parameters:
-      << : *vpc_parameters
-      Subnets: vpc::PrivateSubnets
-      InstanceType: ${db_instance_type}
-      AllowMajorVersionUpgrade: "false"
-      AutoMinorVersionUpgrade: "true"
-      AllocatedStorage: ${storage_size}
-      IOPS: ${iops}
-      InternalZoneName: vpc::InternalZoneName
-      InternalZoneId: vpc::InternalZoneId
+    variables:
+      << : *vpc_variables
+      Subnets: ${output vpc::PrivateSubnets}
+      InstanceType: ${master_db_instance_type}
+      AllowMajorVersionUpgrade: ${master_allow_major_version_upgrade}
+      AutoMinorVersionUpgrade: ${master_auto_minor_version_upgrade}
+      AllocatedStorage: ${master_storage_size}
+      IOPS: ${master_iops}
+      InternalZoneName: ${output vpc::InternalZoneName}
+      InternalZoneId: ${output vpc::InternalZoneId}
       InternalHostname: ${master_name}
       DBInstanceIdentifier: ${master_name}
-      DBFamily: ${db_family}
-      EngineVersion: ${engine_version}
-      EngineMajorVersion: ${engine_major_version}
+      DBFamily: ${master_db_family}
+      EngineVersion: ${master_engine_version}
+      EngineMajorVersion: ${master_engine_major_version}
       StorageEncrypted: ${master_storage_encrypted}
       # MasterInstance specific
-      MasterUser: ${db_user}
-      MasterUserPassword: ${db_passwd}
-      DatabaseName: ${db_name}
-      MultiAZ: "true"
-  - name: mysqlSlave
+      MasterUser: ${master_db_user}
+      MasterUserPassword: ${master_db_passwd}
+      DatabaseName: ${master_db_name}
+      MultiAZ: ${master_multi_az}
+  - name: mysqlReplica
     class_path: stacker_blueprints.rds.mysql.ReadReplica
-    parameters:
-      << : *vpc_parameters
-      Subnets: vpc::PrivateSubnets
-      InstanceType: ${db_instance_type}
-      AllowMajorVersionUpgrade: "false"
-      AutoMinorVersionUpgrade: "true"
-      AllocatedStorage: ${storage_size}
-      IOPS: ${iops}
-      InternalZoneName: vpc::InternalZoneName
-      InternalZoneId: vpc::InternalZoneId
-      InternalHostname: ${slave_name}
-      DBInstanceIdentifier: ${slave_name}
-      DBFamily: ${db_family}
-      EngineVersion: ${engine_version}
-      EngineMajorVersion: ${engine_major_version}
-      StorageEncrypted: ${slave_storage_encrypted}
+    variables:
+      << : *vpc_variables
+      Subnets: ${output vpc::PrivateSubnets}
+      InstanceType: ${replica_db_instance_type}
+      AllowMajorVersionUpgrade: ${replica_allow_major_version_upgrade}
+      AutoMinorVersionUpgrade: ${replica_auto_minor_version_upgrade}
+      AllocatedStorage: ${replica_storage_size}
+      IOPS: ${replica_iops}
+      InternalZoneName: ${output vpc::InternalZoneName}
+      InternalZoneId: ${output vpc::InternalZoneId}
+      InternalHostname: ${replica_name}
+      DBInstanceIdentifier: ${replica_name}
+      DBFamily: ${replica_db_family}
+      EngineVersion: ${replica_engine_version}
+      EngineMajorVersion: ${replica_engine_major_version}
+      StorageEncrypted: ${replica_replica_storage_encrypted}
       # ReadReplica Specific
-      MasterDatabaseId: mysqlMaster::DBInstance
+      MasterDatabaseId: ${output postgresMaster::DBInstance}
