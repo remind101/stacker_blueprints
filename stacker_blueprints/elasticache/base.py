@@ -263,6 +263,7 @@ class BaseReplicationGroup(Blueprint):
                 CacheNodeType=variables["CacheNodeType"],
                 CacheParameterGroupName=Ref(PARAMETER_GROUP),
                 CacheSubnetGroupName=Ref(SUBNET_GROUP),
+                NumCacheClusters=variables["NumCacheClusters"],
                 Engine=self.engine(),
                 EngineVersion=variables["EngineVersion"],
                 NotificationTopicArn=notification_topic_arn,
