@@ -21,11 +21,11 @@ mappings:
       bastion: ami-5189a661
 
 vpc_parameters: &vpc_parameters
-  VpcId: vpc::VpcId # parametrs with ::'s in them refer to <stack>::<Output>
-  DefaultSG: vpc::DefaultSG
-  PublicSubnets: vpc::PublicSubnets
-  PrivateSubnets: vpc::PrivateSubnets
-  AvailabilityZones: vpc::AvailabilityZones
+  VpcId: ${output vpc::VpcId} # parametrs with ::'s in them refer to <stack>::<Output>
+  DefaultSG: ${output vpc::DefaultSG}
+  PublicSubnets: ${output vpc::PublicSubnets}
+  PrivateSubnets: ${output vpc::PrivateSubnets}
+  AvailabilityZones: ${output vpc::AvailabilityZones}
 
 stacks:
   - name: vpc
@@ -44,7 +44,7 @@ stacks:
         - 10.128.1.0/24
         - 10.128.2.0/24
         - 10.128.3.0/24
-      PrivateSubnets: 
+      PrivateSubnets:
         - 10.128.8.0/22
         - 10.128.12.0/22
         - 10.128.16.0/22
