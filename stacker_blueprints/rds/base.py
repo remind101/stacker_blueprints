@@ -467,7 +467,7 @@ class ReadReplica(BaseRDS):
         variables = self.get_variables()
 
         return {
-            "SourceDBInstanceIdentifier": Ref("MasterDatabaseId"),
+            "SourceDBInstanceIdentifier": variables["MasterDatabaseId"],
             "AllocatedStorage": variables["AllocatedStorage"],
             "AllowMajorVersionUpgrade": variables["AllowMajorVersionUpgrade"],
             "AutoMinorVersionUpgrade": variables["AutoMinorVersionUpgrade"],

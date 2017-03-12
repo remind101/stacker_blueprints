@@ -57,11 +57,11 @@ mappings:
 # this makes it easy to pass them around. Stacker will drop unused Parameters
 # that are passed to a blueprint.
 vpc_variables: &vpc_variables
-  VpcId: ${vpc::VpcId} # default output lookup variable refers to <stack>::<Output>
-  DefaultSG: ${vpc::DefaultSG}
-  PublicSubnets: ${vpc::PublicSubnets}
-  PrivateSubnets: ${vpc::PrivateSubnets}
-  AvailabilityZones: ${vpc::AvailabilityZones}
+  VpcId: ${output vpc::VpcId} # default output lookup variable refers to <stack>::<Output>
+  DefaultSG: ${output vpc::DefaultSG}
+  PublicSubnets: ${output vpc::PublicSubnets}
+  PrivateSubnets: ${output vpc::PrivateSubnets}
+  AvailabilityZones: ${output vpc::AvailabilityZones}
 
 # These are required for the minion & controller, used to access private
 # registries.
@@ -129,8 +129,8 @@ stacks:
       DBName: empire
       # Creates the InternalHostname on the InternalZone, ie:
       # empire-db.empire
-      InternalZoneId: ${vpc::InternalZoneId}
-      InternalZoneName: ${vpc::InternalZoneName}
+      InternalZoneId: ${output vpc::InternalZoneId}
+      InternalZoneName: ${output vpc::InternalZoneName}
       InternalHostname: empire-db
   - name: empireMinion
     class_path: stacker_blueprints.empire.minion.EmpireMinion
@@ -153,7 +153,7 @@ stacks:
       MaxHosts: ${empire_controller_max_instance_count}
       SshKeyName: ${ssh_key_name}
       ImageName: empire
-      DatabaseSecurityGroup: ${empireDB::SecurityGroup}
+      DatabaseSecurityGroup: ${output empireDB::SecurityGroup}
   - name: empireDaemon
     class_path: stacker_blueprints.empire.daemon.EmpireDaemon
     variables:
@@ -162,34 +162,34 @@ stacks:
       DesiredCount: 1
       TaskMemory: 256
       TaskCPU: 512
-      InternalZoneId: ${vpc::InternalZoneId}
+      InternalZoneId: ${output vpc::InternalZoneId}
       ExternalDomain: ${external_domain}
       TrustedNetwork: ${trusted_network_cidr}
       ELBCertName: ${empire_controller_cert_name}
       ELBCertType: ${empire_controller_cert_type}
-      PublicAppELBSG: ${empireMinion::PublicAppELBSG}
-      PrivateAppELBSG: ${empireMinion::PrivateAppELBSG}
-      MinionCluster: ${empireMinion::ECSCluster}
-      ControllerCluster: ${empireController::ECSCluster}
-      DatabaseHost: ${empireDB::DBCname}
+      PublicAppELBSG: ${output empireMinion::PublicAppELBSG}
+      PrivateAppELBSG: ${output empireMinion::PrivateAppELBSG}
+      MinionCluster: ${output empireMinion::ECSCluster}
+      ControllerCluster: ${output empireController::ECSCluster}
+      DatabaseHost: ${output empireDB::DBCname}
       DatabaseUser: ${empiredb_user}
       DatabasePassword: ${empiredb_password}
       GithubClientId: ${empire_controller_github_client_id}
       GithubClientSecret: ${empire_controller_github_client_secret}
       GithubOrganization: ${empire_controller_github_organization}
       Environment: ${empire_environment}
-      InstanceRole: ${empireController::IAMRole}
-      InstanceSecurityGroup: ${empireController::SecurityGroup}
+      InstanceRole: ${output empireController::IAMRole}
+      InstanceSecurityGroup: ${output empireController::SecurityGroup}
       # Used for github deploy webhooks
       GitHubWebhooksSecret: ${empire_daemon_github_webhooks_secret}
       GitHubDeploymentsEnvironment: ${empire_daemon_github_deployments_environment}
       TokenSecret: ${empire_daemon_token_secret}
       LogsStreamer: ${empire_daemon_log_streamer}
-      InternalZoneId: vpc::InternalZoneId
-      PublicAppELBSG: empireMinion::PublicAppELBSG
-      PrivateAppELBSG: empireMinion::PrivateAppELBSG
-      MinionCluster: empireMinion::ECSCluster
-      ControllerCluster: empireController::ECSCluster
+      InternalZoneId: ${output vpc::InternalZoneId}
+      PublicAppELBSG: ${output empireMinion::PublicAppELBSG}
+      PrivateAppELBSG: ${output empireMinion::PrivateAppELBSG}
+      MinionCluster: ${output empireMinion::ECSCluster}
+      ControllerCluster: ${output empireController::ECSCluster}
       RunLogsBackend: ${empire_daemon_run_logs_backend}
       RunLogsCloudwatchGroup: !!str
       EventsBackend: ${empire_daemon_events_backend}

@@ -45,6 +45,8 @@ class Buckets(Blueprint):
 
         policy_prefix = self.context.get_fqn(self.name)
 
+        bucket_ids = []
+
         for title, attrs in variables["Buckets"].items():
             t.add_resource(s3.Bucket.from_dict(title, attrs))
             t.add_output(Output(title + "BucketId", Value=Ref(title)))
@@ -56,28 +58,30 @@ class Buckets(Blueprint):
                 )
             )
 
-            read_write_roles = variables["ReadWriteRoles"]
-            if read_write_roles:
-                t.add_resource(
-                    iam.PolicyType(
-                        title + "ReadWritePolicy",
-                        PolicyName=policy_prefix + "ReadWritePolicy",
-                        PolicyDocument=read_write_s3_bucket_policy(
-                            [Ref(title)]
-                        ),
-                        Roles=read_write_roles,
-                    )
-                )
+            bucket_ids.append(Ref(title))
 
-            read_only_roles = variables["ReadRoles"]
-            if read_only_roles:
-                t.add_resource(
-                    iam.PolicyType(
-                        title + "ReadPolicy",
-                        PolicyName=policy_prefix + "ReadPolicy",
-                        PolicyDocument=read_only_s3_bucket_policy(
-                            [Ref(title)]
-                        ),
-                        Roles=read_only_roles,
-                    )
+        read_write_roles = variables["ReadWriteRoles"]
+        if read_write_roles:
+            t.add_resource(
+                iam.PolicyType(
+                    "ReadWritePolicy",
+                    PolicyName=policy_prefix + "ReadWritePolicy",
+                    PolicyDocument=read_write_s3_bucket_policy(
+                        bucket_ids
+                    ),
+                    Roles=read_write_roles,
                 )
+            )
+
+        read_only_roles = variables["ReadRoles"]
+        if read_only_roles:
+            t.add_resource(
+                iam.PolicyType(
+                    "ReadPolicy",
+                    PolicyName=policy_prefix + "ReadPolicy",
+                    PolicyDocument=read_only_s3_bucket_policy(
+                        bucket_ids
+                    ),
+                    Roles=read_only_roles,
+                )
+            )
