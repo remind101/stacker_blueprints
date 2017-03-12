@@ -7,7 +7,7 @@ from troposphere import (
     iam,
 )
 
-from policies import (
+from .policies import (
     read_only_s3_bucket_policy,
     read_write_s3_bucket_policy,
     s3_arn
