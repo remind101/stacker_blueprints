@@ -96,7 +96,6 @@ stacks:
         - 10.128.12.0/22
         - 10.128.16.0/22
         - 10.128.20.0/22
-      # InstanceType used for NAT instances
       BaseDomain: ${external_domain}
       InternalDomain: empire
   - name: bastion
@@ -160,17 +159,10 @@ stacks:
       << : *vpc_variables
       << : *docker_params
       DesiredCount: 1
-      TaskMemory: 256
-      TaskCPU: 512
-      InternalZoneId: ${output vpc::InternalZoneId}
       ExternalDomain: ${external_domain}
       TrustedNetwork: ${trusted_network_cidr}
       ELBCertName: ${empire_controller_cert_name}
       ELBCertType: ${empire_controller_cert_type}
-      PublicAppELBSG: ${output empireMinion::PublicAppELBSG}
-      PrivateAppELBSG: ${output empireMinion::PrivateAppELBSG}
-      MinionCluster: ${output empireMinion::ECSCluster}
-      ControllerCluster: ${output empireController::ECSCluster}
       DatabaseHost: ${output empireDB::DBCname}
       DatabaseUser: ${empiredb_user}
       DatabasePassword: ${empiredb_password}
