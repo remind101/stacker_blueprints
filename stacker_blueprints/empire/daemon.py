@@ -124,7 +124,7 @@ class EmpireDaemon(Blueprint):
             "type": CFNString,
             "description": "Environment used for Empire."},
         "EmpireScheduler": {
-            "type": "String",
+            "type": CFNString,
             "description": (
                 "The scheduler for Empire to use. Defaults to "
                 "cloudformation-migration"
@@ -260,7 +260,7 @@ class EmpireDaemon(Blueprint):
             ),
             "default": "50"},
         "RequireCommitMessages": {
-            "type": "String",
+            "type": CFNString,
             "description": "Enables requiring commit messages if set to "
                            "'true'.",
             'default': "false",
