@@ -1,5 +1,5 @@
 from troposphere import (
-    Ref, ec2, Output, GetAtt, Not, Equals, Condition, And, Join
+    Ref, ec2, Output, GetAtt, Join
 )
 
 from troposphere.elasticache import (
