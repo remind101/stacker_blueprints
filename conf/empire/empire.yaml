@@ -166,9 +166,10 @@ stacks:
       DatabaseHost: ${output empireDB::DBCname}
       DatabaseUser: ${empiredb_user}
       DatabasePassword: ${empiredb_password}
-      GithubClientId: ${empire_controller_github_client_id}
-      GithubClientSecret: ${empire_controller_github_client_secret}
-      GithubOrganization: ${empire_controller_github_organization}
+      GithubClientId: ${empire_daemon_github_client_id}
+      GithubClientSecret: ${empire_daemon_github_client_secret}
+      GithubOrganization: ${empire_daemon_github_organization}
+      DockerImage: ${empire_daemon_docker_image}
       Environment: ${empire_environment}
       InstanceRole: ${output empireController::IAMRole}
       InstanceSecurityGroup: ${output empireController::SecurityGroup}
