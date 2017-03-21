@@ -38,7 +38,7 @@ class BaseReplicationGroup(Blueprint):
             "description": "Vpc Id to place the Cluster in"
         },
         "Subnets": {
-            "type": str,
+            "type": list,
             "description": "Comma separated list of subnets to deploy the "
                            "Cluster nodes in."
         },
@@ -180,41 +180,6 @@ class BaseReplicationGroup(Blueprint):
 
         return variables
 
-    def create_conditions(self):
-        t = self.template
-
-        t.add_condition(
-            "DefinedNotificationArn",
-            Not(Equals(Ref("NotificationTopicArn"), "")))
-        t.add_condition(
-            "DefinedPort",
-            Not(Equals(Ref("Port"), "0")))
-        t.add_condition(
-            "DefinedAvailabilityZones",
-            Not(Equals(Join(",", Ref("PreferredCacheClusterAZs")), "")))
-        t.add_condition(
-            "DefinedSnapshotArns",
-            Not(Equals(Join(",", Ref("SnapshotArns")), "")))
-        t.add_condition(
-            "DefinedSnapshotWindow",
-            Not(Equals(Ref("SnapshotWindow"), "")))
-
-        # DNS Conditions
-        t.add_condition(
-            "HasInternalZone",
-            Not(Equals(Ref("InternalZoneId"), "")))
-        t.add_condition(
-            "HasInternalZoneName",
-            Not(Equals(Ref("InternalZoneName"), "")))
-        t.add_condition(
-            "HasInternalHostname",
-            Not(Equals(Ref("InternalHostname"), "")))
-        t.add_condition(
-            "CreateInternalHostname",
-            And(Condition("HasInternalZone"),
-                Condition("HasInternalZoneName"),
-                Condition("HasInternalHostname")))
-
     def create_parameter_group(self):
         t = self.template
         variables = self.get_variables()
@@ -286,9 +251,9 @@ class BaseReplicationGroup(Blueprint):
 
     def should_create_internal_cname(self):
         variables = self.get_variables()
-        return all(variables["InternalZoneId"],
-                   variables["InternalZoneName"],
-                   variables["HasInternalHostname"])
+        return all([variables["InternalZoneId"],
+                    variables["InternalZoneName"],
+                    variables["InternalHostname"]])
 
     def create_dns_records(self):
         t = self.template
@@ -325,7 +290,6 @@ class BaseReplicationGroup(Blueprint):
                     Value=Ref(DNS_RECORD)))
 
     def create_template(self):
-        self.create_conditions()
         self.create_parameter_group()
         self.create_subnet_group()
         self.create_security_group()
