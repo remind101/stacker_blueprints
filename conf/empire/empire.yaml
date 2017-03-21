@@ -165,8 +165,8 @@ stacks:
       InternalZoneId: ${output vpc::InternalZoneId}
       ExternalDomain: ${external_domain}
       TrustedNetwork: ${trusted_network_cidr}
-      ELBCertName: ${empire_controller_cert_name}
-      ELBCertType: ${empire_controller_cert_type}
+      ELBCertName: ${empire_daemon_cert_name}
+      ELBCertType: ${empire_daemon_cert_type}
       PublicAppELBSG: ${output empireMinion::PublicAppELBSG}
       PrivateAppELBSG: ${output empireMinion::PrivateAppELBSG}
       MinionCluster: ${output empireMinion::ECSCluster}
@@ -174,9 +174,9 @@ stacks:
       DatabaseHost: ${output empireDB::DBCname}
       DatabaseUser: ${empiredb_user}
       DatabasePassword: ${empiredb_password}
-      GithubClientId: ${empire_controller_github_client_id}
-      GithubClientSecret: ${empire_controller_github_client_secret}
-      GithubOrganization: ${empire_controller_github_organization}
+      GithubClientId: ${empire_daemon_github_client_id}
+      GithubClientSecret: ${empire_daemon_github_client_secret}
+      GithubOrganization: ${empire_daemon_github_organization}
       Environment: ${empire_environment}
       InstanceRole: ${output empireController::IAMRole}
       InstanceSecurityGroup: ${output empireController::SecurityGroup}

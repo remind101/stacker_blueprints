@@ -105,7 +105,7 @@ class PostgresRDS(Blueprint):
                 DBInstanceClass=Ref('InstanceType'),
                 DBSubnetGroupName=Ref(RDS_SUBNET_GROUP % self.name),
                 Engine='postgres',
-                EngineVersion='9.3.5',
+                EngineVersion='9.3.14',
                 MasterUsername=Ref('MasterUser'),
                 MasterUserPassword=Ref('MasterUserPassword'),
                 MultiAZ=True,
