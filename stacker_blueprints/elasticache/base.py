@@ -188,7 +188,7 @@ class BaseReplicationGroup(Blueprint):
             ParameterGroup(
                 PARAMETER_GROUP,
                 Description=self.name,
-                CacheParameterGroupFamily=Ref("ParameterGroupFamily"),
+                CacheParameterGroupFamily=variables["ParameterGroupFamily"],
                 Properties=params,
             )
         )
@@ -219,6 +219,8 @@ class BaseReplicationGroup(Blueprint):
         port = variables["Port"] or NOVALUE
         snapshot_arns = variables["SnapshotArns"] or NOVALUE
         snapshot_window = variables["SnapshotWindow"] or NOVALUE
+        maintenance_window = variables["PreferredMaintenanceWindow"] or \
+            NOVALUE
 
         t.add_resource(
             ReplicationGroup(
@@ -234,7 +236,7 @@ class BaseReplicationGroup(Blueprint):
                 NotificationTopicArn=notification_topic_arn,
                 Port=port,
                 PreferredCacheClusterAZs=availability_zones,
-                PreferredMaintenanceWindow=Ref("PreferredMaintenanceWindow"),
+                PreferredMaintenanceWindow=maintenance_window,
                 ReplicationGroupDescription=self.name,
                 SecurityGroupIds=[Ref(SECURITY_GROUP), ],
                 SnapshotArns=snapshot_arns,
