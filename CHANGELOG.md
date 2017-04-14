@@ -1,4 +1,15 @@
-## 1.0.0 (2016-03-04)
+## 1.0.1 (2017-04-13)
+
+- Update examples to use explicit output lookups [GH-82]
+- Fix vpc parameters [GH-83]
+- Fix elasticsearch replication group [GH-84]
+- Add s3 policies [GH-85]
+- Fix bad empire merge [GH-86]
+- Remove repeated values [GH-87]
+- Fix elasticache template [GH-90]
+- Change missed Refs [GH-92]
+
+## 1.0.0 (2017-03-04)
 
 - New low-level security group rule blueprint [GH-56]
 - Update firehose blueprint to fully use variables [GH-57]
