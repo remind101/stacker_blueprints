@@ -1,8 +1,16 @@
-from awacs.aws import Statement, Allow, Policy, Action
+from awacs.aws import (
+    Action,
+    Allow,
+    Policy,
+    Statement,
+)
 
-from troposphere import Join
+from troposphere import Join, Ref
 
-from awacs import s3
+from awacs import s3, logs
+
+ACCOUNT_ID = Ref("AWS::AccountId")
+REGION = Ref("AWS::Region")
 
 
 def s3_arn(bucket):
@@ -67,3 +75,31 @@ def read_write_s3_bucket_policy_statements(buckets):
 
 def read_write_s3_bucket_policy(buckets):
     return Policy(Statement=read_write_s3_bucket_policy_statements(buckets))
+
+
+def log_stream_arn(log_group_name, log_stream_name):
+    return Join(
+        '',
+        [
+            "arn:aws:logs:", REGION, ":", ACCOUNT_ID, ":log-group:",
+            log_group_name, ":log-stream:", log_stream_name
+        ]
+    )
+
+
+def write_to_cloudwatch_logs_stream_statements(log_group_name,
+                                               log_stream_name):
+    return [
+        Statement(
+            Effect=Allow,
+            Action=[logs.PutLogEvents],
+            Resource=[log_stream_arn(log_group_name, log_stream_name)]
+        )
+    ]
+
+
+def write_to_cloudwatch_logs_stream_policy(log_group_name, log_stream_name):
+    return Policy(
+        Statement=write_to_cloudwatch_logs_stream_statements(log_group_name,
+                                                             log_stream_name)
+    )
