@@ -1,8 +1,27 @@
-from awacs.aws import Statement, Allow, Policy, Action
+from awacs.aws import (
+    Action,
+    Allow,
+    Policy,
+    Principal,
+    Statement,
+)
 
 from troposphere import Join
 
-from awacs import s3
+from awacs import s3, sts
+
+
+def make_simple_assume_statement(*principals):
+    return Statement(
+        Principal=Principal('Service', principals),
+        Effect=Allow,
+        Action=[sts.AssumeRole])
+
+
+def make_simple_assume_policy(*principals):
+    return Policy(
+        Statement=[
+            make_simple_assume_statement(*principals)])
 
 
 def s3_arn(bucket):
@@ -67,3 +86,7 @@ def read_write_s3_bucket_policy_statements(buckets):
 
 def read_write_s3_bucket_policy(buckets):
     return Policy(Statement=read_write_s3_bucket_policy_statements(buckets))
+
+
+def flowlogs_assumerole_policy():
+    return make_simple_assume_policy("vpc-flow-logs.amazonaws.com")
