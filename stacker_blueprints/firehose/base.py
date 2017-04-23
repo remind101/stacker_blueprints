@@ -30,18 +30,17 @@ from ..policies import (
     write_to_cloudwatch_logs_stream_statements,
 )
 
+from ..cloudwatch_logs import (
+    LOG_RETENTION_STRINGS,
+    validate_cloudwatch_log_retention,
+)
+
 LOG_GROUP = "LogGroup"
 S3_LOG_STREAM = "S3LogStream"
 ROLE = "Role"
 
 REGION = Ref("AWS::Region")
 NOVALUE = Ref("AWS::NoValue")
-
-LOG_RETENTION_VALUES = [
-    0, 1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1827,
-    3653
-]
-LOG_RETENTION_STRINGS = [str(x) for x in LOG_RETENTION_VALUES]
 
 
 def make_simple_assume_policy(*principals):
@@ -50,16 +49,6 @@ def make_simple_assume_policy(*principals):
             make_simple_assume_statement(*principals)
         ]
     )
-
-
-def validate_cloudwatch_log_retention(value):
-    if value not in LOG_RETENTION_VALUES:
-        raise ValueError(
-            "%d is not a valid retention period. Must be one of: %s" % (
-                value,
-                ', '.join(LOG_RETENTION_STRINGS)
-            )
-        )
 
 
 def s3_write_statements(bucket_name):
@@ -151,7 +140,8 @@ class BaseDeliveryStream(Blueprint):
                            "values: %s. Default 0 - retain forever." % (
                                ', '.join(LOG_RETENTION_STRINGS)),
             "default": 0,
-            }
+            "validator": validate_cloudwatch_log_retention,
+        }
     }
 
     def buffering_hints(self):
