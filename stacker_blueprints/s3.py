@@ -57,6 +57,13 @@ class Buckets(Blueprint):
                     Value=GetAtt(title, "DomainName")
                 )
             )
+            if "WebsiteConfiguration" in attrs:
+                t.add_output(
+                    Output(
+                        title + "WebsiteUrl",
+                        Value=GetAtt(title, "WebsiteURL")
+                    )
+                )
 
             bucket_ids.append(Ref(title))
 
