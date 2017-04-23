@@ -1,4 +1,4 @@
-from troposphere import firehose, kms, Output, Ref
+from troposphere import firehose, logs, Output, Ref, GetAtt
 
 from stacker.blueprints.variables.types import CFNString
 
@@ -47,7 +47,7 @@ class DeliveryStream(BaseDeliveryStream):
         super(DeliveryStream, self).create_log_stream()
 
         self.redshift_log_stream = t.add_resource(
-            kms.LogStream(
+            logs.LogStream(
                 REDSHIFT_LOG_STREAM,
                 LogGroupName=Ref(self.log_group),
                 DependsOn=self.log_group.title
@@ -65,8 +65,12 @@ class DeliveryStream(BaseDeliveryStream):
         t = self.template
         variables = self.get_variables()
 
+        s3_dest_config = firehose.S3Configuration(
+            **self.s3_destination_config_dict()
+        )
+
         redshift_config = firehose.RedshiftDestinationConfiguration(
-            RoleARN=Ref(self.role),
+            RoleARN=GetAtt(self.role, "Arn"),
             ClusterJDBCURL=variables['JDBCURL'],
             CopyCommand=firehose.CopyCommand(
                 CopyOptions=variables["CopyOptions"],
@@ -74,23 +78,16 @@ class DeliveryStream(BaseDeliveryStream):
             ),
             Username=variables['Username'],
             Password=variables['Password'].ref,
-            S3Configuration=self.s3_destination_config(),
+            S3Configuration=s3_dest_config,
             CloudWatchLoggingOptions=self.cloudwatch_logging_options(
                 self.log_group,
                 self.redshift_log_stream
             )
         )
 
-        t.add_resource(
-            DeliveryStream(
-                DELIVERY_STREAM,
-                RedshiftDestinationConfiguration=redshift_config
-            )
-        )
-
         self.delivery_stream = t.add_resource(
             firehose.DeliveryStream(
                 DELIVERY_STREAM,
-                S3DestinationConfiguration=self.s3_destination_config()
+                RedshiftDestinationConfiguration=redshift_config
             )
         )

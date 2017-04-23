@@ -11,13 +11,13 @@ import awacs.logs
 import awacs.s3
 import awacs.firehose
 import awacs.kms
-from awacs.helpers.trust import make_simple_assume_policy
+from awacs.helpers.trust import make_simple_assume_statement
 
 from stacker.blueprints.base import Blueprint
 
 from troposphere import (
     iam,
-    kms,
+    logs,
     firehose,
     Join,
     GetAtt,
@@ -37,18 +37,27 @@ ROLE = "Role"
 REGION = Ref("AWS::Region")
 NOVALUE = Ref("AWS::NoValue")
 
-ACCEPTABLE_CLOUDWATCH_LOG_RETENTION = [
+LOG_RETENTION_VALUES = [
     0, 1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1827,
     3653
 ]
+LOG_RETENTION_STRINGS = [str(x) for x in LOG_RETENTION_VALUES]
+
+
+def make_simple_assume_policy(*principals):
+    return Policy(
+        Statement=[
+            make_simple_assume_statement(*principals)
+        ]
+    )
 
 
 def validate_cloudwatch_log_retention(value):
-    if value not in ACCEPTABLE_CLOUDWATCH_LOG_RETENTION:
+    if value not in LOG_RETENTION_VALUES:
         raise ValueError(
             "%d is not a valid retention period. Must be one of: %s" % (
-                 value,
-                 ', '.join(ACCEPTABLE_CLOUDWATCH_LOG_RETENTION)
+                value,
+                ', '.join(LOG_RETENTION_STRINGS)
             )
         )
 
@@ -125,10 +134,10 @@ class BaseDeliveryStream(Blueprint):
         },
         "BufferingHints": {
             "type": dict,
-            "description": "A optional dictionary with buffering hints for "
-                           "writing objects to the s3 bucket. Valid keys are: "
+            "description": "A dictionary with buffering hints for writing "
+                           "objects to the s3 bucket. Valid keys are: "
                            "IntervalInSeconds, SizeInMBs",
-            "default": {},
+            "default": {"IntervalInSeconds": 300, "SizeInMBs": 5},
         },
         "CompressionFormat": {
             "type": str,
@@ -140,17 +149,14 @@ class BaseDeliveryStream(Blueprint):
             "type": int,
             "description": "Time in days to retain Cloudwatch Logs. Accepted "
                            "values: %s. Default 0 - retain forever." % (
-                               ', '.join(ACCEPTABLE_CLOUDWATCH_LOG_RETENTION)),
+                               ', '.join(LOG_RETENTION_STRINGS)),
             "default": 0,
             }
     }
 
     def buffering_hints(self):
         hints_config = self.get_variables()["BufferingHints"]
-        if hints_config:
-            return firehose.BufferingHints(**hints_config)
-        else:
-            return NOVALUE
+        return firehose.BufferingHints(**hints_config)
 
     def encryption_config(self):
         key_arn = self.get_variables()["EncryptionKeyArn"]
@@ -174,21 +180,24 @@ class BaseDeliveryStream(Blueprint):
                         LogStreamName=Ref(log_stream),
                     )
 
-    def s3_destination_config(self):
+    def s3_destination_config_dict(self):
+        t = self.template
         variables = self.get_variables()
 
-        return firehose.S3DestinationConfiguration(
-            BucketARN=self.s3_bucket_arn(),
-            RoleARN=Ref(self.role),
-            CompressionFormat=variables['CompressionFormat'],
-            BufferingHints=self.buffering_hints(),
-            Prefix=variables["S3Prefix"],
-            EncryptionConfiguration=self.encryption_config(),
-            CloudWatchLoggingOptions=self.cloudwatch_logging_options(
+        t.add_output(Output("BucketName", Value=variables["BucketName"]))
+
+        return {
+            "BucketARN": self.s3_bucket_arn(),
+            "RoleARN": GetAtt(self.role, "Arn"),
+            "CompressionFormat": variables['CompressionFormat'],
+            "BufferingHints": self.buffering_hints(),
+            "Prefix": variables["S3Prefix"],
+            "EncryptionConfiguration": self.encryption_config(),
+            "CloudWatchLoggingOptions": self.cloudwatch_logging_options(
                 self.log_group,
                 self.s3_log_stream
             )
-        )
+        }
 
     def generate_iam_policy_statements(self):
         variables = self.get_variables()
@@ -198,15 +207,15 @@ class BaseDeliveryStream(Blueprint):
         key_arn = variables["EncryptionKeyArn"]
 
         statements = []
-        statements.append(s3_write_statements(bucket_name))
-        statements.append(
+        statements.extend(s3_write_statements(bucket_name))
+        statements.extend(
             write_to_cloudwatch_logs_stream_statements(
                 Ref(self.log_group), Ref(self.s3_log_stream)
             )
         )
 
         if key_arn:
-            statements.append(
+            statements.extend(
                 kms_key_statements(
                     key_arn, bucket_arn, s3_prefix
                 )
@@ -246,7 +255,7 @@ class BaseDeliveryStream(Blueprint):
         log_retention = variables["LogRetentionDays"] or NOVALUE
 
         self.log_group = t.add_resource(
-            kms.LogGroup(
+            logs.LogGroup(
                 LOG_GROUP,
                 RetentionInDays=log_retention,
             )
@@ -261,7 +270,7 @@ class BaseDeliveryStream(Blueprint):
         t = self.template
 
         self.s3_log_stream = t.add_resource(
-            kms.LogStream(
+            logs.LogStream(
                 S3_LOG_STREAM,
                 LogGroupName=Ref(self.log_group),
                 DependsOn=self.log_group.title
@@ -283,9 +292,9 @@ class BaseDeliveryStream(Blueprint):
             Output("DeliveryStreamName", Value=Ref(self.delivery_stream))
         )
 
-    def create_teamplate(self):
-        self.create_role()
+    def create_template(self):
         self.create_log_group()
         self.create_log_stream()
+        self.create_role()
         self.create_delivery_stream()
         self.create_delivery_stream_output()

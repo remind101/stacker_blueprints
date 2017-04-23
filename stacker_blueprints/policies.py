@@ -2,15 +2,29 @@ from awacs.aws import (
     Action,
     Allow,
     Policy,
+    Principal,
     Statement,
 )
 
 from troposphere import Join, Ref
 
-from awacs import s3, logs
+from awacs import sts, s3, logs
 
 ACCOUNT_ID = Ref("AWS::AccountId")
 REGION = Ref("AWS::Region")
+
+
+def make_simple_assume_statement(*principals):
+    return Statement(
+        Principal=Principal('Service', principals),
+        Effect=Allow,
+        Action=[sts.AssumeRole])
+
+
+def make_simple_assume_policy(*principals):
+    return Policy(
+        Statement=[
+            make_simple_assume_statement(*principals)])
 
 
 def s3_arn(bucket):
@@ -103,3 +117,7 @@ def write_to_cloudwatch_logs_stream_policy(log_group_name, log_stream_name):
         Statement=write_to_cloudwatch_logs_stream_statements(log_group_name,
                                                              log_stream_name)
     )
+
+
+def flowlogs_assumerole_policy():
+    return make_simple_assume_policy("vpc-flow-logs.amazonaws.com")
