@@ -175,10 +175,10 @@ class BaseDeliveryStream(Blueprint):
 
     def cloudwatch_logging_options(self, log_group, log_stream):
         return firehose.CloudWatchLoggingOptions(
-                        Enabled=True,
-                        LogGroupName=Ref(log_group),
-                        LogStreamName=Ref(log_stream),
-                    )
+            Enabled=True,
+            LogGroupName=Ref(log_group),
+            LogStreamName=Ref(log_stream),
+        )
 
     def s3_destination_config_dict(self):
         t = self.template
