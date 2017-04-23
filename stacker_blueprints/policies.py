@@ -1,8 +1,30 @@
-from awacs.aws import Statement, Allow, Policy, Action
+from awacs.aws import (
+    Action,
+    Allow,
+    Policy,
+    Principal,
+    Statement,
+)
 
-from troposphere import Join
+from troposphere import Join, Ref
 
-from awacs import s3
+from awacs import sts, s3, logs
+
+ACCOUNT_ID = Ref("AWS::AccountId")
+REGION = Ref("AWS::Region")
+
+
+def make_simple_assume_statement(*principals):
+    return Statement(
+        Principal=Principal('Service', principals),
+        Effect=Allow,
+        Action=[sts.AssumeRole])
+
+
+def make_simple_assume_policy(*principals):
+    return Policy(
+        Statement=[
+            make_simple_assume_statement(*principals)])
 
 
 def s3_arn(bucket):
@@ -67,3 +89,35 @@ def read_write_s3_bucket_policy_statements(buckets):
 
 def read_write_s3_bucket_policy(buckets):
     return Policy(Statement=read_write_s3_bucket_policy_statements(buckets))
+
+
+def log_stream_arn(log_group_name, log_stream_name):
+    return Join(
+        '',
+        [
+            "arn:aws:logs:", REGION, ":", ACCOUNT_ID, ":log-group:",
+            log_group_name, ":log-stream:", log_stream_name
+        ]
+    )
+
+
+def write_to_cloudwatch_logs_stream_statements(log_group_name,
+                                               log_stream_name):
+    return [
+        Statement(
+            Effect=Allow,
+            Action=[logs.PutLogEvents],
+            Resource=[log_stream_arn(log_group_name, log_stream_name)]
+        )
+    ]
+
+
+def write_to_cloudwatch_logs_stream_policy(log_group_name, log_stream_name):
+    return Policy(
+        Statement=write_to_cloudwatch_logs_stream_statements(log_group_name,
+                                                             log_stream_name)
+    )
+
+
+def flowlogs_assumerole_policy():
+    return make_simple_assume_policy("vpc-flow-logs.amazonaws.com")
