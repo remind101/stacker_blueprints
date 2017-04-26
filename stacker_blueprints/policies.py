@@ -148,3 +148,56 @@ def s3_write_policy(bucket):
 
 def read_write_s3_bucket_policy(buckets):
     return Policy(Statement=read_write_s3_bucket_policy_statements(buckets))
+
+
+def s3_read_only_external_account(accounts, bucket):
+    return [
+        Statement(
+            Effect='Allow',
+            Action=[
+                awacs.s3.GetBucketLocation,
+                awacs.s3.ListBucket
+            ],
+            Resource=[s3_arn(bucket)],
+            Principal=awacs.aws.Principal('AWS', accounts),
+        ),
+        Statement(
+            Effect='Allow',
+            Action=[
+                awacs.s3.GetObject,
+                awacs.s3.RestoreObject,
+            ],
+            Resource=[s3_arn(Join("", [bucket, "/*"]))],
+            Principal=awacs.aws.Principal('AWS', accounts),
+        ),
+    ]
+
+
+def s3_read_only_external_account_policy(accounts, bucket):
+    return Policy(Statement=s3_read_only_external_account(accounts, bucket))
+
+
+def s3_read_write_external_account_statements(accounts, bucket):
+    return [
+        Statement(
+            Effect='Allow',
+            Principal=awacs.aws.Principal('AWS', accounts),
+            Action=[
+                awacs.s3.AbortMultipartUpload,
+                awacs.s3.GetBucketLocation,
+                awacs.s3.GetObject,
+                awacs.s3.ListBucket,
+                awacs.s3.ListBucketMultipartUploads,
+                awacs.s3.PutObject,
+            ],
+            Resource=[
+                Join('', ['arn:aws:s3:::', bucket]),
+                Join('', ['arn:aws:s3:::', bucket, '/*'])]
+        )
+    ]
+
+
+def s3_read_write_external_account_policy(accounts, bucket):
+    return Policy(Statement=s3_read_write_external_account_statements(
+        accounts, bucket
+    ))

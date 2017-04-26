@@ -10,7 +10,9 @@ from troposphere import (
 from policies import (
     read_only_s3_bucket_policy,
     read_write_s3_bucket_policy,
-    s3_arn
+    s3_arn,
+    s3_read_only_external_account_policy,
+    s3_read_write_external_account_policy
 )
 
 
@@ -36,6 +38,18 @@ class Buckets(Blueprint):
                            "access to the buckets created.",
             "default": []
         },
+        "ReadExternalArns": {
+            "type": list,
+            "description": "A list of external arns that have read-only "
+                           "permissions for the created buckets",
+            "default": []
+        },
+        "ReadWriteExternalArns": {
+            "type": list,
+            "description": "A list of external arns that have read-write "
+                           "permissions for the created buckets",
+            "default": []
+        }
 
     }
 
@@ -85,3 +99,35 @@ class Buckets(Blueprint):
                     Roles=read_only_roles,
                 )
             )
+
+        read_external_arns = variables["ReadExternalArns"]
+        if read_external_arns:
+            for title, attrs in variables["Buckets"].items():
+
+                bucket_name_without_dashes = title.replace('-', '')
+
+                t.add_resource(
+                    s3.BucketPolicy(
+                        "ExternalPolicy%s" % bucket_name_without_dashes,
+                        Bucket=Ref(title),
+                        PolicyDocument=s3_read_only_external_account_policy(
+                            read_external_arns, Ref(title)
+                        )
+                    )
+                )
+
+        write_external_arns = variables["ReadWriteExternalArns"]
+        if write_external_arns:
+            for title, attrs in variables["Buckets"].items():
+
+                bucket_name_without_dashes = title.replace('-', '')
+
+                t.add_resource(
+                    s3.BucketPolicy(
+                        "ExternalPolicy%s" % bucket_name_without_dashes,
+                        Bucket=Ref(title),
+                        PolicyDocument=s3_read_write_external_account_policy(
+                            write_external_arns, Ref(title)
+                        )
+                    )
+                )
