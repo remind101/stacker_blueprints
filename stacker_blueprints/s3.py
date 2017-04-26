@@ -53,26 +53,15 @@ class Buckets(Blueprint):
 
     }
 
-    def create_template(self):
-        t = self.template
-        variables = self.get_variables()
+    def additional_bucket_policies(self):
+        # Overwrite this method in a subclass to add additional
+        # policies to the s3 bucket.
+        pass
 
+    def add_bucket_policies(self, bucket_ids):
         policy_prefix = self.context.get_fqn(self.name)
-
-        bucket_ids = []
-
-        for title, attrs in variables["Buckets"].items():
-            t.add_resource(s3.Bucket.from_dict(title, attrs))
-            t.add_output(Output(title + "BucketId", Value=Ref(title)))
-            t.add_output(Output(title + "BucketArn", Value=s3_arn(Ref(title))))
-            t.add_output(
-                Output(
-                    title + "BucketDomainName",
-                    Value=GetAtt(title, "DomainName")
-                )
-            )
-
-            bucket_ids.append(Ref(title))
+        variables = self.get_variables()
+        t = self.template
 
         read_write_roles = variables["ReadWriteRoles"]
         if read_write_roles:
@@ -131,3 +120,35 @@ class Buckets(Blueprint):
                         )
                     )
                 )
+
+    def create_buckets(self):
+        t = self.template
+        variables = self.get_variables()
+
+        bucket_ids = []
+
+        for title, attrs in variables["Buckets"].items():
+            t.add_resource(s3.Bucket.from_dict(title, attrs))
+            t.add_output(Output(title + "BucketId", Value=Ref(title)))
+            t.add_output(Output(title + "BucketArn", Value=s3_arn(Ref(title))))
+            t.add_output(
+                Output(
+                    title + "BucketDomainName",
+                    Value=GetAtt(title, "DomainName")
+                )
+            )
+
+            bucket_ids.append(Ref(title))
+
+        return bucket_ids
+
+    def create_template(self):
+
+        # Create the buckets and return the ids
+        bucket_ids = self.create_buckets()
+
+        # Add common permissions to all the buckets
+        self.add_bucket_policies(bucket_ids)
+
+        # Allow subclasses to add custom permissions
+        self.additional_bucket_policies()
