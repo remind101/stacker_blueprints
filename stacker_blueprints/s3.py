@@ -7,7 +7,7 @@ from troposphere import (
     iam,
 )
 
-from awacs import Policy
+from awacs.aws import Policy
 
 from .policies import (
     read_only_s3_bucket_policy,
@@ -59,11 +59,15 @@ class Buckets(Blueprint):
         self._bucket_ids = []
 
     def add_bucket_statements(self, stmts):
-        self._bucket_statements.extend(stmts)
+        self._bucket_stmts.extend(stmts)
+
+    def additional_bucket_statments(self):
+        # Use this when adding additional statements in a subclass
+        return []
 
     @property
     def bucket_statements(self):
-        stmts = self._bucket_statements
+        stmts = self._bucket_stmts
         stmts.extend(self.additional_bucket_statments())
         return stmts
 
@@ -145,4 +149,4 @@ class Buckets(Blueprint):
         self.create_iam_policies()
 
         # Add Bucket policies (some permissions cannot be express as IAM) 
-        self.additional_bucket_policies()
+        self.create_bucket_policies()
