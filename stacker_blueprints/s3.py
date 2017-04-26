@@ -59,14 +59,14 @@ class Buckets(Blueprint):
 
     def nameBucket(self):
         return "S3"
-       
+
     def additional_bucket_statements(self, bucket_arn):
         return []
 
     def create_bucket_policies(self):
         t = self.template
         variables = self.get_variables()
-        
+
         for title, attrs in variables["Buckets"].items():
             bucket_arn = s3_arn(Ref(title))
             stmts = self.additional_bucket_statements(bucket_arn)
