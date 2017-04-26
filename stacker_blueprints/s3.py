@@ -7,12 +7,12 @@ from troposphere import (
     iam,
 )
 
+from awacs import Policy
+
 from .policies import (
     read_only_s3_bucket_policy,
     read_write_s3_bucket_policy,
-    s3_arn,
-    s3_read_only_external_account_policy,
-    s3_read_write_external_account_policy
+    s3_arn
 )
 
 
@@ -53,12 +53,42 @@ class Buckets(Blueprint):
 
     }
 
-    def additional_bucket_policies(self):
-        # Overwrite this method in a subclass to add additional
-        # policies to the s3 bucket.
-        pass
+    def __init__(self, *args, **kwargs):
+        super(Buckets, self).__init__(*args, **kwargs)
+        self._bucket_stmts = []
+        self._bucket_ids = []
 
-    def add_bucket_policies(self, bucket_ids):
+    def add_bucket_statements(self, stmts):
+        self._bucket_statements.extend(stmts)
+
+    @property
+    def bucket_statements(self):
+        stmts = self._bucket_statements
+        stmts.extend(self.additional_bucket_statments())
+        return stmts
+
+    def bucket_policy_document(self):
+        return Policy(
+            Version='2012-10-17',
+            Statement=self.bucket_statements)
+
+    def create_bucket_policies(self):
+        t = self.template
+        variables = self.get_variables()
+        stmts = self.bucket_statements
+
+        if stmts:
+            for title, attrs in variables["Buckets"].items():
+                bucket_name_without_dashes = title.replace('-', '')
+                t.add_resource(
+                    s3.BucketPolicy(
+                        "BucketPolicy-%s" % bucket_name_without_dashes,
+                        Bucket=Ref(title),
+                        PolicyDocument=self.bucket_policy_document()
+                    )
+                )
+
+    def create_iam_policies(self):
         policy_prefix = self.context.get_fqn(self.name)
         variables = self.get_variables()
         t = self.template
@@ -70,7 +100,7 @@ class Buckets(Blueprint):
                     "ReadWritePolicy",
                     PolicyName=policy_prefix + "ReadWritePolicy",
                     PolicyDocument=read_write_s3_bucket_policy(
-                        bucket_ids
+                        self._bucket_ids
                     ),
                     Roles=read_write_roles,
                 )
@@ -83,49 +113,15 @@ class Buckets(Blueprint):
                     "ReadPolicy",
                     PolicyName=policy_prefix + "ReadPolicy",
                     PolicyDocument=read_only_s3_bucket_policy(
-                        bucket_ids
+                        self._bucket_ids
                     ),
                     Roles=read_only_roles,
                 )
             )
 
-        read_external_arns = variables["ReadExternalArns"]
-        if read_external_arns:
-            for title, attrs in variables["Buckets"].items():
-
-                bucket_name_without_dashes = title.replace('-', '')
-
-                t.add_resource(
-                    s3.BucketPolicy(
-                        "ExternalPolicy%s" % bucket_name_without_dashes,
-                        Bucket=Ref(title),
-                        PolicyDocument=s3_read_only_external_account_policy(
-                            read_external_arns, Ref(title)
-                        )
-                    )
-                )
-
-        write_external_arns = variables["ReadWriteExternalArns"]
-        if write_external_arns:
-            for title, attrs in variables["Buckets"].items():
-
-                bucket_name_without_dashes = title.replace('-', '')
-
-                t.add_resource(
-                    s3.BucketPolicy(
-                        "ExternalPolicy%s" % bucket_name_without_dashes,
-                        Bucket=Ref(title),
-                        PolicyDocument=s3_read_write_external_account_policy(
-                            write_external_arns, Ref(title)
-                        )
-                    )
-                )
-
     def create_buckets(self):
         t = self.template
         variables = self.get_variables()
-
-        bucket_ids = []
 
         for title, attrs in variables["Buckets"].items():
             t.add_resource(s3.Bucket.from_dict(title, attrs))
@@ -138,17 +134,15 @@ class Buckets(Blueprint):
                 )
             )
 
-            bucket_ids.append(Ref(title))
-
-        return bucket_ids
+            self._bucket_ids.append(Ref(title))
 
     def create_template(self):
 
         # Create the buckets and return the ids
-        bucket_ids = self.create_buckets()
+        self.create_buckets()
 
-        # Add common permissions to all the buckets
-        self.add_bucket_policies(bucket_ids)
+        # Add IAM policies
+        self.create_iam_policies()
 
-        # Allow subclasses to add custom permissions
+        # Add Bucket policies (some permissions cannot be express as IAM) 
         self.additional_bucket_policies()
