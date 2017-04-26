@@ -8,7 +8,7 @@ from awacs.aws import (
 
 from troposphere import Join, Ref
 
-from awacs import sts, s3, logs
+from awacs import sts, s3, logs, aws
 
 ACCOUNT_ID = Ref("AWS::AccountId")
 REGION = Ref("AWS::Region")
@@ -121,3 +121,56 @@ def write_to_cloudwatch_logs_stream_policy(log_group_name, log_stream_name):
 
 def flowlogs_assumerole_policy():
     return make_simple_assume_policy("vpc-flow-logs.amazonaws.com")
+
+
+def s3_read_only_external_account(accounts, bucket):
+    return [
+        Statement(
+            Effect='Allow',
+            Action=[
+                s3.GetBucketLocation,
+                s3.ListBucket
+            ],
+            Resource=[s3_arn(bucket)],
+            Principal=aws.Principal('AWS', accounts),
+        ),
+        Statement(
+            Effect='Allow',
+            Action=[
+                s3.GetObject,
+                s3.RestoreObject,
+            ],
+            Resource=[s3_arn(Join("", [bucket, "/*"]))],
+            Principal=aws.Principal('AWS', accounts),
+        ),
+    ]
+
+
+def s3_read_only_external_account_policy(accounts, bucket):
+    return Policy(Statement=s3_read_only_external_account(accounts, bucket))
+
+
+def s3_read_write_external_account_statements(accounts, bucket):
+    return [
+        Statement(
+            Effect='Allow',
+            Principal=aws.Principal('AWS', accounts),
+            Action=[
+                s3.AbortMultipartUpload,
+                s3.GetBucketLocation,
+                s3.GetObject,
+                s3.ListBucket,
+                s3.ListBucketMultipartUploads,
+                s3.PutObject,
+            ],
+            Resource=[
+                Join('', ['arn:aws:s3:::', bucket]),
+                Join('', ['arn:aws:s3:::', bucket, '/*'])]
+        )
+    ]
+
+
+def s3_read_write_external_account_policy(accounts, bucket):
+    return Policy(Statement=s3_read_write_external_account_statements(
+        accounts, bucket
+    ))
