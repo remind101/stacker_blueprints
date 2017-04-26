@@ -55,40 +55,32 @@ class Buckets(Blueprint):
 
     def __init__(self, *args, **kwargs):
         super(Buckets, self).__init__(*args, **kwargs)
-        self._bucket_stmts = []
         self._bucket_ids = []
 
-    def add_bucket_statements(self, stmts):
-        self._bucket_stmts.extend(stmts)
-
-    def additional_bucket_statments(self):
-        # Use this when adding additional statements in a subclass
+    def nameBucket(self):
+        return "S3"
+       
+    def additional_bucket_statements(self, bucket_arn):
         return []
-
-    @property
-    def bucket_statements(self):
-        stmts = self._bucket_stmts
-        stmts.extend(self.additional_bucket_statments())
-        return stmts
-
-    def bucket_policy_document(self):
-        return Policy(
-            Version='2012-10-17',
-            Statement=self.bucket_statements)
 
     def create_bucket_policies(self):
         t = self.template
         variables = self.get_variables()
-        stmts = self.bucket_statements
+        
+        for title, attrs in variables["Buckets"].items():
+            bucket_arn = s3_arn(Ref(title))
+            stmts = self.additional_bucket_statements(bucket_arn)
 
-        if stmts:
-            for title, attrs in variables["Buckets"].items():
+            # If there are additional bucket statements
+            if stmts:
                 bucket_name_without_dashes = title.replace('-', '')
                 t.add_resource(
                     s3.BucketPolicy(
-                        "BucketPolicy-%s" % bucket_name_without_dashes,
+                        "BucketPolicy%s" % bucket_name_without_dashes,
                         Bucket=Ref(title),
-                        PolicyDocument=self.bucket_policy_document()
+                        PolicyDocument=Policy(
+                            Version='2012-10-17',
+                            Statement=stmts)
                     )
                 )
 
@@ -148,5 +140,5 @@ class Buckets(Blueprint):
         # Add IAM policies
         self.create_iam_policies()
 
-        # Add Bucket policies (some permissions cannot be express as IAM) 
+        # Add Bucket policies (some permissions cannot be express as IAM)
         self.create_bucket_policies()
