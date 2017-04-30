@@ -4,7 +4,7 @@ from setuptools import setup, find_packages
 src_dir = os.path.dirname(__file__)
 
 install_requires = [
-    "stacker~=1.0.0",
+    "stacker~=1.0.1",
 ]
 
 tests_require = [
