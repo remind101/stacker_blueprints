@@ -1,0 +1,26 @@
+{
+    "Resources": {
+        "TestHost": {
+            "Properties": {
+                "HostedZoneId": "fake_zone_id",
+                "Name": "host.testdomain.com.",
+                "ResourceRecords": [
+                    "10.0.0.1"
+                ],
+                "Type": "A"
+            },
+            "Type": "AWS::Route53::RecordSet"
+        },
+        "TestHost2": {
+            "Properties": {
+                "HostedZoneId": "set_zone_id",
+                "Name": "host2.testdomain.com.",
+                "ResourceRecords": [
+                    "10.0.0.2"
+                ],
+                "Type": "A"
+            },
+            "Type": "AWS::Route53::RecordSet"
+        }
+    }
+}

@@ -65,3 +65,6 @@ dev.env
 
 # Mac
 .DS_Store
+
+# Ignore blueprint fixture results
+*.json-result
