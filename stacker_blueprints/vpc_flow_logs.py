@@ -21,10 +21,14 @@ import awacs
 import awacs.logs
 
 from .policies import flowlogs_assumerole_policy
+from .cloudwatch_logs import (
+    LOG_RETENTION_STRINGS,
+    validate_cloudwatch_log_retention
+)
 
 ALLOWED_TRAFFIC_TYPES = ["ACCEPT", "REJECT", "ALL"]
 JOINED_TRAFFIC_TYPES = '/'.join(ALLOWED_TRAFFIC_TYPES)
-LOG_RETENTION_DEFAULT = 1
+LOG_RETENTION_DEFAULT = 0
 CLOUDWATCH_ROLE_NAME = "Role"
 FLOW_LOG_GROUP_NAME = "LogGroup"
 FLOW_LOG_STREAM_NAME = "LogStream"
@@ -70,8 +74,12 @@ class FlowLogs(Blueprint):
     VARIABLES = {
         "Retention": {
             "type": int,
-            "description": "Log group retention time in days.",
+            "description": "Time in days to retain Cloudwatch Logs. Accepted "
+                           "values: %s. Default 0 - retain forever." % (
+                               ', '.join(LOG_RETENTION_STRINGS)),
             "default": LOG_RETENTION_DEFAULT,
+            "validator": validate_cloudwatch_log_retention,
+
         },
         "VpcId": {
             "type": str,
