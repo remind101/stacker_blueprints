@@ -91,6 +91,10 @@ class BaseRDS(Blueprint):
                            "during maintenance windows.",
             "default": False,
         },
+        "DBFamily": {
+            "type": str,
+            "description": "DBFamily for ParameterGroup.",
+        },
         "StorageType": {
             "type": str,
             "description": "Storage type for RDS instance. Defaults to "
@@ -188,10 +192,6 @@ class BaseRDS(Blueprint):
             ]
         )
 
-    def get_piops(self):
-        variables = self.get_variables()
-        return variables["IOPS"] or Ref("AWS::NoValue")
-
     def get_storage_type(self):
         variables = self.get_variables()
         return variables["StorageType"] or Ref("AWS::NoValue")
@@ -269,12 +269,16 @@ class BaseRDS(Blueprint):
 
     def create_rds(self):
         t = self.template
-        t.add_resource(
-            DBInstance(
-                DBINSTANCE,
-                StorageType=self.get_storage_type(),
-                Iops=self.get_piops(),
-                **self.get_common_attrs()))
+        variables = self.get_variables()
+        db = DBInstance(
+            DBINSTANCE,
+            StorageType=self.get_storage_type(),
+            **self.get_common_attrs())
+        # Hack till https://github.com/cloudtools/troposphere/pull/652/
+        # is accepted
+        if variables["IOPS"]:
+            db.Iops = variables["IOPS"]
+        t.add_resource(db)
 
     def create_dns_records(self):
         t = self.template
@@ -382,10 +386,6 @@ class MasterInstance(BaseRDS):
                 "type": str,
                 "description": "Database engine version for the RDS Instance.",
             },
-            "DBFamily": {
-                "type": str,
-                "description": "DBFamily for ParameterGroup.",
-            },
             "StorageEncrypted": {
                 "type": bool,
                 "description": "Set to 'false' to disable encrypted storage.",
@@ -447,10 +447,6 @@ class ReadReplica(BaseRDS):
                 "type": str,
                 "description": "Database engine version for the RDS Instance.",
             },
-            "DBFamily": {
-                "type": str,
-                "description": "DBFamily for ParameterGroup.",
-            },
             "StorageEncrypted": {
                 "type": bool,
                 "description": "Set to 'false' to disable encrypted storage.",
@@ -505,6 +501,7 @@ class ClusterInstance(BaseRDS):
             "DBInstanceClass": variables["InstanceType"],
             "DBInstanceIdentifier": variables["DBInstanceIdentifier"],
             "DBSnapshotIdentifier": self.get_db_snapshot_identifier(),
+            "DBParameterGroupName": Ref("ParameterGroup"),
             "Engine": self.engine() or variables["Engine"],
             "LicenseModel": Ref("AWS::NoValue"),
             "Tags": self.get_tags(),
