@@ -1,3 +1,14 @@
+## 1.0.2 (2017-05-18)
+
+- Basic VPC Flow Logs blueprint [GH-94]
+- Basic KMS Key blueprint [GH-95]
+- Updated Firehose blueprints [GH-96]
+- Add website url to s3 bucket [GH-97]
+- Cloudwatch Log filters blueprint [GH-98]
+- Simple Lambda Function blueprint [GH-99]
+- Route53 recordset blueprint [GH-102]
+- Minor fixes for Aurora blueprints [GH-111]
+
 ## 1.0.1 (2017-04-13)
 
 - Update examples to use explicit output lookups [GH-82]
