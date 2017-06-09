@@ -409,7 +409,10 @@ class MasterInstance(BaseRDS):
             "BackupRetentionPeriod": variables["BackupRetentionPeriod"],
             "DBName": variables["DatabaseName"],
             "DBInstanceClass": variables["InstanceType"],
-            "DBInstanceIdentifier": variables["DBInstanceIdentifier"] or self.context.get_fqn(self.name),
+            "DBInstanceIdentifier": (
+                variables["DBInstanceIdentifier"]
+                or self.context.get_fqn(self.name)
+            ),
             "DBSnapshotIdentifier": self.get_db_snapshot_identifier(),
             "DBParameterGroupName": Ref("ParameterGroup"),
             "DBSubnetGroupName": Ref(SUBNET_GROUP),
@@ -469,7 +472,10 @@ class ReadReplica(BaseRDS):
             "AllowMajorVersionUpgrade": variables["AllowMajorVersionUpgrade"],
             "AutoMinorVersionUpgrade": variables["AutoMinorVersionUpgrade"],
             "DBInstanceClass": variables["InstanceType"],
-            "DBInstanceIdentifier": variables["DBInstanceIdentifier"] or self.context.get_fqn(self.name),
+            "DBInstanceIdentifier": (
+                variables["DBInstanceIdentifier"]
+                or self.context.get_fqn(self.name)
+            ),
             "DBParameterGroupName": Ref("ParameterGroup"),
             "Engine": self.engine() or variables["Engine"],
             "EngineVersion": variables["EngineVersion"],
@@ -503,7 +509,10 @@ class ClusterInstance(BaseRDS):
             "AllowMajorVersionUpgrade": variables["AllowMajorVersionUpgrade"],
             "AutoMinorVersionUpgrade": variables["AutoMinorVersionUpgrade"],
             "DBInstanceClass": variables["InstanceType"],
-            "DBInstanceIdentifier": variables["DBInstanceIdentifier"] or self.context.get_fqn(self.name),
+            "DBInstanceIdentifier": (
+                variables["DBInstanceIdentifier"]
+                or self.context.get_fqn(self.name)
+            ),
             "DBSnapshotIdentifier": self.get_db_snapshot_identifier(),
             "DBParameterGroupName": Ref("ParameterGroup"),
             "Engine": self.engine() or variables["Engine"],
