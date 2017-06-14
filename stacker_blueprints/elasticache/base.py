@@ -222,6 +222,11 @@ class BaseReplicationGroup(Blueprint):
         maintenance_window = variables["PreferredMaintenanceWindow"] or \
             NOVALUE
 
+        if snapshot_window == NOVALUE:
+            snapshot_retention_limit = NOVALUE
+        else:
+            snapshot_retention_limit = variables["SnapshotRetentionLimit"]
+
         t.add_resource(
             ReplicationGroup(
                 REPLICATION_GROUP,
@@ -240,7 +245,7 @@ class BaseReplicationGroup(Blueprint):
                 ReplicationGroupDescription=self.name,
                 SecurityGroupIds=[Ref(SECURITY_GROUP), ],
                 SnapshotArns=snapshot_arns,
-                SnapshotRetentionLimit=variables["SnapshotRetentionLimit"],
+                SnapshotRetentionLimit=snapshot_retention_limit,
                 SnapshotWindow=snapshot_window,
             )
         )
