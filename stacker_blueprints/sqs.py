@@ -13,6 +13,7 @@ from . import util
 def validate_queue(queue):
     sqs_queue_properties = [
         "DelaySeconds",
+        "FifoQueue",
         "MaximumMessageSize",
         "MessageRetentionPeriod",
         "ReceiveMessageWaitTimeSeconds",
