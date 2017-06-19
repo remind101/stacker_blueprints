@@ -38,7 +38,7 @@ class BaseReplicationGroup(Blueprint):
             "description": "Vpc Id to place the Cluster in"
         },
         "Subnets": {
-            "type": list,
+            "type": str,
             "description": "Comma separated list of subnets to deploy the "
                            "Cluster nodes in."
         },
@@ -199,7 +199,7 @@ class BaseReplicationGroup(Blueprint):
             SubnetGroup(
                 SUBNET_GROUP,
                 Description="%s subnet group." % self.name,
-                SubnetIds=self.get_variables()["Subnets"]))
+                SubnetIds=self.get_variables()["Subnets"].split(',')))
 
     def create_security_group(self):
         t = self.template
