@@ -7,7 +7,7 @@
 # the VPC you must first SSH to a bastion host, and then SSH from that host to
 # another inside the VPC.
 
-from troposphere import Ref, ec2, autoscaling, FindInMap
+from troposphere import Ref, ec2, autoscaling, FindInMap, Output
 from troposphere.autoscaling import Tag as ASTag
 
 from stacker.blueprints.base import Blueprint
@@ -65,11 +65,18 @@ class Bastion(Blueprint):
             ec2.SecurityGroupRule(IpProtocol='tcp',
                                   FromPort=22, ToPort=22,
                                   CidrIp=Ref('OfficeNetwork')))
-        t.add_resource(
+        sg = t.add_resource(
             ec2.SecurityGroup(CLUSTER_SG_NAME,
                               GroupDescription='BastionSecurityGroup',
                               SecurityGroupIngress=cluster_rules,
                               VpcId=Ref("VpcId")))
+
+        t.add_output(
+            Output(
+                'SecurityGroup',
+                Value=Ref(sg)
+            )
+        )
 
         # Make it so the bastion hosts can ssh into any other host.
         t.add_resource(
