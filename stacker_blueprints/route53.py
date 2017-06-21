@@ -64,8 +64,7 @@ class DNSRecords(Blueprint):
         rs = route53.RecordSetType.from_dict(record_set_md5, rs_dict)
         rs = add_hosted_zone_id_if_missing(rs, self.hosted_zone_id)
         rs = add_hosted_zone_id_for_cloudfront_alias_if_missing(rs)
-        self.template.add_resource(rs)
-        return rs
+        return self.template.add_resource(rs)
 
     def create_record_sets(self, record_set_dicts):
         """Accept list of record_set dicts.
