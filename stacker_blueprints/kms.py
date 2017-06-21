@@ -57,12 +57,18 @@ class Key(Blueprint):
             "description": "The alias to give the key.",
             "default": "",
         },
-        "Attributes": {
+        "Properties": {
             "type": dict,
             "description": "A dictionary of KMS key attributes which should "
                            "match the attributes for AWS::KMS::Key "
                            "Cloudformation resource. Note: You should "
                            "not supply a `KeyPolicy` attribute.",
+            "default": {},
+        },
+        "Attributes": {
+            "type": dict,
+            "description": "Deprecated. Use Properties instead.",
+            "default": {},
         }
     }
 
@@ -74,16 +80,20 @@ class Key(Blueprint):
         variables = self.get_variables()
 
         key_policy = self.generate_key_policy()
-        attrs = variables["Attributes"]
+        props = variables["Properties"]
 
-        if "KeyPolicy" in attrs:
+        if variables["Attributes"]:
+            raise DeprecationWarning(
+                    "Attributes was deprecated, use Properties instead.")
+
+        if "KeyPolicy" in props:
             logger.warning("KeyPolicy provided, but not used. To write "
                            "your own policy you need to subclass this "
                            "blueprint and override `generate_key_policy`.")
-        attrs["KeyPolicy"] = key_policy
+        props["KeyPolicy"] = key_policy
 
         key = t.add_resource(
-            kms.Key.from_dict("Key", attrs)
+            kms.Key.from_dict("Key", props)
         )
 
         key_arn = Join(
