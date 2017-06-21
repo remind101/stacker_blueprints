@@ -15,8 +15,7 @@ class TestKmsKey(BlueprintTestCase):
         blueprint.resolve_variables(
             [
                 Variable("KeyAlias", "alias/a-test-key"),
-                #Variable("Properties", {"Description": "a KMS test-key."}),
-                Variable("Attributes", {"Description": "a KMS test-key."}),
+                Variable("Properties", {"Description": "a KMS test-key."}),
             ]
         )
         blueprint.create_template()
@@ -27,14 +26,12 @@ class TestKmsKey(BlueprintTestCase):
         blueprint.resolve_variables(
             [
                 Variable("KeyAlias", "b-test-key"),
-                #Variable("Properties", {"Description": "b KMS test-key."}),
-                Variable("Attributes", {"Description": "b KMS test-key."}),
+                Variable("Properties", {"Description": "b KMS test-key."}),
             ]
         )
         blueprint.create_template()
         self.assertRenderedBlueprint(blueprint)
     
-    """
     def test_kms_key_without_properties(self):
         blueprint = Key('kms_key_c', self.ctx)
         blueprint.resolve_variables(
@@ -44,9 +41,7 @@ class TestKmsKey(BlueprintTestCase):
         )
         blueprint.create_template()
         self.assertRenderedBlueprint(blueprint)
-    """
 
-    """
     def test_kms_key_attributes_is_deprecated(self):
         blueprint = Key('kms_key_attributes_deprecated', self.ctx)
         blueprint.resolve_variables(
@@ -57,7 +52,7 @@ class TestKmsKey(BlueprintTestCase):
         )
         with self.assertRaises(DeprecationWarning):
             blueprint.create_template()
-    """
+
 
 if __name__ == '__main__':
     unittest.main()
