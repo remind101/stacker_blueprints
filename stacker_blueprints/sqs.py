@@ -26,6 +26,14 @@ def validate_queue(queue):
     if "RedrivePolicy" in queue:
         queue["RedrivePolicy"] = sqs.RedrivePolicy(**queue["RedrivePolicy"])
 
+    if "FifoQueue" in queue and queue["FifoQueue"]:
+        if "QueueName" not in queue or \
+                not queue["QueueName"].endswith(".fifo"):
+            raise ValueError(
+                "FIFO queues need to provide a QueueName "
+                "that ends with '.fifo'"
+            )
+
     return queue
 
 
