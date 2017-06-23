@@ -10,7 +10,30 @@ from troposphere import (
     route53,
 )
 
-CLOUDFRONT_HOSTED_ZONE_ID = "Z2FDTNDATAQYW2"
+# reference: http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide
+#       /aws-properties-route53-aliastarget.html
+CLOUDFRONT_ZONE_ID = "Z2FDTNDATAQYW2"
+
+# reference: http://docs.aws.amazon.com/general/latest/gr/rande.html
+ELB_ZONE_IDS = {
+    'us-east-2': 'Z3AADJGX6KTTL2',
+    'us-east-1': 'Z35SXDOTRQ7X7K',
+    'us-west-1': 'Z368ELLRRE2KJ0',
+    'us-west-2': 'Z1H1FL5HABSF5',
+    'ca-central-1': 'ZQSVJUPU6J1EY',
+    'ap-south-1': 'ZP97RAFLXTNZK',
+    'ap-northeast-2': 'ZWKZPGTI48KDX',
+    'ap-southeast-1': 'Z1LMS91P8CMLE5',
+    'ap-southeast-2': 'Z1GM3OXH4ZPM65',
+    'ap-northeast-1': 'Z14GRHDCWA56QT',
+    'eu-central-1': 'Z215JYRZR1TBD5',
+    'eu-west-1': 'Z32O12XQLNTSW2',
+    'eu-west-2': 'ZHURV8PSTC4K8',
+    'sa-east-1': 'Z2P70J7HTTTPLU',
+}
+
+CF_DOMAIN = ".cloudfront.net."
+ELB_DOMAIN = ".elb.amazonaws.com."
 
 
 def get_record_set_md5(rs_name, rs_type):
@@ -22,18 +45,6 @@ def add_hosted_zone_id_if_missing(record_set, hosted_zone_id):
     """Add HostedZoneId to Trophosphere record_set object if missing."""
     if not getattr(record_set, "HostedZoneId", None):
         record_set.HostedZoneId = hosted_zone_id
-    return record_set
-
-
-def add_hosted_zone_id_for_cloudfront_alias_if_missing(record_set):
-    """Accept a record_set Troposphere object. Returns record_set object."""
-    # magic to automatically add the HostedZoneId for cloudfront.net aliases.
-    # http://docs.aws.amazon.com/AWSCloudFormation/latest
-    #       /UserGuide/aws-properties-route53-aliastarget.html
-    if getattr(record_set, "AliasTarget", None):
-        if not getattr(record_set.AliasTarget, "HostedZoneId", None):
-            if ".cloudfront.net" in record_set.AliasTarget.DNSName:
-                record_set.AliasTarget.HostedZoneId = CLOUDFRONT_HOSTED_ZONE_ID
     return record_set
 
 
@@ -58,12 +69,25 @@ class DNSRecords(Blueprint):
         },
     }
 
+    def add_hosted_zone_id_for_alias_target_if_missing(self, rs):
+        """Add proper hosted zone id to record set alias target if missing."""
+        if getattr(rs, "AliasTarget", None):
+            if not getattr(rs.AliasTarget, "HostedZoneId", None):
+                if rs.AliasTarget.DNSName.endswith(CF_DOMAIN):
+                    rs.AliasTarget.HostedZoneId = CLOUDFRONT_ZONE_ID
+                elif rs.AliasTarget.DNSName.endswith(ELB_DOMAIN):
+                    elb_region = rs.AliasTarget.DNSName.split('.')[-5]
+                    rs.AliasTarget.HostedZoneId = ELB_ZONE_IDS[elb_region]
+                else:
+                    rs.AliasTarget.HostedZoneId = self.hosted_zone_id
+        return rs
+
     def create_record_set(self, rs_dict):
         """Accept a record_set dict. Return a Troposphere record_set object."""
         record_set_md5 = get_record_set_md5(rs_dict["Name"], rs_dict["Type"])
         rs = route53.RecordSetType.from_dict(record_set_md5, rs_dict)
         rs = add_hosted_zone_id_if_missing(rs, self.hosted_zone_id)
-        rs = add_hosted_zone_id_for_cloudfront_alias_if_missing(rs)
+        rs = self.add_hosted_zone_id_for_alias_target_if_missing(rs)
         return self.template.add_resource(rs)
 
     def create_record_sets(self, record_set_dicts):
