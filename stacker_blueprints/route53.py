@@ -10,8 +10,10 @@ from troposphere import (
     route53,
 )
 
-# reference: http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide
-#       /aws-properties-route53-aliastarget.html
+import logging
+logger = logging.getLogger(__name__)
+
+# reference: http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-route53-aliastarget.html  # noqa
 CLOUDFRONT_ZONE_ID = "Z2FDTNDATAQYW2"
 
 # reference: http://docs.aws.amazon.com/general/latest/gr/rande.html
@@ -61,6 +63,12 @@ class DNSRecords(Blueprint):
             "description": "The name of a HostedZone to create and manage.",
             "default": "",
         },
+        "Comment": {
+            "type": str,
+            "description": "The comment of a stacker managed HostedZone."
+                           "Does nothing when HostedZoneId in variables.",
+            "default": "",
+        },
         "RecordSets": {
             "type": list,
             "description": "A list of dictionaries representing the attributes"
@@ -102,6 +110,13 @@ class DNSRecords(Blueprint):
         variables = self.get_variables()
         hosted_zone_name = variables["HostedZoneName"]
         hosted_zone_id = variables["HostedZoneId"]
+        hosted_zone_comment = variables["Comment"]
+
+        if all([hosted_zone_comment, hosted_zone_id]):
+            logger.warning(
+                "The Comment variable works when HostedZoneName is passed."
+                "When HostedZoneId in variables, Comment is ignored."
+            )
 
         if all([hosted_zone_name, hosted_zone_id]):
             raise ValueError("Cannot specify both 'HostedZoneName' and "
@@ -115,8 +130,16 @@ class DNSRecords(Blueprint):
             self.hosted_zone_id = hosted_zone_id
 
         else:
+            hosted_zone_config = route53.HostedZoneConfiguration(
+                "HostedZoneConfiguration",
+                Comment=hosted_zone_comment
+            )
             self.template.add_resource(
-                route53.HostedZone("HostedZone", Name=hosted_zone_name)
+                route53.HostedZone(
+                    "HostedZone",
+                    Name=hosted_zone_name,
+                    HostedZoneConfig=hosted_zone_config
+                )
             )
             self.hosted_zone_id = Ref("HostedZone")
             self.nameservers = Join(',', GetAtt("HostedZone", "NameServers"))

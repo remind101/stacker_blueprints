@@ -22,12 +22,16 @@
     "Resources": {
         "HostedZone": {
             "Properties": {
+                "HostedZoneConfig": {
+                    "Comment": "test-testdomain-com"
+                },
                 "Name": "testdomain.com"
             },
             "Type": "AWS::Route53::HostedZone"
         },
         "b42885d94c1ece3681f457bcb9b3e2f5": {
             "Properties": {
+                "Comment": "This is host2's record. : )",
                 "HostedZoneId": {
                     "Ref": "HostedZone"
                 },
