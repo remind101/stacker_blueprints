@@ -50,10 +50,12 @@ class TestRoute53(BlueprintTestCase):
                             "Name": "host2.testdomain.com.",
                             "Type": "A",
                             "ResourceRecords": ["10.0.0.2"],
+                            "Comment": "This is host2's record. : )",
                         },
                     ]
                 ),
                 Variable("HostedZoneName", "testdomain.com"),
+                Variable("Comment", "test-testdomain-com"),
             ]
         )
         blueprint.create_template()
