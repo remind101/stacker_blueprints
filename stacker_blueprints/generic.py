@@ -4,18 +4,14 @@ from troposphere import (
 )
 
 from stacker.blueprints.base import Blueprint
-from stacker.blueprints.variables.types import (
-    CFNString,
-    CFNCommaDelimitedList,
-)
 
-class generic_resource_creator(Blueprint):
+class GenericResourceCreator(Blueprint):
     """ Generic Blueprint for creating a resource """
     def add_cfn_description(self):
         """ Boilerplate for CFN Template """
         template = self.template
         template.add_version('2010-09-09')
-        template.add_description('Generic Resource Creator - 1.0.0')
+        template.add_description('CGM Generic Resource Creator - 1.0.0')
 
     """
 
@@ -40,6 +36,7 @@ class generic_resource_creator(Blueprint):
     }
 
     def setup_resource(self):
+        """ Setting Up Resource """
         template = self.template
         variables = self.get_variables()
 
@@ -52,7 +49,7 @@ class generic_resource_creator(Blueprint):
         # we need to do the following because of type conversion issues
         tprops_string = {}
         for variable, value in tprops.items():
-          tprops_string[variable] = str(value)
+            tprops_string[variable] = str(value)
 
         instance = klass.from_dict('ResourceRefName', tprops_string)
 
@@ -69,9 +66,10 @@ class generic_resource_creator(Blueprint):
         self.setup_resource()
 
     def get_class(self, kls):
+        """ Get class function """
         parts = kls.split('.')
         module = ".".join(parts[:-1])
-        m = __import__( module )
+        mod = __import__(module)
         for comp in parts[1:]:
-            m = getattr(m, comp)            
-        return m
+            mod = getattr(mod, comp)
+        return mod
