@@ -5,6 +5,7 @@ from troposphere import (
 
 from stacker.blueprints.base import Blueprint
 
+
 class GenericResourceCreator(Blueprint):
     """ Generic Blueprint for creating a resource """
     def add_cfn_description(self):
@@ -32,7 +33,8 @@ class GenericResourceCreator(Blueprint):
              'description': 'The output to create'},
         'Properties':
             {'type': dict,
-             'description': 'The list of propertie to use for the troposphere class'},
+             'description': 'The list of propertie to use for the troposphere'
+                            + ' class'},
     }
 
     def setup_resource(self):
