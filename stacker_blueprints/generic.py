@@ -22,6 +22,20 @@ class GenericResourceCreator(Blueprint):
     updates to the repo. This is the only way we can tell which version of
     a template is in place on a running resouce.
 
+
+    Example yaml:
+
+    - name: generic-resource-volume
+        class_path: blueprints.generic.GenericResourceCreator
+        variables:
+            Class: ec2.Volume
+            Output: VolumeId
+            Properties:
+                VolumeType: gp2
+                Size: 5
+                Encrypted: true
+                AvailabilityZone: us-east-1b
+
     """
 
     VARIABLES = {
@@ -38,23 +52,6 @@ class GenericResourceCreator(Blueprint):
              'description': 'The list of properties to use for the '
                             'Troposphere class'},
     }
-
-    """
-
-    Example yaml:
-
-    - name: generic-resource-volume
-        class_path: blueprints.generic.GenericResourceCreator
-        variables:
-            Class: ec2.Volume
-            Output: VolumeId
-            Properties:
-                VolumeType: gp2
-                Size: 5
-                Encrypted: true
-                AvailabilityZone: us-east-1b
-
-    """
 
     def setup_resource(self):
         """ Setting Up Resource """
