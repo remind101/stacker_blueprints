@@ -22,7 +22,7 @@ class TestGenericResourceCreator(BlueprintTestCase):
                     'Size': '600',
                     'Encrypted': 'true',
                     'AvailabilityZone': 'us-east-1b',
-                }
+                }),
             ]
         )
         blueprint.create_template()
