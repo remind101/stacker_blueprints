@@ -12,7 +12,7 @@ class TestGenericResourceCreator(BlueprintTestCase):
         self.ctx = Context({'namespace': 'test'})
 
     def test_create_template(self):
-        blueprint = Function('test_generic_GenericResourceCreator', self.ctx)
+        blueprint = GenericResourceCreator('test_generic_GenericResourceCreator', self.ctx)
         blueprint.resolve_variables(
             [
                 Variable('Class', 'ec2.Volume'),
