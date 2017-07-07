@@ -7,7 +7,7 @@ from stacker.variables import Variable
 from stacker_blueprints.generic import GenericResourceCreator
 
 
-class TestFunction(BlueprintTestCase):
+class TestGenericResourceCreator(BlueprintTestCase):
     def setUp(self):
         self.ctx = Context({'namespace': 'test'})
 
