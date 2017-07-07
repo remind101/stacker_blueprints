@@ -27,14 +27,16 @@ class GenericResourceCreator(Blueprint):
     VARIABLES = {
         'Class':
             {'type': str,
-             'description': 'The troposphere class to create, e.g. ec2.Volume'},
+             'description': 'The troposphere class to create, '
+                            'e.g.: ec2.Volume'},
         'Output':
             {'type': str,
-             'description': 'The output field that should be created, e.g. VolumeId'},
+             'description': 'The output field that should be created, '
+                            'e.g.: VolumeId'},
         'Properties':
             {'type': dict,
-             'description': 'The list of properties to use for the troposphere '
-                            'class'},
+             'description': 'The list of properties to use for the '
+                            'Troposphere class'},
     }
 
     """
@@ -53,7 +55,6 @@ class GenericResourceCreator(Blueprint):
                 AvailabilityZone: us-east-1b
 
     """
-
 
     def setup_resource(self):
         """ Setting Up Resource """
