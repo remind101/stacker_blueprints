@@ -1,9 +1,9 @@
-""" Load dependencies """
 from troposphere import (
     Ref, Output
 )
 
 from stacker.blueprints.base import Blueprint
+from stacker.util import load_object_from_string
 
 
 class GenericResourceCreator(Blueprint):
@@ -12,7 +12,7 @@ class GenericResourceCreator(Blueprint):
         """ Boilerplate for CFN Template """
         template = self.template
         template.add_version('2010-09-09')
-        template.add_description('CGM Generic Resource Creator - 1.0.0')
+        template.add_description('Generic Resource Creator - 1.0.0')
 
     """
 
@@ -27,15 +27,33 @@ class GenericResourceCreator(Blueprint):
     VARIABLES = {
         'Class':
             {'type': str,
-             'description': 'The troposphere class to create'},
+             'description': 'The troposphere class to create, e.g. ec2.Volume'},
         'Output':
             {'type': str,
-             'description': 'The output to create'},
+             'description': 'The output field that should be created, e.g. VolumeId'},
         'Properties':
             {'type': dict,
-             'description': 'The list of propertie to use for the troposphere'
-                            + ' class'},
+             'description': 'The list of properties to use for the troposphere '
+                            'class'},
     }
+
+    """
+
+    Example yaml:
+
+    - name: generic-resource-volume
+        class_path: blueprints.generic.GenericResourceCreator
+        variables:
+            Class: ec2.Volume
+            Output: VolumeId
+            Properties:
+                VolumeType: gp2
+                Size: 5
+                Encrypted: true
+                AvailabilityZone: us-east-1b
+
+    """
+
 
     def setup_resource(self):
         """ Setting Up Resource """
@@ -46,9 +64,14 @@ class GenericResourceCreator(Blueprint):
         tprops = variables['Properties']
         output = variables['Output']
 
-        klass = self.get_class('troposphere.' + tclass)
+        klass = load_object_from_string('troposphere.' + tclass)
 
-        # we need to do the following because of type conversion issues
+        # we need to do the following because of type conversion issues -
+        # Troposphere expects strings, but stacker automatically converts
+        # to types such as Number, etc.  In the future, it'd be nice to
+        # have a variables_raw or something like that which just keeps
+        # the plain string from the yaml
+
         tprops_string = {}
         for variable, value in tprops.items():
             tprops_string[variable] = str(value)
@@ -58,7 +81,7 @@ class GenericResourceCreator(Blueprint):
         template.add_resource(instance)
         template.add_output(Output(
             output,
-            Description="The output",
+            Description="A reference to the object created in this blueprint",
             Value=Ref(instance)
         ))
 
@@ -66,12 +89,3 @@ class GenericResourceCreator(Blueprint):
         """ Create the CFN template """
         self.add_cfn_description()
         self.setup_resource()
-
-    def get_class(self, kls):
-        """ Get class function """
-        parts = kls.split('.')
-        module = ".".join(parts[:-1])
-        mod = __import__(module)
-        for comp in parts[1:]:
-            mod = getattr(mod, comp)
-        return mod
