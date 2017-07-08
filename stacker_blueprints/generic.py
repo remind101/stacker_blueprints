@@ -67,7 +67,7 @@ class GenericResourceCreator(Blueprint):
         # Warning - sometimes, Troposhpere expects a datatype
         # that is strange, for example ec2.Volume.Size expects
         # to be a string.  In those cases, you should make a PR
-        # with Troposhpere to fix it, but as a workaround you 
+        # with Troposhpere to fix it, but as a workaround you
         # can quote the value in the yaml to force detection
         # as a string
 
