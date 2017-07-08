@@ -64,17 +64,14 @@ class GenericResourceCreator(Blueprint):
 
         klass = load_object_from_string('troposphere.' + tclass)
 
-        # we need to do the following because of type conversion issues -
-        # Troposphere expects strings, but stacker automatically converts
-        # to types such as Number, etc.  In the future, it'd be nice to
-        # have a variables_raw or something like that which just keeps
-        # the plain string from the yaml
+        # Warning - sometimes, Troposhpere expects a datatype
+        # that is strange, for example ec2.Volume.Size expects
+        # to be a string.  In those cases, you should make a PR
+        # with Troposhpere to fix it, but as a workaround you 
+        # can quote the value in the yaml to force detection
+        # as a string
 
-        tprops_string = {}
-        for variable, value in tprops.items():
-            tprops_string[variable] = str(value)
-
-        instance = klass.from_dict('ResourceRefName', tprops_string)
+        instance = klass.from_dict('ResourceRefName', tprops)
 
         template.add_resource(instance)
         template.add_output(Output(
