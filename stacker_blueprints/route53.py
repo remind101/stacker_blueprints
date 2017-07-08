@@ -72,7 +72,8 @@ class DNSRecords(Blueprint):
         "RecordSets": {
             "type": list,
             "description": "A list of dictionaries representing the attributes"
-                           "of a troposphere.route53.RecordSetType object.",
+                           "of a troposphere.route53.RecordSetType object."
+                           "Also accepts an optional 'Enabled' boolean.",
             "default": []
         },
     }
@@ -103,7 +104,11 @@ class DNSRecords(Blueprint):
         Return list of record_set objects."""
         record_set_objects = []
         for record_set_dict in record_set_dicts:
-            record_set_objects.append(self.create_record_set(record_set_dict))
+            # pop removes the 'Enabled' key and tests if True.
+            if record_set_dict.pop('Enabled', True):
+                record_set_objects.append(
+                    self.create_record_set(record_set_dict)
+                )
         return record_set_objects
 
     def create_template(self):
