@@ -52,13 +52,21 @@ class TestRoute53(BlueprintTestCase):
                             "ResourceRecords": ["10.0.0.2"],
                             "Comment": "This is host2's record. : )",
                         },
+                        {
+                            "Name": "host3.testdomain.com.",
+                            "Type": "A",
+                            "ResourceRecords": ["10.0.0.3"],
+                            "Comment": "This record is present but disabled.",
+                            "Enabled": False,
+                        },
                     ]
                 ),
                 Variable("HostedZoneName", "testdomain.com"),
                 Variable("Comment", "test-testdomain-com"),
             ]
         )
-        blueprint.create_template()
+        record_sets = blueprint.create_template()
+        self.assertEqual(2, len(record_sets))
         self.assertRenderedBlueprint(blueprint)
 
     def test_cloudfront_alias_adds_hosted_zone_id(self):
