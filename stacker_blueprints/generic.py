@@ -7,23 +7,10 @@ from stacker.util import load_object_from_string
 
 
 class GenericResourceCreator(Blueprint):
-    """ Generic Blueprint for creating a resource """
-    def add_cfn_description(self):
-        """ Boilerplate for CFN Template """
-        template = self.template
-        template.add_version('2010-09-09')
-        template.add_description('Generic Resource Creator - 1.0.0')
+    """ Generic Blueprint for creating a resource
 
-    """
-
-    *** NOTE ***    Template Version Reminder
-
-    Make Sure you bump up the template version number above if submitting
-    updates to the repo. This is the only way we can tell which version of
-    a template is in place on a running resouce.
-
-
-    Example yaml:
+    Example config - this would create a stack with a single resource in it,
+    an ec2.Volume resource:
 
     - name: generic-resource-volume
         class_path: blueprints.generic.GenericResourceCreator
@@ -53,6 +40,20 @@ class GenericResourceCreator(Blueprint):
                             'Troposphere class'},
     }
 
+    def add_cfn_description(self):
+        """ Boilerplate for CFN Template
+
+
+        *** NOTE ***    Template Version Reminder
+
+        Make Sure you bump up the template version number above if submitting
+        updates to the repo. This is the only way we can tell which version of
+        a template is in place on a running resouce.
+        """
+        template = self.template
+        template.add_version('2010-09-09')
+        template.add_description('Generic Resource Creator - 1.0.0')
+
     def setup_resource(self):
         """ Setting Up Resource """
         template = self.template
@@ -63,13 +64,6 @@ class GenericResourceCreator(Blueprint):
         output = variables['Output']
 
         klass = load_object_from_string('troposphere.' + tclass)
-
-        # Warning - sometimes, Troposhpere expects a datatype
-        # that is strange, for example ec2.Volume.Size expects
-        # to be a string.  In those cases, you should make a PR
-        # with Troposhpere to fix it, but as a workaround you
-        # can quote the value in the yaml to force detection
-        # as a string
 
         instance = klass.from_dict('ResourceRefName', tprops)
 
