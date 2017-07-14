@@ -40,6 +40,10 @@ ELB_DOMAIN = ".elb.amazonaws.com."
 
 def get_record_set_md5(rs_name, rs_type):
     """Accept record_set Name and Type. Return MD5 sum of these values."""
+    rs_name = rs_name.lower()
+    rs_type = rs_type.upper()
+    # Make A and CNAME records hash to same sum to support updates.
+    rs_type = "ACNAME" if rs_type in ["A", "CNAME"] else rs_type
     return md5(rs_name + rs_type).hexdigest()
 
 

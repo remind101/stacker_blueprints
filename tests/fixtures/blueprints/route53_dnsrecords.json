@@ -5,7 +5,7 @@
         }
     },
     "Resources": {
-        "b42885d94c1ece3681f457bcb9b3e2f5": {
+        "154ad64949b7d01dc1d117e306f5ef2c": {
             "Properties": {
                 "HostedZoneId": "fake_zone_id",
                 "Name": "host2.testdomain.com.",
@@ -16,7 +16,7 @@
             },
             "Type": "AWS::Route53::RecordSet"
         },
-        "fa483a19f88c93a25d8185959159fa2e": {
+        "d8df5bad0c9f04ee2c1f12f25a46a67c": {
             "Properties": {
                 "HostedZoneId": "fake_zone_id",
                 "Name": "host.testdomain.com.",
