@@ -1,7 +1,10 @@
 from stacker.context import Context
 from stacker.variables import Variable
 
-from stacker_blueprints.route53 import DNSRecords
+from stacker_blueprints.route53 import (
+  DNSRecords,
+  get_record_set_md5,
+)
 
 from stacker.blueprints.testutil import BlueprintTestCase
 
@@ -176,6 +179,31 @@ class TestRoute53(BlueprintTestCase):
         )
         with self.assertRaises(ValueError):
             blueprint.create_template()
+
+    def test_get_record_set_md5(self):
+        rs_name = "www.example.com"
+        self.assertEqual(
+            get_record_set_md5(rs_name, "A"),
+            get_record_set_md5(rs_name, "A")
+        )
+        self.assertNotEqual(
+            get_record_set_md5(rs_name, "A"),
+            get_record_set_md5(rs_name, "MX")
+        )
+
+    def test_get_record_set_md5_a_and_cname_same_sum(self):
+        rs_name = "www.example.com"
+        self.assertEqual(
+            get_record_set_md5(rs_name, "A"),
+            get_record_set_md5(rs_name, "CNAME")
+        )
+
+    def test_get_record_set_md5_caps_in_name_same_sum(self):
+        rs_name = "www.example.com"
+        self.assertEqual(
+            get_record_set_md5(rs_name, "A"),
+            get_record_set_md5("Www.Example.Com", "A")
+        )
 
 
 if __name__ == '__main__':
