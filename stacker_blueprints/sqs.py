@@ -13,6 +13,7 @@ from . import util
 def validate_queue(queue):
     sqs_queue_properties = [
         "DelaySeconds",
+        "FifoQueue",
         "MaximumMessageSize",
         "MessageRetentionPeriod",
         "ReceiveMessageWaitTimeSeconds",
@@ -24,6 +25,13 @@ def validate_queue(queue):
 
     if "RedrivePolicy" in queue:
         queue["RedrivePolicy"] = sqs.RedrivePolicy(**queue["RedrivePolicy"])
+
+    if queue.get("FifoQueue"):
+        if not queue.get("QueueName", "").endswith(".fifo"):
+            raise ValueError(
+                "FIFO queues need to provide a QueueName "
+                "that ends with '.fifo'"
+            )
 
     return queue
 
