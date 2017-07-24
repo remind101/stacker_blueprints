@@ -29,11 +29,11 @@ def validate_storage_type(value):
     return value
 
 
-def validate_db_instance_identifier(value):
-    l = len(value)
-    if l == 0:
+def validate_db_instance_identifier(value, allow_empty=True):
+    if not value and allow_empty:
         # Empty value will pick up default from stackname
         return value
+    l = len(value)
     pattern = r"^[a-zA-Z][a-zA-Z0-9-]*$"
     if not (0 < l < 64):
         raise ValueError("Must be between 1 and 63 characters in length.")
@@ -411,7 +411,10 @@ class MasterInstance(BaseRDS):
             "DBInstanceClass": variables["InstanceType"],
             "DBInstanceIdentifier": (
                 variables["DBInstanceIdentifier"]
-                or self.context.get_fqn(self.name)
+                or validate_db_instance_identifier(
+                    self.context.get_fqn(self.name),
+                    allow_empty=False
+                )
             ),
             "DBSnapshotIdentifier": self.get_db_snapshot_identifier(),
             "DBParameterGroupName": Ref("ParameterGroup"),
@@ -474,7 +477,10 @@ class ReadReplica(BaseRDS):
             "DBInstanceClass": variables["InstanceType"],
             "DBInstanceIdentifier": (
                 variables["DBInstanceIdentifier"]
-                or self.context.get_fqn(self.name)
+                or validate_db_instance_identifier(
+                    self.context.get_fqn(self.name),
+                    allow_empty=False
+                )
             ),
             "DBParameterGroupName": Ref("ParameterGroup"),
             "Engine": self.engine() or variables["Engine"],
