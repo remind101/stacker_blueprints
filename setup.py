@@ -23,7 +23,7 @@ def read(filename):
 if __name__ == "__main__":
     setup(
         name="stacker_blueprints",
-        version="1.0.2",
+        version="1.0.3",
         author="Michael Barrett",
         author_email="loki77@gmail.com",
         license="New BSD license",

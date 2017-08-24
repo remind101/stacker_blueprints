@@ -1,3 +1,20 @@
+## 1.0.3 (2017-08-24)
+
+- New iam Roles blueprint [GH-106]
+- Add bastion security group output [GH-113]
+- Add PutObjectACL action [GH-114]
+- Add default db name in RDS [GH-115]
+- Fix Elasticache subnets [GH-116]
+- Fix issue w/ SnapshotRetnetionLimit [GH-117]
+- Add FifoQueue parameter to sqs.Queues [GH-118]
+- KMS refactor [GH-119]
+- Route53 refactor [GH-120]
+- Add ELB hostedZoneId if missing for Alias targets in Route53 [GH-121]
+- Generic Resource Creator [GH-122]
+- DNS Hosted Zone Comments in Route53 [GH-123]
+- Skip record\_set if Enabled key is False [GH-126]
+- Make A & CNAME share the same label [GH-127]
+
 ## 1.0.2 (2017-05-18)
 
 - Basic VPC Flow Logs blueprint [GH-94]
