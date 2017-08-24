@@ -8,11 +8,13 @@ from troposphere import (
 )
 
 from awacs.aws import Policy
-from awacs.helpers.trust import get_default_assumerole_policy, get_lambda_assumerole_policy
+from awacs.helpers.trust import (
+    get_default_assumerole_policy,
+    get_lambda_assumerole_policy
+)
 
 
 class Roles(Blueprint):
-    # TODO - Expand to map of name: list(params for awacs.aws.Statement)
     VARIABLES = {
         "Ec2Roles": {
             "type": list,
@@ -57,8 +59,24 @@ class Roles(Blueprint):
     def create_lambda_role(self, name):
         return self.create_role(name, get_lambda_assumerole_policy())
 
-    # TODO - Call this
+    def generate_policy_statements(self):
+        """Should be overridden on a subclass to create policy statements.
+
+        By subclassing this blueprint, and overriding this method to generate
+        a list of :class:`awacs.aws.Statement` types, a
+        :class:`troposphere.iam.PolicyType` will be created and attached to
+        the roles specified here.
+
+        If not specified, no Policy will be created.
+        """
+
+        return []
+
     def create_policy(self, name):
+        statements = self.generate_policy_statements()
+        if not statements:
+            return
+
         t = self.template
         policy_prefix = self.context.get_fqn(self.name)
 
@@ -67,9 +85,9 @@ class Roles(Blueprint):
                 "{}Policy".format(name),
                 PolicyName="{}-{}-policy".format(policy_prefix, name),
                 PolicyDocument=Policy(
-                    Statement=None,  # FIXME - Define
+                    Statement=statements,
                 ),
-                Roles=[Ref(self.role)],
+                Roles=[Ref(role) for role in self.roles],
             )
         )
 
@@ -86,3 +104,5 @@ class Roles(Blueprint):
 
         for role in variables['LambdaRoles']:
             self.create_lambda_role(role)
+
+        self.create_policy()
