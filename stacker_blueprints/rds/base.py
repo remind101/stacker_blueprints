@@ -29,7 +29,10 @@ def validate_storage_type(value):
     return value
 
 
-def validate_db_instance_identifier(value):
+def validate_db_instance_identifier(value, allow_empty=True):
+    if not value and allow_empty:
+        # Empty value will pick up default from stackname
+        return value
     l = len(value)
     pattern = r"^[a-zA-Z][a-zA-Z0-9-]*$"
     if not (0 < l < 64):
@@ -144,6 +147,7 @@ class BaseRDS(Blueprint):
             "type": str,
             "description": "Name of the database instance in RDS.",
             "validator": validate_db_instance_identifier,
+            "default": "",
         },
         "DBSnapshotIdentifier": {
             "type": str,
@@ -405,7 +409,13 @@ class MasterInstance(BaseRDS):
             "BackupRetentionPeriod": variables["BackupRetentionPeriod"],
             "DBName": variables["DatabaseName"],
             "DBInstanceClass": variables["InstanceType"],
-            "DBInstanceIdentifier": variables["DBInstanceIdentifier"],
+            "DBInstanceIdentifier": (
+                variables["DBInstanceIdentifier"]
+                or validate_db_instance_identifier(
+                    self.context.get_fqn(self.name),
+                    allow_empty=False
+                )
+            ),
             "DBSnapshotIdentifier": self.get_db_snapshot_identifier(),
             "DBParameterGroupName": Ref("ParameterGroup"),
             "DBSubnetGroupName": Ref(SUBNET_GROUP),
@@ -465,7 +475,13 @@ class ReadReplica(BaseRDS):
             "AllowMajorVersionUpgrade": variables["AllowMajorVersionUpgrade"],
             "AutoMinorVersionUpgrade": variables["AutoMinorVersionUpgrade"],
             "DBInstanceClass": variables["InstanceType"],
-            "DBInstanceIdentifier": variables["DBInstanceIdentifier"],
+            "DBInstanceIdentifier": (
+                variables["DBInstanceIdentifier"]
+                or validate_db_instance_identifier(
+                    self.context.get_fqn(self.name),
+                    allow_empty=False
+                )
+            ),
             "DBParameterGroupName": Ref("ParameterGroup"),
             "Engine": self.engine() or variables["Engine"],
             "EngineVersion": variables["EngineVersion"],
@@ -499,7 +515,10 @@ class ClusterInstance(BaseRDS):
             "AllowMajorVersionUpgrade": variables["AllowMajorVersionUpgrade"],
             "AutoMinorVersionUpgrade": variables["AutoMinorVersionUpgrade"],
             "DBInstanceClass": variables["InstanceType"],
-            "DBInstanceIdentifier": variables["DBInstanceIdentifier"],
+            "DBInstanceIdentifier": (
+                variables["DBInstanceIdentifier"]
+                or self.context.get_fqn(self.name)
+            ),
             "DBSnapshotIdentifier": self.get_db_snapshot_identifier(),
             "DBParameterGroupName": Ref("ParameterGroup"),
             "Engine": self.engine() or variables["Engine"],
