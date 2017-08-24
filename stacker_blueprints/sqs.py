@@ -11,17 +11,7 @@ from . import util
 
 
 def validate_queue(queue):
-    sqs_queue_properties = [
-        "DelaySeconds",
-        "FifoQueue",
-        "MaximumMessageSize",
-        "MessageRetentionPeriod",
-        "ReceiveMessageWaitTimeSeconds",
-        "RedrivePolicy",
-        "VisibilityTimeout",
-    ]
-
-    util.check_properties(queue, sqs_queue_properties, "SQS")
+    util.check_properties(queue, sqs.Queue.props.keys(), "SQS")
 
     if "RedrivePolicy" in queue:
         queue["RedrivePolicy"] = sqs.RedrivePolicy(**queue["RedrivePolicy"])
