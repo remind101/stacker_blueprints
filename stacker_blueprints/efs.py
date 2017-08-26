@@ -1,11 +1,11 @@
 from troposphere import ec2, efs
-from troposphere import Join, Output, Ref, Split
+from troposphere import Join, Output, Ref
 
 from stacker.blueprints.base import Blueprint
-from stacker.blueprints.variables.types import EC2VPCId, EC2SecurityGroupIdList
+from stacker.blueprints.variables.types import EC2VPCId, TroposphereType
 
 
-class EFSBlueprint(Blueprint):
+class ElasticFileSystem(Blueprint):
     VARIABLES = {
         'VpcId': {
             'type': EC2VPCId,
@@ -26,13 +26,6 @@ class EFSBlueprint(Blueprint):
             'description': 'Comma-delimited list of subnets to deploy private '
                            'mount targets in.'
         },
-        'SecurityGroups': {
-            'type': str,
-            'description': 'Security groups to place mount targets in. '
-                           'Omit to create automatically from '
-                           'AllowedCIDRs',
-            'default': ''
-        },
         'IPAddresses': {
             'type': str,
             'description': 'List of IP addresses to assign to mount targets. '
@@ -40,39 +33,61 @@ class EFSBlueprint(Blueprint):
                            'Corresponds to Subnets listed in the same order.',
             'default': ''
         },
-        'AllowedCIDRs': {
-            'type': list,
-            'description': 'List of CIDRs to allow access to the filesystem'
-                           'Leave empty to avoid creating default security '
-                           'group.',
+        'SecurityGroups': {
+            'type': TroposphereType(ec2.SecurityGroup, many=True,
+                                    validate=False),
+            'description': 'Definition of SecurityGroups to be created and '
+                           'assigned to the Mount Targets. The VpcId property '
+                           'will be filled from the similarly named variable '
+                           'of this blueprint, so it can be ommited. '
+                           'Omit this parameter entirely, or make it an empty '
+                           'list to avoid creating any groups (and use the '
+                           'ExtraSecurityGroups variable instead)',
             'default': []
+        },
+        'ExtraSecurityGroups': {
+            'type': str,
+            'description': 'Comma-separated list of existing SecurityGroups '
+                           'to be assigned to the EFS.',
+            'default': ''
         }
     }
 
-    def create_efs_security_group(self):
+    def create_efs_filesystem(self):
         t = self.template
         v = self.get_variables()
 
-        cidrs = v['AllowedCIDRs']
-        if not cidrs:
-            self.efs_sg = None
-            return
+        fs = t.add_resource(efs.FileSystem(
+            'EfsFileSystem',
+            FileSystemTags=efs.Tags(v['FileSystemTags']),
+            PerformanceMode=v['PerformanceMode']))
 
-        self.efs_sg = t.add_resource(ec2.SecurityGroup(
-            'EFSSecurityGroup',
-            GroupDescription='{} EFS Access'.format(self.name),
-            VpcId=Ref('VpcId')))
+        t.add_output(Output(
+            'EfsFileSystemId',
+            Value=Ref(fs)))
 
-        for i, cidr in enumerate(cidrs):
-            t.add_resource(ec2.SecurityGroupIngress(
-                'EFSSecurityGroupIngress{}'.format(i + 1),
-                IpProtocol='tcp',
-                FromPort='2049',
-                ToPort='2049',
-                CidrIp=cidr,
-                GroupId=Ref(self.efs_sg)))
+        return fs
 
-    def create_efs_mount_targets(self, fs):
+    def create_efs_security_groups(self):
+        t = self.template
+        v = self.get_variables()
+
+        new_sgs = []
+        for sg in v['SecurityGroups']:
+            sg.VpcId = Ref('VpcId')
+            sg.validate()
+
+            t.add_resource(sg)
+            new_sgs.append(Ref(sg))
+
+        t.add_output(Output(
+            'EfsSecurityGroupIds',
+            Value=Join(',', new_sgs)))
+
+        existing_sgs = v['ExtraSecurityGroups'].split(',')
+        return new_sgs + existing_sgs
+
+    def create_efs_mount_targets(self, fs, sgs):
         t = self.template
         v = self.get_variables()
 
@@ -82,42 +97,24 @@ class EFSBlueprint(Blueprint):
             raise ValueError('Subnets and IPAddresses must have same count')
 
         mount_targets = []
-
-        if self.efs_sg and v['SecurityGroups']:
-            sgs = Join(',', [Ref(self.efs_sg), v['SecurityGroups']])
-        elif self.efs_sg:
-            sgs = Ref(self.efs_sg)
-        else:
-            sgs = v['SecurityGroups']
-
         for i, subnet in enumerate(subnets):
-            params = {'IpAddress': ips[i]} if ips else {}
-
-            mount_target = t.add_resource(efs.MountTarget(
-                'EFSMountTarget{}'.format(i + 1),
+            mount_target = efs.MountTarget(
+                'EfsMountTarget{}'.format(i + 1),
                 FileSystemId=Ref(fs),
                 SubnetId=subnet,
-                SecurityGroups=Split(',', sgs),
-                **params))
+                SecurityGroups=sgs)
 
+            if ips:
+                mount_target.IpAddress = ips[i]
+
+            t.add_resource(mount_target)
             mount_targets.append(mount_target)
 
         t.add_output(Output(
-            'MountTargetIds',
+            'EfsMountTargetIds',
             Value=Join(',', list(map(Ref, mount_targets)))))
 
     def create_template(self):
-        t = self.template
-        v = self.get_variables()
-
-        fs = t.add_resource(efs.FileSystem(
-            'EFSFileSystem',
-            FileSystemTags=efs.Tags(v['FileSystemTags']),
-            PerformanceMode=v['PerformanceMode']))
-
-        t.add_output(Output(
-            'FileSystemId',
-            Value=Ref(fs)))
-
-        self.create_efs_security_group()
-        self.create_efs_mount_targets(fs)
+        fs = self.create_efs_filesystem()
+        sgs = self.create_efs_security_groups()
+        self.create_efs_mount_targets(fs, sgs)
