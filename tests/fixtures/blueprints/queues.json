@@ -1,5 +1,18 @@
 {
     "Outputs": {
+        "FifoArn": {
+            "Value": {
+                "Fn::GetAtt": [
+                    "Fifo",
+                    "Arn"
+                ]
+            }
+        },
+        "FifoUrl": {
+            "Value": {
+                "Ref": "Fifo"
+            }
+        },
         "RedrivePolicyArn": {
             "Value": {
                 "Fn::GetAtt": [
@@ -28,6 +41,13 @@
         }
     },
     "Resources": {
+        "Fifo": {
+            "Properties": {
+                "FifoQueue": true,
+                "QueueName": "Fifo.fifo"
+            },
+            "Type": "AWS::SQS::Queue"
+        },
         "RedrivePolicy": {
             "Properties": {
                 "RedrivePolicy": {

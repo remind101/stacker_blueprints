@@ -14,6 +14,10 @@ class TestBlueprint(BlueprintTestCase):
                     'ReceiveMessageWaitTimeSeconds': 15,
                     'VisibilityTimeout': 600,
                 },
+                'Fifo': {
+                    'FifoQueue': True,
+                    'QueueName': 'Fifo.fifo',
+                },
                 'RedrivePolicy': {
                     'RedrivePolicy': {
                         'deadLetterTargetArn': 'arn:aws:sqs:us-east-1:123456789:dlq',
