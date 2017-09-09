@@ -115,6 +115,9 @@ class Function(Blueprint):
         }
     }
 
+    def code(self):
+        return self.get_variables()["Code"]
+
     def dead_letter_config(self):
         arn = self.get_variables()["DeadLetterArn"]
         dlc = NoValue
@@ -172,7 +175,7 @@ class Function(Blueprint):
         self.function = t.add_resource(
             awslambda.Function(
                 "Function",
-                Code=variables["Code"],
+                Code=self.code(),
                 DeadLetterConfig=self.dead_letter_config(),
                 Description=variables["Description"] or NoValue,
                 Environment=self.environment(),
