@@ -1,5 +1,9 @@
 from stacker.blueprints.base import Blueprint
 
+from stacker.blueprints.variables.types import TroposphereType
+
+from stacker.util import cf_safe_name
+
 from troposphere import (
     GetAtt,
     Join,
@@ -9,6 +13,8 @@ from troposphere import (
 )
 
 from troposphere import awslambda
+
+from troposphere import events
 
 import awacs.logs
 from awacs.aws import Statement, Allow, Policy
@@ -219,3 +225,42 @@ class Function(Blueprint):
         self.create_role()
         self.create_function()
         self.create_policy()
+
+
+class FunctionScheduler(Blueprint):
+
+    VARIABLES = {
+        "CloudwatchEventsRule": {
+            "type": TroposphereType(events.Rule),
+            "description": "The troposphere.events.Rule object params.",
+        },
+    }
+
+    def create_scheduler(self):
+        variables = self.get_variables()
+        troposphere_events_rule = variables["CloudwatchEventsRule"]
+        aws_lambda_arns = {}
+
+        # iterate over targets in the event Rule & gather aws_lambda_arns.
+        for target in getattr(troposphere_events_rule, "Targets", []):
+            if target.Arn.startswith("arn:aws:lambda:"):
+                safe_id = cf_safe_name(target.Id)
+                aws_lambda_arns[safe_id] = target.Arn
+
+        # schedule a Cloudwatch event rule to invoke the Targets.
+        rule = self.template.add_resource(troposphere_events_rule)
+
+        # allow cloudwatch to invoke on any of the given lambda targets.
+        for event_rule_target_id, aws_lambda_arn in aws_lambda_arns.items():
+            self.template.add_resource(
+                awslambda.Permission(
+                    "PermToInvokeFunctionFor{}".format(event_rule_target_id),
+                    Principal="events.amazonaws.com",
+                    Action="lambda:InvokeFunction",
+                    FunctionName=aws_lambda_arn,
+                    SourceArn=GetAtt(rule, "Arn")
+                )
+            )
+
+    def create_template(self):
+        self.create_scheduler()

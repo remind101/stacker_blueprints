@@ -4,7 +4,10 @@ from stacker.blueprints.testutil import BlueprintTestCase
 from stacker.context import Context
 from stacker.variables import Variable
 
-from stacker_blueprints.aws_lambda import Function
+from stacker_blueprints.aws_lambda import (
+  Function,
+  FunctionScheduler,
+)
 
 from troposphere.awslambda import Code
 
@@ -29,6 +32,35 @@ class TestFunction(BlueprintTestCase):
         blueprint.create_template()
         self.assertRenderedBlueprint(blueprint)
 
+
+class TestFunctionScheduler(BlueprintTestCase):
+    def setUp(self):
+        self.ctx = Context({'namespace': 'test'})
+
+    def test_create_template(self):
+        blueprint = FunctionScheduler('test_aws_lambda_FunctionScheduler', self.ctx)
+        blueprint.resolve_variables(
+            [
+                Variable(
+                    "CloudwatchEventsRule",
+                    {
+                        "MyTestFuncSchedule": {
+                            "Description": "The AWS Lambda schedule for my-powerful-test-function",
+                            "ScheduleExpression": "rate(15 minutes)",
+                            "State": "ENABLED",
+                            "Targets" : [
+                                { 
+                                    "Id" : "my-powerful-test-function",
+                                    "Arn" : "arn:aws:lambda:us-east-1:01234:function:my-Function-162L1234"
+                                },
+                            ],
+                        }
+                    }
+                )
+            ]
+        )
+        blueprint.create_template()
+        self.assertRenderedBlueprint(blueprint)
 
 if __name__ == '__main__':
     unittest.main()
