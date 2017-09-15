@@ -7,6 +7,7 @@ from troposphere import (
     Output,
     GetAtt,
     Join,
+    Region,
     route53,
 )
 
@@ -57,6 +58,13 @@ def add_hosted_zone_id_if_missing(record_set, hosted_zone_id):
 class DNSRecords(Blueprint):
 
     VARIABLES = {
+        "VPC": {
+            "type": str,
+            "default": "",
+            "description": "A VPC that you want to associate with "
+                           "this hosted zone. When you specify this property, "
+                           "AWS CloudFormation creates a private hosted zone.",
+        },
         "HostedZoneId": {
             "type": str,
             "description": "The id of an existing HostedZone.",
@@ -143,20 +151,30 @@ class DNSRecords(Blueprint):
                 "HostedZoneConfiguration",
                 Comment=hosted_zone_comment
             )
-            self.template.add_resource(
-                route53.HostedZone(
-                    "HostedZone",
-                    Name=hosted_zone_name,
-                    HostedZoneConfig=hosted_zone_config
-                )
+            hosted_zone = route53.HostedZone(
+                "HostedZone",
+                Name=hosted_zone_name,
+                HostedZoneConfig=hosted_zone_config
             )
-            self.hosted_zone_id = Ref("HostedZone")
-            self.nameservers = Join(',', GetAtt("HostedZone", "NameServers"))
-            self.template.add_output(
-                    Output("NameServers", Value=self.nameservers))
+
+            if variables["VPC"]:
+                vpc = route53.HostedZoneVPCs(
+                    VPCId=variables["VPC"],
+                    VPCRegion=Region
+                )
+                hosted_zone.VPCs = [vpc]
+            else:
+                nameservers = Join(',', GetAtt(hosted_zone, "NameServers"))
+                self.template.add_output(
+                    Output("NameServers", Value=nameservers)
+                )
+
+            self.template.add_resource(hosted_zone)
+            self.hosted_zone_id = Ref(hosted_zone)
 
         self.template.add_output(
-                Output("HostedZoneId", Value=self.hosted_zone_id))
+            Output("HostedZoneId", Value=self.hosted_zone_id)
+        )
 
         # return a list of troposphere record set objects.
         return self.create_record_sets(variables["RecordSets"])
