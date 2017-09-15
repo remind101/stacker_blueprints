@@ -1,0 +1,70 @@
+{
+    "Outputs": {
+        "FifoArn": {
+            "Value": {
+                "Fn::GetAtt": [
+                    "Fifo",
+                    "Arn"
+                ]
+            }
+        },
+        "FifoUrl": {
+            "Value": {
+                "Ref": "Fifo"
+            }
+        },
+        "RedrivePolicyArn": {
+            "Value": {
+                "Fn::GetAtt": [
+                    "RedrivePolicy",
+                    "Arn"
+                ]
+            }
+        },
+        "RedrivePolicyUrl": {
+            "Value": {
+                "Ref": "RedrivePolicy"
+            }
+        },
+        "SimpleArn": {
+            "Value": {
+                "Fn::GetAtt": [
+                    "Simple",
+                    "Arn"
+                ]
+            }
+        },
+        "SimpleUrl": {
+            "Value": {
+                "Ref": "Simple"
+            }
+        }
+    },
+    "Resources": {
+        "Fifo": {
+            "Properties": {
+                "FifoQueue": true,
+                "QueueName": "Fifo.fifo"
+            },
+            "Type": "AWS::SQS::Queue"
+        },
+        "RedrivePolicy": {
+            "Properties": {
+                "RedrivePolicy": {
+                    "deadLetterTargetArn": "arn:aws:sqs:us-east-1:123456789:dlq",
+                    "maxReceiveCount": 3
+                }
+            },
+            "Type": "AWS::SQS::Queue"
+        },
+        "Simple": {
+            "Properties": {
+                "DelaySeconds": 15,
+                "MaximumMessageSize": 4096,
+                "ReceiveMessageWaitTimeSeconds": 15,
+                "VisibilityTimeout": 600
+            },
+            "Type": "AWS::SQS::Queue"
+        }
+    }
+}
