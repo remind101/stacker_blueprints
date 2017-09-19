@@ -278,3 +278,21 @@ class FunctionScheduler(Blueprint):
 
     def create_template(self):
         self.create_scheduler()
+
+
+class Alias(Blueprint):
+    VARIABLES = {
+        "Aliases": {
+            "type": TroposphereType(awslambda.Alias, many=True),
+            "description": "A dictionary of AWS Lambda Alias resources to "
+                           "create.",
+        }
+    }
+
+    def create_template(self):
+        t = self.template
+        variables = self.get_variables()
+        for alias in variables["Aliases"]:
+            alias = t.add_resource(alias)
+            alias_name = alias.title
+            t.add_output(Output("%sArn" % alias_name, Value=alias.Ref()))

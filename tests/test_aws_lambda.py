@@ -7,6 +7,7 @@ from stacker.variables import Variable
 from stacker_blueprints.aws_lambda import (
   Function,
   FunctionScheduler,
+  Alias,
 )
 
 from troposphere.awslambda import Code
@@ -38,20 +39,23 @@ class TestFunctionScheduler(BlueprintTestCase):
         self.ctx = Context({'namespace': 'test'})
 
     def test_create_template(self):
-        blueprint = FunctionScheduler('test_aws_lambda_FunctionScheduler', self.ctx)
+        blueprint = FunctionScheduler('test_aws_lambda_FunctionScheduler',
+                                      self.ctx)
         blueprint.resolve_variables(
             [
                 Variable(
                     "CloudwatchEventsRule",
                     {
                         "MyTestFuncSchedule": {
-                            "Description": "The AWS Lambda schedule for my-powerful-test-function",
+                            "Description": "The AWS Lambda schedule for "
+                                           "my-powerful-test-function",
                             "ScheduleExpression": "rate(15 minutes)",
                             "State": "ENABLED",
-                            "Targets" : [
-                                { 
-                                    "Id" : "my-powerful-test-function",
-                                    "Arn" : "arn:aws:lambda:us-east-1:01234:function:my-Function-162L1234"
+                            "Targets": [
+                                {
+                                    "Id": "my-powerful-test-function",
+                                    "Arn": "arn:aws:lambda:us-east-1:01234:"
+                                           "function:my-Function-162L1234"
                                 },
                             ],
                         }
@@ -61,6 +65,30 @@ class TestFunctionScheduler(BlueprintTestCase):
         )
         blueprint.create_template()
         self.assertRenderedBlueprint(blueprint)
+
+
+class TestAlias(BlueprintTestCase):
+    def setUp(self):
+        self.ctx = Context({'namespace': 'test'})
+
+    def test_create_template(self):
+        blueprint = Alias('test_aws_lambda_Alias', self.ctx)
+        blueprint.resolve_variables(
+            [
+                Variable(
+                    "Aliases", {
+                        "MyAlias": {
+                            "FunctionName": "myFunction",
+                            "FunctionVersion": "v1234",
+                            "Name": "staging"
+                        }
+                    }
+                )
+            ]
+        )
+        blueprint.create_template()
+        self.assertRenderedBlueprint(blueprint)
+
 
 if __name__ == '__main__':
     unittest.main()
