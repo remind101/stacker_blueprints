@@ -184,6 +184,8 @@ class Function(Blueprint):
                 Output("RoleName", Value=Ref(self.role))
             )
 
+        self.role_arn = role_arn
+
         t.add_output(
             Output("RoleArn", Value=role_arn)
         )
@@ -202,7 +204,7 @@ class Function(Blueprint):
                 Handler=variables["Handler"],
                 KmsKeyArn=variables["KmsKeyArn"] or NoValue,
                 MemorySize=variables["MemorySize"],
-                Role=GetAtt(self.role.title, "Arn"),
+                Role=self.role_arn,
                 Runtime=variables["Runtime"],
                 Timeout=variables["Timeout"],
                 VpcConfig=self.vpc_config(),
