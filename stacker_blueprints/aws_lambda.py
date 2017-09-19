@@ -173,12 +173,11 @@ class Function(Blueprint):
             )
         )
 
-        role_arn = GetAtt(self.role.title, "Arn")
-
         t.add_output(
             Output("RoleName", Value=Ref(self.role))
         )
 
+        role_arn = GetAtt(self.role.title, "Arn")
         self.role_arn = role_arn
 
         t.add_output(
