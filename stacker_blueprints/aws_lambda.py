@@ -118,7 +118,14 @@ class Function(Blueprint):
                            "SecurityGroupIds (a list of Ids), and SubnetIds "
                            "(a list of Ids)",
             "default": {},
-        }
+        },
+        "Role": {
+            "type": str,
+            "description": "Arn of the Role to create the function as - if "
+                           "not specified, a role will be created with the "
+                           "basic permissions necessary for Lambda to run.",
+            "default": "",
+        },
     }
 
     def code(self):
@@ -159,19 +166,26 @@ class Function(Blueprint):
 
     def create_role(self):
         t = self.template
+        variables = self.get_variables()
 
-        self.role = t.add_resource(
-            iam.Role(
-                "Role",
-                AssumeRolePolicyDocument=get_lambda_assumerole_policy(),
+        role_arn = variables["Role"]
+
+        if not role_arn:
+            self.role = t.add_resource(
+                iam.Role(
+                    "Role",
+                    AssumeRolePolicyDocument=get_lambda_assumerole_policy(),
+                )
             )
-        )
+
+            role_arn = GetAtt(self.role.title, "Arn")
+
+            t.add_output(
+                Output("RoleName", Value=Ref(self.role))
+            )
 
         t.add_output(
-            Output("RoleName", Value=Ref(self.role))
-        )
-        t.add_output(
-            Output("RoleArn", Value=GetAtt(self.role.title, "Arn"))
+            Output("RoleArn", Value=role_arn)
         )
 
     def create_function(self):
