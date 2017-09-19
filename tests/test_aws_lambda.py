@@ -33,6 +33,24 @@ class TestFunction(BlueprintTestCase):
         blueprint.create_template()
         self.assertRenderedBlueprint(blueprint)
 
+    def test_create_template_external_role(self):
+        blueprint = Function('test_aws_lambda_Function_external_role',
+                             self.ctx)
+        blueprint.resolve_variables(
+            [
+                Variable(
+                    "Code",
+                    Code(S3Bucket="test_bucket", S3Key="code_key")
+                ),
+                Variable("Description", "Test function."),
+                Variable("Environment", {"TEST_NAME": "test_value"}),
+                Variable("Runtime", "python2.7"),
+                Variable("Role", "my-fake-role"),
+            ]
+        )
+        blueprint.create_template()
+        self.assertRenderedBlueprint(blueprint)
+
 
 class TestFunctionScheduler(BlueprintTestCase):
     def setUp(self):
