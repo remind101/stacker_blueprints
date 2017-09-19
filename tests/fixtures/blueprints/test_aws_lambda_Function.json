@@ -13,6 +13,19 @@
                 "Ref": "Function"
             }
         },
+        "LatestVersion": {
+            "Value": {
+                "Ref": "LatestVersion"
+            }
+        },
+        "LatestVersionArn": {
+            "Value": {
+                "Fn::GetAtt": [
+                    "LatestVersion",
+                    "Arn"
+                ]
+            }
+        },
         "PolicyName": {
             "Value": {
                 "Ref": "Policy"
@@ -66,6 +79,14 @@
                 }
             },
             "Type": "AWS::Lambda::Function"
+        },
+        "LatestVersion": {
+            "Properties": {
+                "FunctionName": {
+                    "Ref": "Function"
+                }
+            },
+            "Type": "AWS::Lambda::Version"
         },
         "Policy": {
             "Properties": {
