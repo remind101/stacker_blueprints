@@ -5,6 +5,9 @@ from stacker.blueprints.variables.types import TroposphereType
 from stacker.util import cf_safe_name
 
 from troposphere import (
+    NoValue,
+    Region,
+    AccountId,
     GetAtt,
     Join,
     Output,
@@ -19,10 +22,6 @@ from troposphere import events
 import awacs.logs
 from awacs.aws import Statement, Allow, Policy
 from awacs.helpers.trust import get_lambda_assumerole_policy
-
-NoValue = Ref("AWS::NoValue")
-Region = Ref("AWS::Region")
-AccountId = Ref("AWS::AccountId")
 
 
 def lambda_basic_execution_statements(log_group):
