@@ -161,7 +161,7 @@ class Function(Blueprint):
         Returns:
             list: A list of :class:`awacs.aws.Statement` objects.
         """
-        log_group = Join("/", ["/aws/lambda", Ref(self.function)])
+        log_group = Join("/", ["/aws/lambda", Ref("Function")])
         return lambda_basic_execution_statements(log_group)
 
     def create_role(self):
