@@ -1,0 +1,19 @@
+{
+    "Outputs": {
+        "MyAliasArn": {
+            "Value": {
+                "Ref": "MyAlias"
+            }
+        }
+    },
+    "Resources": {
+        "MyAlias": {
+            "Properties": {
+                "FunctionName": "myFunction",
+                "FunctionVersion": "v1234",
+                "Name": "staging"
+            },
+            "Type": "AWS::Lambda::Alias"
+        }
+    }
+}
