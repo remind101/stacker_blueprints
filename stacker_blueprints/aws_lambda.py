@@ -201,6 +201,21 @@ class Function(Blueprint):
             Output("FunctionArn", Value=GetAtt(self.function.title, "Arn"))
         )
 
+        self.function_version = t.add_resource(
+            awslambda.Version(
+                "LatestVersion",
+                FunctionName=self.function.Ref()
+            )
+        )
+
+        t.add_output(
+            Output("LatestVersion", Value=self.function_version.Ref())
+        )
+        t.add_output(
+            Output("LatestVersionArn",
+                   Value=self.function_version.GetAtt("Arn"))
+        )
+
     def create_policy(self):
         t = self.template
         policy_prefix = self.context.get_fqn(self.name)
