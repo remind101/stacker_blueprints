@@ -166,23 +166,19 @@ class Function(Blueprint):
 
     def create_role(self):
         t = self.template
-        variables = self.get_variables()
 
-        role_arn = variables["Role"]
-
-        if not role_arn:
-            self.role = t.add_resource(
-                iam.Role(
-                    "Role",
-                    AssumeRolePolicyDocument=get_lambda_assumerole_policy(),
-                )
+        self.role = t.add_resource(
+            iam.Role(
+                "Role",
+                AssumeRolePolicyDocument=get_lambda_assumerole_policy(),
             )
+        )
 
-            role_arn = GetAtt(self.role.title, "Arn")
+        role_arn = GetAtt(self.role.title, "Arn")
 
-            t.add_output(
-                Output("RoleName", Value=Ref(self.role))
-            )
+        t.add_output(
+            Output("RoleName", Value=Ref(self.role))
+        )
 
         self.role_arn = role_arn
 
@@ -238,9 +234,12 @@ class Function(Blueprint):
         )
 
     def create_template(self):
-        self.create_role()
+        variables = self.get_variables()
+        self.role_arn = variables["Role"]
+        if not variables["Role"]:
+            self.create_role()
+            self.create_policy()
         self.create_function()
-        self.create_policy()
 
 
 class FunctionScheduler(Blueprint):
