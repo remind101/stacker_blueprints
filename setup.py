@@ -5,7 +5,7 @@ src_dir = os.path.dirname(__file__)
 
 install_requires = [
     "stacker~=1.0.1",
-    "troposphere~=1.9.3",
+    "troposphere~=1.9.5",
 ]
 
 tests_require = [

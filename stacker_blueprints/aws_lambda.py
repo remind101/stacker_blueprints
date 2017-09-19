@@ -5,6 +5,9 @@ from stacker.blueprints.variables.types import TroposphereType
 from stacker.util import cf_safe_name
 
 from troposphere import (
+    NoValue,
+    Region,
+    AccountId,
     GetAtt,
     Join,
     Output,
@@ -19,10 +22,6 @@ from troposphere import events
 import awacs.logs
 from awacs.aws import Statement, Allow, Policy
 from awacs.helpers.trust import get_lambda_assumerole_policy
-
-NoValue = Ref("AWS::NoValue")
-Region = Ref("AWS::Region")
-AccountId = Ref("AWS::AccountId")
 
 
 def lambda_basic_execution_statements(log_group):
@@ -214,6 +213,21 @@ class Function(Blueprint):
             Output("FunctionArn", Value=GetAtt(self.function.title, "Arn"))
         )
 
+        self.function_version = t.add_resource(
+            awslambda.Version(
+                "LatestVersion",
+                FunctionName=self.function.Ref()
+            )
+        )
+
+        t.add_output(
+            Output("LatestVersion", Value=self.function_version.Ref())
+        )
+        t.add_output(
+            Output("LatestVersionArn",
+                   Value=self.function_version.GetAtt("Arn"))
+        )
+
     def create_policy(self):
         t = self.template
         policy_prefix = self.context.get_fqn(self.name)
@@ -279,3 +293,21 @@ class FunctionScheduler(Blueprint):
 
     def create_template(self):
         self.create_scheduler()
+
+
+class Alias(Blueprint):
+    VARIABLES = {
+        "Aliases": {
+            "type": TroposphereType(awslambda.Alias, many=True),
+            "description": "A dictionary of AWS Lambda Alias resources to "
+                           "create.",
+        }
+    }
+
+    def create_template(self):
+        t = self.template
+        variables = self.get_variables()
+        for alias in variables["Aliases"]:
+            alias = t.add_resource(alias)
+            alias_name = alias.title
+            t.add_output(Output("%sArn" % alias_name, Value=alias.Ref()))
