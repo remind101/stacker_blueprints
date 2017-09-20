@@ -117,7 +117,14 @@ class Function(Blueprint):
                            "SecurityGroupIds (a list of Ids), and SubnetIds "
                            "(a list of Ids)",
             "default": {},
-        }
+        },
+        "Role": {
+            "type": str,
+            "description": "Arn of the Role to create the function as - if "
+                           "not specified, a role will be created with the "
+                           "basic permissions necessary for Lambda to run.",
+            "default": "",
+        },
     }
 
     def code(self):
@@ -153,7 +160,7 @@ class Function(Blueprint):
         Returns:
             list: A list of :class:`awacs.aws.Statement` objects.
         """
-        log_group = Join("/", ["/aws/lambda", Ref(self.function)])
+        log_group = Join("/", ["/aws/lambda", Ref("Function")])
         return lambda_basic_execution_statements(log_group)
 
     def create_role(self):
@@ -169,8 +176,12 @@ class Function(Blueprint):
         t.add_output(
             Output("RoleName", Value=Ref(self.role))
         )
+
+        role_arn = GetAtt(self.role.title, "Arn")
+        self.role_arn = role_arn
+
         t.add_output(
-            Output("RoleArn", Value=GetAtt(self.role.title, "Arn"))
+            Output("RoleArn", Value=role_arn)
         )
 
     def create_function(self):
@@ -187,7 +198,7 @@ class Function(Blueprint):
                 Handler=variables["Handler"],
                 KmsKeyArn=variables["KmsKeyArn"] or NoValue,
                 MemorySize=variables["MemorySize"],
-                Role=GetAtt(self.role.title, "Arn"),
+                Role=self.role_arn,
                 Runtime=variables["Runtime"],
                 Timeout=variables["Timeout"],
                 VpcConfig=self.vpc_config(),
@@ -236,9 +247,12 @@ class Function(Blueprint):
         )
 
     def create_template(self):
-        self.create_role()
+        variables = self.get_variables()
+        self.role_arn = variables["Role"]
+        if not variables["Role"]:
+            self.create_role()
+            self.create_policy()
         self.create_function()
-        self.create_policy()
 
 
 class FunctionScheduler(Blueprint):
