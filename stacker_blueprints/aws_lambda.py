@@ -125,6 +125,17 @@ class Function(Blueprint):
                            "basic permissions necessary for Lambda to run.",
             "default": "",
         },
+        "AliasName": {
+            "type": str,
+            "description": "The name of an optional alias.",
+            "default": "",
+        },
+        "AliasVersion": {
+            "type": str,
+            "description": "The version string for the alias without the "
+                           "function Arn prepended.",
+            "default": "$LATEST",
+        },
     }
 
     def code(self):
@@ -227,6 +238,33 @@ class Function(Blueprint):
                    Value=self.function_version.GetAtt("Version"))
         )
 
+        alias_name = variables["AliasName"]
+        if alias_name:
+            if not alias_name.startswith("arn:"):
+                # assume short alias name, build full name
+                alias_name = Sub(
+                    "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:"
+                    "function:${function_name}:${alias_name}",
+                    function_name=self.function.Ref(),
+                    alias_name=alias_name,
+                )
+            alias_version = Sub(
+                "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:"
+                "function:${function_name}:${version}",
+                function_name=self.function.Ref(),
+                version=variables["AliasVersion"],
+            )
+            self.alias = t.add_resource(
+                awslambda.Alias(
+                    "Alias",
+                    Name=alias_name,
+                    FunctionName=self.function.Ref(),
+                    FunctionVersion=alias_version,
+                )
+            )
+
+            t.add_output(Output("AliasArn", Value=self.alias.Ref()))
+
     def create_policy(self):
         t = self.template
         policy_prefix = self.context.get_fqn(self.name)
@@ -292,50 +330,3 @@ class FunctionScheduler(Blueprint):
 
     def create_template(self):
         self.create_scheduler()
-
-
-class Alias(Blueprint):
-    VARIABLES = {
-        "Name": {
-            "type": str,
-            "description": "The name of the alias.",
-        },
-        "FunctionName": {
-            "type": str,
-            "description": "The function name to create the Alias on.",
-        },
-        "Version": {
-            "type": str,
-            "description": "The version string without the function Arn "
-                           "prepended.",
-            "default": "$LATEST",
-        },
-        "Description": {
-            "type": str,
-            "description": "Optional description for the alias.",
-            "default": "",
-        }
-    }
-
-    def create_template(self):
-        t = self.template
-        variables = self.get_variables()
-
-        args = {
-            "Name": variables["Name"],
-            "FunctionName": variables["FunctionName"],
-        }
-
-        if variables["Description"]:
-            args["Description"] = variables["Description"]
-
-        function_version = Sub(
-            "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:"
-            "function:${function_name}:${version}",
-            function_name=variables["FunctionName"],
-            function_version=variables["Version"])
-
-        args["FunctionVersion"] = function_version
-
-        alias = t.add_resource(awslambda.Alias("Alias", **args))
-        t.add_output(Output("Arn", Value=alias.Ref()))
