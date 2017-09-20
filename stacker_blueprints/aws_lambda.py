@@ -11,7 +11,6 @@ from troposphere import (
     Join,
     Output,
     Ref,
-    Sub,
     iam,
 )
 
@@ -240,26 +239,12 @@ class Function(Blueprint):
 
         alias_name = variables["AliasName"]
         if alias_name:
-            if not alias_name.startswith("arn:"):
-                # assume short alias name, build full name
-                alias_name = Sub(
-                    "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:"
-                    "function:${function_name}:${alias_name}",
-                    function_name=self.function.Ref(),
-                    alias_name=alias_name,
-                )
-            alias_version = Sub(
-                "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:"
-                "function:${function_name}:${version}",
-                function_name=self.function.Ref(),
-                version=variables["AliasVersion"],
-            )
             self.alias = t.add_resource(
                 awslambda.Alias(
                     "Alias",
                     Name=alias_name,
                     FunctionName=self.function.Ref(),
-                    FunctionVersion=alias_version,
+                    FunctionVersion=variables["AliasVersion"] or "$LATEST",
                 )
             )
 
