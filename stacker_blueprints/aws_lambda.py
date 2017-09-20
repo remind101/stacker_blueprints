@@ -8,7 +8,6 @@ from troposphere import (
     NoValue,
     Region,
     AccountId,
-    GetAtt,
     Join,
     Output,
     Ref,
@@ -177,7 +176,7 @@ class Function(Blueprint):
             Output("RoleName", Value=Ref(self.role))
         )
 
-        role_arn = GetAtt(self.role.title, "Arn")
+        role_arn = self.role.GetAtt("Arn")
         self.role_arn = role_arn
 
         t.add_output(
@@ -206,10 +205,10 @@ class Function(Blueprint):
         )
 
         t.add_output(
-            Output("FunctionName", Value=Ref(self.function))
+            Output("FunctionName", Value=self.function.Ref())
         )
         t.add_output(
-            Output("FunctionArn", Value=GetAtt(self.function.title, "Arn"))
+            Output("FunctionArn", Value=self.function.GetAtt("Arn"))
         )
 
         self.function_version = t.add_resource(
@@ -224,7 +223,7 @@ class Function(Blueprint):
         )
         t.add_output(
             Output("LatestVersionArn",
-                   Value=self.function_version.GetAtt("Arn"))
+                   Value=self.function_version.GetAtt("Version"))
         )
 
     def create_policy(self):
@@ -286,7 +285,7 @@ class FunctionScheduler(Blueprint):
                     Principal="events.amazonaws.com",
                     Action="lambda:InvokeFunction",
                     FunctionName=aws_lambda_arn,
-                    SourceArn=GetAtt(rule, "Arn")
+                    SourceArn=rule.GetAtt("Arn")
                 )
             )
 
