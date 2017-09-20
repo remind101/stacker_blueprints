@@ -15,15 +15,15 @@
         },
         "LatestVersion": {
             "Value": {
-                "Ref": "LatestVersion"
-            }
-        },
-        "LatestVersionArn": {
-            "Value": {
                 "Fn::GetAtt": [
                     "LatestVersion",
                     "Version"
                 ]
+            }
+        },
+        "LatestVersionArn": {
+            "Value": {
+                "Ref": "LatestVersion"
             }
         },
         "PolicyName": {
