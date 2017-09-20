@@ -93,15 +93,10 @@ class TestAlias(BlueprintTestCase):
         blueprint = Alias('test_aws_lambda_Alias', self.ctx)
         blueprint.resolve_variables(
             [
-                Variable(
-                    "Aliases", {
-                        "MyAlias": {
-                            "FunctionName": "myFunction",
-                            "FunctionVersion": "v1234",
-                            "Name": "staging"
-                        }
-                    }
-                )
+                Variable("Name", "prod"),
+                Variable("FunctionName", "myFunction"),
+                Variable("Version", "1"),
+                Variable("Description", "The prod version of myFunction"),
             ]
         )
         blueprint.create_template()

@@ -1,17 +1,26 @@
 {
     "Outputs": {
-        "MyAliasArn": {
+        "Arn": {
             "Value": {
-                "Ref": "MyAlias"
+                "Ref": "Alias"
             }
         }
     },
     "Resources": {
-        "MyAlias": {
+        "Alias": {
             "Properties": {
+                "Description": "The prod version of myFunction",
                 "FunctionName": "myFunction",
-                "FunctionVersion": "v1234",
-                "Name": "staging"
+                "FunctionVersion": {
+                    "Fn::Sub": [
+                        "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${function_name}:${version}",
+                        {
+                            "function_name": "myFunction",
+                            "function_version": "1"
+                        }
+                    ]
+                },
+                "Name": "prod"
             },
             "Type": "AWS::Lambda::Alias"
         }

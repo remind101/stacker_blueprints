@@ -11,6 +11,7 @@ from troposphere import (
     Join,
     Output,
     Ref,
+    Sub,
     iam,
 )
 
@@ -295,17 +296,46 @@ class FunctionScheduler(Blueprint):
 
 class Alias(Blueprint):
     VARIABLES = {
-        "Aliases": {
-            "type": TroposphereType(awslambda.Alias, many=True),
-            "description": "A dictionary of AWS Lambda Alias resources to "
-                           "create.",
+        "Name": {
+            "type": str,
+            "description": "The name of the alias.",
+        },
+        "FunctionName": {
+            "type": str,
+            "description": "The function name to create the Alias on.",
+        },
+        "Version": {
+            "type": str,
+            "description": "The version string without the function Arn "
+                           "prepended.",
+            "default": "$LATEST",
+        },
+        "Description": {
+            "type": str,
+            "description": "Optional description for the alias.",
+            "default": "",
         }
     }
 
     def create_template(self):
         t = self.template
         variables = self.get_variables()
-        for alias in variables["Aliases"]:
-            alias = t.add_resource(alias)
-            alias_name = alias.title
-            t.add_output(Output("%sArn" % alias_name, Value=alias.Ref()))
+
+        args = {
+            "Name": variables["Name"],
+            "FunctionName": variables["FunctionName"],
+        }
+
+        if variables["Description"]:
+            args["Description"] = variables["Description"]
+
+        function_version = Sub(
+            "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:"
+            "function:${function_name}:${version}",
+            function_name=variables["FunctionName"],
+            function_version=variables["Version"])
+
+        args["FunctionVersion"] = function_version
+
+        alias = t.add_resource(awslambda.Alias("Alias", **args))
+        t.add_output(Output("Arn", Value=alias.Ref()))
