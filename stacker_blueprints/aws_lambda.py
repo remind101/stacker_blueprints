@@ -230,11 +230,12 @@ class Function(Blueprint):
         )
 
         t.add_output(
-            Output("LatestVersion", Value=self.function_version.Ref())
+            Output("LatestVersion",
+                   Value=self.function_version.GetAtt("Version"))
         )
         t.add_output(
             Output("LatestVersionArn",
-                   Value=self.function_version.GetAtt("Version"))
+                   Value=self.function_version.Ref())
         )
 
         alias_name = variables["AliasName"]
