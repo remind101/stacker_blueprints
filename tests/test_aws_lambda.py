@@ -7,7 +7,6 @@ from stacker.variables import Variable
 from stacker_blueprints.aws_lambda import (
   Function,
   FunctionScheduler,
-  Alias,
 )
 
 from troposphere.awslambda import Code
@@ -51,6 +50,68 @@ class TestFunction(BlueprintTestCase):
         blueprint.create_template()
         self.assertRenderedBlueprint(blueprint)
 
+    def test_create_template_with_alias_full_name_arn(self):
+        blueprint = Function(
+            'test_aws_lambda_Function_with_alias_full_name_arn',
+            self.ctx
+        )
+        blueprint.resolve_variables(
+            [
+                Variable(
+                    "Code",
+                    Code(S3Bucket="test_bucket", S3Key="code_key")
+                ),
+                Variable("Description", "Test function."),
+                Variable("Environment", {"TEST_NAME": "test_value"}),
+                Variable("Runtime", "python2.7"),
+                Variable("AliasName", "arn:aws:lambda:aws-region:"
+                                      "acct-id:function:helloworld:PROD"),
+            ]
+        )
+        blueprint.create_template()
+        self.assertRenderedBlueprint(blueprint)
+
+    def test_create_template_with_alias_partial_name(self):
+        blueprint = Function(
+            'test_aws_lambda_Function_with_alias_partial_name',
+            self.ctx
+        )
+        blueprint.resolve_variables(
+            [
+                Variable(
+                    "Code",
+                    Code(S3Bucket="test_bucket", S3Key="code_key")
+                ),
+                Variable("Description", "Test function."),
+                Variable("Environment", {"TEST_NAME": "test_value"}),
+                Variable("Runtime", "python2.7"),
+                Variable("AliasName", "prod"),
+            ]
+        )
+        blueprint.create_template()
+        self.assertRenderedBlueprint(blueprint)
+
+    def test_create_template_with_alias_provided_version(self):
+        blueprint = Function(
+            'test_aws_lambda_Function_with_alias_provided_version',
+            self.ctx
+        )
+        blueprint.resolve_variables(
+            [
+                Variable(
+                    "Code",
+                    Code(S3Bucket="test_bucket", S3Key="code_key")
+                ),
+                Variable("Description", "Test function."),
+                Variable("Environment", {"TEST_NAME": "test_value"}),
+                Variable("Runtime", "python2.7"),
+                Variable("AliasName", "prod"),
+                Variable("AliasVersion", "1")
+            ]
+        )
+        blueprint.create_template()
+        self.assertRenderedBlueprint(blueprint)
+
 
 class TestFunctionScheduler(BlueprintTestCase):
     def setUp(self):
@@ -76,29 +137,6 @@ class TestFunctionScheduler(BlueprintTestCase):
                                            "function:my-Function-162L1234"
                                 },
                             ],
-                        }
-                    }
-                )
-            ]
-        )
-        blueprint.create_template()
-        self.assertRenderedBlueprint(blueprint)
-
-
-class TestAlias(BlueprintTestCase):
-    def setUp(self):
-        self.ctx = Context({'namespace': 'test'})
-
-    def test_create_template(self):
-        blueprint = Alias('test_aws_lambda_Alias', self.ctx)
-        blueprint.resolve_variables(
-            [
-                Variable(
-                    "Aliases", {
-                        "MyAlias": {
-                            "FunctionName": "myFunction",
-                            "FunctionVersion": "v1234",
-                            "Name": "staging"
                         }
                     }
                 )

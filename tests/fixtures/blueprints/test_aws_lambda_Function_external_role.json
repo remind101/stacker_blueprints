@@ -22,7 +22,7 @@
             "Value": {
                 "Fn::GetAtt": [
                     "LatestVersion",
-                    "Arn"
+                    "Version"
                 ]
             }
         }

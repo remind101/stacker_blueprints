@@ -1,5 +1,10 @@
 {
     "Outputs": {
+        "AliasArn": {
+            "Value": {
+                "Ref": "Alias"
+            }
+        },
         "FunctionArn": {
             "Value": {
                 "Fn::GetAtt": [
@@ -46,6 +51,36 @@
         }
     },
     "Resources": {
+        "Alias": {
+            "Properties": {
+                "FunctionName": {
+                    "Ref": "Function"
+                },
+                "FunctionVersion": {
+                    "Fn::Sub": [
+                        "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${function_name}:${version}",
+                        {
+                            "function_name": {
+                                "Ref": "Function"
+                            },
+                            "version": "1"
+                        }
+                    ]
+                },
+                "Name": {
+                    "Fn::Sub": [
+                        "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:${function_name}:${alias_name}",
+                        {
+                            "alias_name": "prod",
+                            "function_name": {
+                                "Ref": "Function"
+                            }
+                        }
+                    ]
+                }
+            },
+            "Type": "AWS::Lambda::Alias"
+        },
         "Function": {
             "Properties": {
                 "Code": {
@@ -159,7 +194,7 @@
                         }
                     ]
                 },
-                "PolicyName": "test-test_aws_lambda_Function-policy",
+                "PolicyName": "test-test_aws_lambda_Function_with_alias_provided_version-policy",
                 "Roles": [
                     {
                         "Ref": "Role"

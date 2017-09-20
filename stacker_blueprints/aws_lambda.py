@@ -11,6 +11,7 @@ from troposphere import (
     Join,
     Output,
     Ref,
+    Sub,
     iam,
 )
 
@@ -124,6 +125,17 @@ class Function(Blueprint):
                            "basic permissions necessary for Lambda to run.",
             "default": "",
         },
+        "AliasName": {
+            "type": str,
+            "description": "The name of an optional alias.",
+            "default": "",
+        },
+        "AliasVersion": {
+            "type": str,
+            "description": "The version string for the alias without the "
+                           "function Arn prepended.",
+            "default": "$LATEST",
+        },
     }
 
     def code(self):
@@ -226,6 +238,33 @@ class Function(Blueprint):
                    Value=self.function_version.GetAtt("Version"))
         )
 
+        alias_name = variables["AliasName"]
+        if alias_name:
+            if not alias_name.startswith("arn:"):
+                # assume short alias name, build full name
+                alias_name = Sub(
+                    "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:"
+                    "function:${function_name}:${alias_name}",
+                    function_name=self.function.Ref(),
+                    alias_name=alias_name,
+                )
+            alias_version = Sub(
+                "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:"
+                "function:${function_name}:${version}",
+                function_name=self.function.Ref(),
+                version=variables["AliasVersion"],
+            )
+            self.alias = t.add_resource(
+                awslambda.Alias(
+                    "Alias",
+                    Name=alias_name,
+                    FunctionName=self.function.Ref(),
+                    FunctionVersion=alias_version,
+                )
+            )
+
+            t.add_output(Output("AliasArn", Value=self.alias.Ref()))
+
     def create_policy(self):
         t = self.template
         policy_prefix = self.context.get_fqn(self.name)
@@ -291,21 +330,3 @@ class FunctionScheduler(Blueprint):
 
     def create_template(self):
         self.create_scheduler()
-
-
-class Alias(Blueprint):
-    VARIABLES = {
-        "Aliases": {
-            "type": TroposphereType(awslambda.Alias, many=True),
-            "description": "A dictionary of AWS Lambda Alias resources to "
-                           "create.",
-        }
-    }
-
-    def create_template(self):
-        t = self.template
-        variables = self.get_variables()
-        for alias in variables["Aliases"]:
-            alias = t.add_resource(alias)
-            alias_name = alias.title
-            t.add_output(Output("%sArn" % alias_name, Value=alias.Ref()))
