@@ -6,9 +6,6 @@ from stacker.util import cf_safe_name
 
 from troposphere import (
     NoValue,
-    Region,
-    AccountId,
-    Join,
     Output,
     Ref,
     iam,
@@ -18,36 +15,13 @@ from troposphere import awslambda
 
 from troposphere import events
 
-import awacs.logs
-from awacs.aws import Statement, Allow, Policy
+from awacs.aws import Policy
 from awacs.helpers.trust import get_lambda_assumerole_policy
 
-
-def lambda_basic_execution_statements(log_group):
-    """Basic policy statements for lambda functions.
-
-    Gives Lambda permission to create the Cloudwatch Logs LogGroups and
-    LogStreams it needs.
-    """
-    log_group_parts = ["arn:aws:logs:", Region, ":", AccountId,
-                       ":log-group:", log_group]
-    log_group_arn = Join("", log_group_parts)
-    log_stream_wild = Join("", log_group_parts + [":*"])
-
-    return [
-        Statement(
-            Effect=Allow,
-            Resource=[
-                log_group_arn,
-                log_stream_wild,
-            ],
-            Action=[
-                awacs.logs.CreateLogGroup,
-                awacs.logs.CreateLogStream,
-                awacs.logs.PutLogEvents
-            ]
-        )
-    ]
+from .policies import (
+    lambda_basic_execution_statements,
+    lambda_vpc_execution_statements,
+)
 
 
 class Function(Blueprint):
@@ -114,7 +88,8 @@ class Function(Blueprint):
                            "that Lambda uses to set up an elastic network "
                            "interface (ENI). Valid keys are: "
                            "SecurityGroupIds (a list of Ids), and SubnetIds "
-                           "(a list of Ids)",
+                           "(a list of Ids). We automatically add an inline "
+                           "policy to allow the lambda to create ENIs.",
             "default": {},
         },
         "Role": {
@@ -158,6 +133,8 @@ class Function(Blueprint):
         vpc_config = self.get_variables()["VpcConfig"]
         config = NoValue
         if vpc_config:
+            if isinstance(vpc_config['SubnetIds'], str):
+                vpc_config['SubnetIds'] = vpc_config['SubnetIds'].split(',')
             config = awslambda.VPCConfig(**vpc_config)
         return config
 
@@ -170,16 +147,48 @@ class Function(Blueprint):
         Returns:
             list: A list of :class:`awacs.aws.Statement` objects.
         """
-        log_group = Join("/", ["/aws/lambda", Ref("Function")])
-        return lambda_basic_execution_statements(log_group)
+        return lambda_basic_execution_statements(Ref("Function"))
+
+    def create_policy(self):
+        t = self.template
+        policy_prefix = self.context.get_fqn(self.name)
+
+        self.policy = t.add_resource(
+            iam.PolicyType(
+                "Policy",
+                PolicyName="%s-policy" % policy_prefix,
+                PolicyDocument=Policy(
+                    Statement=self.generate_policy_statements()
+                ),
+                Roles=[self.role.Ref()],
+            )
+        )
+
+        t.add_output(
+            Output("PolicyName", Value=Ref(self.policy))
+        )
 
     def create_role(self):
         t = self.template
+
+        vpc_policy = NoValue
+        if self.get_variables()["VpcConfig"]:
+            # allow this Lambda to modify ENIs to allow it to run in our VPC.
+            policy_prefix = self.context.get_fqn(self.name)
+            vpc_policy = [
+                iam.Policy(
+                    PolicyName="%s-vpc-policy" % policy_prefix,
+                    PolicyDocument=Policy(
+                        Statement=lambda_vpc_execution_statements()
+                    ),
+                )
+            ]
 
         self.role = t.add_resource(
             iam.Role(
                 "Role",
                 AssumeRolePolicyDocument=get_lambda_assumerole_policy(),
+                Policies=vpc_policy
             )
         )
 
@@ -250,25 +259,6 @@ class Function(Blueprint):
             )
 
             t.add_output(Output("AliasArn", Value=self.alias.Ref()))
-
-    def create_policy(self):
-        t = self.template
-        policy_prefix = self.context.get_fqn(self.name)
-
-        self.policy = t.add_resource(
-            iam.PolicyType(
-                "Policy",
-                PolicyName="%s-policy" % policy_prefix,
-                PolicyDocument=Policy(
-                    Statement=self.generate_policy_statements()
-                ),
-                Roles=[Ref(self.role)],
-            )
-        )
-
-        t.add_output(
-            Output("PolicyName", Value=Ref(self.policy))
-        )
 
     def create_template(self):
         variables = self.get_variables()

@@ -199,6 +199,9 @@
                             }
                         }
                     ]
+                },
+                "Policies": {
+                    "Ref": "AWS::NoValue"
                 }
             },
             "Type": "AWS::IAM::Role"

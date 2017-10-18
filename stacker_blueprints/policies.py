@@ -6,12 +6,13 @@ from awacs.aws import (
     Statement,
 )
 
-from troposphere import Join, Ref
+from troposphere import (
+    Join,
+    Region,
+    AccountId,
+)
 
-from awacs import sts, s3, logs
-
-ACCOUNT_ID = Ref("AWS::AccountId")
-REGION = Ref("AWS::Region")
+from awacs import sts, s3, logs, ec2
 
 
 def make_simple_assume_statement(*principals):
@@ -96,7 +97,7 @@ def log_stream_arn(log_group_name, log_stream_name):
     return Join(
         '',
         [
-            "arn:aws:logs:", REGION, ":", ACCOUNT_ID, ":log-group:",
+            "arn:aws:logs:", Region, ":", AccountId, ":log-group:",
             log_group_name, ":log-stream:", log_stream_name
         ]
     )
@@ -118,6 +119,52 @@ def write_to_cloudwatch_logs_stream_policy(log_group_name, log_stream_name):
         Statement=write_to_cloudwatch_logs_stream_statements(log_group_name,
                                                              log_stream_name)
     )
+
+
+def cloudwatch_logs_write_statements(log_group=None):
+    resources = ["arn:aws:logs:*:*:*"]
+    if log_group:
+        log_group_parts = ["arn:aws:logs:", Region, ":", AccountId,
+                           ":log-group:", log_group]
+        log_group_arn = Join("", log_group_parts)
+        log_stream_wild = Join("", log_group_parts + [":*"])
+        resources = [log_group_arn, log_stream_wild]
+
+    return [
+        Statement(
+            Effect=Allow,
+            Resource=resources,
+            Action=[
+                logs.CreateLogGroup,
+                logs.CreateLogStream,
+                logs.PutLogEvents
+            ]
+        )
+    ]
+
+
+def lambda_basic_execution_statements(function_name):
+    log_group = Join("/", ["/aws/lambda", function_name])
+    return cloudwatch_logs_write_statements(log_group)
+
+
+def lambda_basic_execution_policy(function_name):
+    return Policy(Statement=lambda_basic_execution_statements(function_name))
+
+
+def lambda_vpc_execution_statements():
+    """Allow Lambda to manipuate EC2 ENIs for VPC support."""
+    return [
+        Statement(
+            Effect=Allow,
+            Resource=['*'],
+            Action=[
+                ec2.CreateNetworkInterface,
+                ec2.DescribeNetworkInterfaces,
+                ec2.DeleteNetworkInterface,
+            ]
+        )
+    ]
 
 
 def flowlogs_assumerole_policy():
