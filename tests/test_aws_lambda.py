@@ -32,6 +32,29 @@ class TestFunction(BlueprintTestCase):
         blueprint.create_template()
         self.assertRenderedBlueprint(blueprint)
 
+    def test_create_template_with_vpc_config(self):
+        blueprint = Function('test_aws_lambda_function_with_vpc_config', self.ctx)
+        blueprint.resolve_variables(
+            [
+                Variable(
+                    "Code",
+                    Code(S3Bucket="test_bucket", S3Key="code_key")
+                ),
+                Variable("Description", "Test function."),
+                Variable("Environment", {"TEST_NAME": "test_value"}),
+                Variable("Runtime", "python2.7"),
+                Variable(
+                    "VpcConfig",
+                    {
+                        "SecurityGroupIds": ['sg-12345678'],
+                        "SubnetIds": "subnet-1111,subnet-2222,subnet-3333,subnet-4444"
+                    }
+                ),
+            ]
+        )
+        blueprint.create_template()
+        self.assertRenderedBlueprint(blueprint)
+
     def test_create_template_external_role(self):
         blueprint = Function('test_aws_lambda_Function_external_role',
                              self.ctx)
