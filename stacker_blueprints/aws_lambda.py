@@ -403,7 +403,7 @@ class Function(Blueprint):
         role_arn = variables["Role"]
         # Set here - used in `create_role` to determine if an external role
         # was passed in. If an external role is passed in, no new role is
-        # created, and now policies are generated/added to the external
+        # created, and no policies are generated/added to the external
         # role.
         self.role_arn = role_arn
         if not role_arn:
