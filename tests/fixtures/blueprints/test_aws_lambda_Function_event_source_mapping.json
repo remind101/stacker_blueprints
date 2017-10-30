@@ -1,5 +1,10 @@
 {
     "Outputs": {
+        "EventSourceMappingId": {
+            "Value": {
+                "Ref": "EventSourceMapping"
+            }
+        },
         "FunctionArn": {
             "Value": {
                 "Fn::GetAtt": [
@@ -46,6 +51,19 @@
         }
     },
     "Resources": {
+        "EventSourceMapping": {
+            "Properties": {
+                "EventSourceArn": "arn:aws:dynamodb:us-east-1:12345:table/FakeTable/stream/FakeStream",
+                "FunctionName": {
+                    "Fn::GetAtt": [
+                        "Function",
+                        "Arn"
+                    ]
+                },
+                "StartingPosition": "0"
+            },
+            "Type": "AWS::Lambda::EventSourceMapping"
+        },
         "Function": {
             "Properties": {
                 "Code": {
@@ -53,18 +71,16 @@
                     "S3Key": "code_key"
                 },
                 "DeadLetterConfig": {
-                    "Ref": "AWS::NoValue"
+                    "TargetArn": "arn:aws:sqs:us-east-1:12345:dlq"
                 },
                 "Description": "Test function.",
                 "Environment": {
                     "Variables": {
-                        "TEST_NAME": "test_value"
+                        "Env1": "Value1"
                     }
                 },
                 "Handler": "handler",
-                "KmsKeyArn": {
-                    "Ref": "AWS::NoValue"
-                },
+                "KmsKeyArn": "arn:aws:kms:us-east-1:12345:key",
                 "MemorySize": 128,
                 "Role": {
                     "Fn::GetAtt": [
@@ -75,15 +91,7 @@
                 "Runtime": "python2.7",
                 "Timeout": 3,
                 "VpcConfig": {
-                    "SecurityGroupIds": [
-                        "sg-12345678"
-                    ],
-                    "SubnetIds": [
-                        "subnet-1111",
-                        "subnet-2222",
-                        "subnet-3333",
-                        "subnet-4444"
-                    ]
+                    "Ref": "AWS::NoValue"
                 }
             },
             "Type": "AWS::Lambda::Function"
@@ -100,6 +108,26 @@
             "Properties": {
                 "PolicyDocument": {
                     "Statement": [
+                        {
+                            "Action": [
+                                "dynamodb:DescribeStream",
+                                "dynamodb:GetRecords",
+                                "dynamodb:GetShardIterator"
+                            ],
+                            "Effect": "Allow",
+                            "Resource": [
+                                "arn:aws:dynamodb:us-east-1:12345:table/FakeTable/stream/FakeStream"
+                            ]
+                        },
+                        {
+                            "Action": [
+                                "dynamodb:ListStreams"
+                            ],
+                            "Effect": "Allow",
+                            "Resource": [
+                                "arn:aws:dynamodb:us-east-1:12345:table/FakeTable/stream/*"
+                            ]
+                        },
                         {
                             "Action": [
                                 "logs:CreateLogGroup",
@@ -167,7 +195,7 @@
                         }
                     ]
                 },
-                "PolicyName": "test-test_aws_lambda_function_with_vpc_config-policy",
+                "PolicyName": "test-test_aws_lambda_Function_event_source_mapping-policy",
                 "Roles": [
                     {
                         "Ref": "Role"
@@ -193,26 +221,9 @@
                         }
                     ]
                 },
-                "Policies": [
-                    {
-                        "PolicyDocument": {
-                            "Statement": [
-                                {
-                                    "Action": [
-                                        "ec2:CreateNetworkInterface",
-                                        "ec2:DescribeNetworkInterfaces",
-                                        "ec2:DeleteNetworkInterface"
-                                    ],
-                                    "Effect": "Allow",
-                                    "Resource": [
-                                        "*"
-                                    ]
-                                }
-                            ]
-                        },
-                        "PolicyName": "test-test_aws_lambda_function_with_vpc_config-vpc-policy"
-                    }
-                ]
+                "Policies": {
+                    "Ref": "AWS::NoValue"
+                }
             },
             "Type": "AWS::IAM::Role"
         }

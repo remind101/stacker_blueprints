@@ -1,10 +1,5 @@
 {
     "Outputs": {
-        "AliasArn": {
-            "Value": {
-                "Ref": "Alias"
-            }
-        },
         "FunctionArn": {
             "Value": {
                 "Fn::GetAtt": [
@@ -51,16 +46,6 @@
         }
     },
     "Resources": {
-        "Alias": {
-            "Properties": {
-                "FunctionName": {
-                    "Ref": "Function"
-                },
-                "FunctionVersion": "$LATEST",
-                "Name": "prod"
-            },
-            "Type": "AWS::Lambda::Alias"
-        },
         "Function": {
             "Properties": {
                 "Code": {
@@ -169,10 +154,19 @@
                                     ]
                                 }
                             ]
+                        },
+                        {
+                            "Action": [
+                                "ec2:DescribeInstances"
+                            ],
+                            "Effect": "Allow",
+                            "Resource": [
+                                "*"
+                            ]
                         }
                     ]
                 },
-                "PolicyName": "test-test_aws_lambda_Function_with_alias_partial_name-policy",
+                "PolicyName": "test-test_aws_lambda_Function_extended_statements-policy",
                 "Roles": [
                     {
                         "Ref": "Role"

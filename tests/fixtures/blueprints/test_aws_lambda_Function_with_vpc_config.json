@@ -1,10 +1,5 @@
 {
     "Outputs": {
-        "AliasArn": {
-            "Value": {
-                "Ref": "Alias"
-            }
-        },
         "FunctionArn": {
             "Value": {
                 "Fn::GetAtt": [
@@ -51,16 +46,6 @@
         }
     },
     "Resources": {
-        "Alias": {
-            "Properties": {
-                "FunctionName": {
-                    "Ref": "Function"
-                },
-                "FunctionVersion": "$LATEST",
-                "Name": "prod"
-            },
-            "Type": "AWS::Lambda::Alias"
-        },
         "Function": {
             "Properties": {
                 "Code": {
@@ -88,7 +73,16 @@
                 "Runtime": "python2.7",
                 "Timeout": 3,
                 "VpcConfig": {
-                    "Ref": "AWS::NoValue"
+                    "SecurityGroupIds": [
+                        "sg-1",
+                        "sg-2",
+                        "sg-3"
+                    ],
+                    "SubnetIds": [
+                        "subnet-1",
+                        "subnet-2",
+                        "subnet-3"
+                    ]
                 }
             },
             "Type": "AWS::Lambda::Function"
@@ -172,7 +166,7 @@
                         }
                     ]
                 },
-                "PolicyName": "test-test_aws_lambda_Function_with_alias_partial_name-policy",
+                "PolicyName": "test-test_aws_lambda_Function_with_vpc_config-policy",
                 "Roles": [
                     {
                         "Ref": "Role"
@@ -198,9 +192,26 @@
                         }
                     ]
                 },
-                "Policies": {
-                    "Ref": "AWS::NoValue"
-                }
+                "Policies": [
+                    {
+                        "PolicyDocument": {
+                            "Statement": [
+                                {
+                                    "Action": [
+                                        "ec2:CreateNetworkInterface",
+                                        "ec2:DescribeNetworkInterfaces",
+                                        "ec2:DeleteNetworkInterface"
+                                    ],
+                                    "Effect": "Allow",
+                                    "Resource": [
+                                        "*"
+                                    ]
+                                }
+                            ]
+                        },
+                        "PolicyName": "test-test_aws_lambda_Function_with_vpc_config-vpc-policy"
+                    }
+                ]
             },
             "Type": "AWS::IAM::Role"
         }

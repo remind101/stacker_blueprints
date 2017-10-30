@@ -1,137 +1,137 @@
-import unittest
+from types import MethodType
 
-from stacker.blueprints.testutil import BlueprintTestCase
 from stacker.context import Context
 from stacker.variables import Variable
-
-from stacker_blueprints.aws_lambda import (
-  Function,
-  FunctionScheduler,
-)
+from stacker_blueprints.aws_lambda import Function, FunctionScheduler
+from stacker.blueprints.testutil import BlueprintTestCase
 
 from troposphere.awslambda import Code
 
+from awacs.aws import Statement, Allow
+import awacs.ec2
 
-class TestFunction(BlueprintTestCase):
+
+class TestBlueprint(BlueprintTestCase):
     def setUp(self):
-        self.ctx = Context({'namespace': 'test'})
+        self.code = Code(S3Bucket="test_bucket", S3Key="code_key")
+        self.common_variables = {
+            "Code": self.code,
+            "DeadLetterArn": "arn:aws:sqs:us-east-1:12345:dlq",
+            "Description": "Test function.",
+            "Environment": {"Env1": "Value1"},
+            "Handler": "handler",
+            "KmsKeyArn": "arn:aws:kms:us-east-1:12345:key",
+            "MemorySize": 128,
+            "Runtime": "python2.7",
+            "Timeout": 3,
+        }
+        self.ctx = Context({'namespace': 'test', 'environment': 'test'})
 
-    def test_create_template(self):
-        blueprint = Function('test_aws_lambda_Function', self.ctx)
-        blueprint.resolve_variables(
-            [
-                Variable(
-                    "Code",
-                    Code(S3Bucket="test_bucket", S3Key="code_key")
-                ),
-                Variable("Description", "Test function."),
-                Variable("Environment", {"TEST_NAME": "test_value"}),
-                Variable("Runtime", "python2.7"),
-            ]
-        )
+    def create_blueprint(self, name):
+        return Function(name, self.ctx)
+
+    def generate_variables(self):
+        return [Variable(k, v) for k, v in self.common_variables.items()]
+
+    def test_create_template_base(self):
+        blueprint = self.create_blueprint('test_aws_lambda_Function')
+
+        blueprint.resolve_variables(self.generate_variables())
         blueprint.create_template()
         self.assertRenderedBlueprint(blueprint)
 
-    def test_create_template_with_vpc_config(self):
-        blueprint = Function('test_aws_lambda_function_with_vpc_config', self.ctx)
-        blueprint.resolve_variables(
-            [
-                Variable(
-                    "Code",
-                    Code(S3Bucket="test_bucket", S3Key="code_key")
-                ),
-                Variable("Description", "Test function."),
-                Variable("Environment", {"TEST_NAME": "test_value"}),
-                Variable("Runtime", "python2.7"),
-                Variable(
-                    "VpcConfig",
-                    {
-                        "SecurityGroupIds": ['sg-12345678'],
-                        "SubnetIds": "subnet-1111,subnet-2222,subnet-3333,subnet-4444"
-                    }
-                ),
-            ]
+    def test_create_template_with_external_role(self):
+        blueprint = self.create_blueprint(
+            'test_aws_lambda_Function_external_role'
         )
+        self.common_variables["Role"] = "my-fake-role"
+
+        blueprint.resolve_variables(self.generate_variables())
         blueprint.create_template()
         self.assertRenderedBlueprint(blueprint)
 
-    def test_create_template_external_role(self):
-        blueprint = Function('test_aws_lambda_Function_external_role',
-                             self.ctx)
-        blueprint.resolve_variables(
-            [
-                Variable(
-                    "Code",
-                    Code(S3Bucket="test_bucket", S3Key="code_key")
-                ),
-                Variable("Description", "Test function."),
-                Variable("Environment", {"TEST_NAME": "test_value"}),
-                Variable("Runtime", "python2.7"),
-                Variable("Role", "my-fake-role"),
-            ]
+    def test_create_template_vpc_config(self):
+        blueprint = self.create_blueprint(
+            'test_aws_lambda_Function_with_vpc_config'
         )
+        self.common_variables["VpcConfig"] = {
+            "SecurityGroupIds": ["sg-1", "sg-2", "sg-3"],
+            "SubnetIds": ["subnet-1", "subnet-2", "subnet-3"],
+        }
+
+        blueprint.resolve_variables(self.generate_variables())
         blueprint.create_template()
         self.assertRenderedBlueprint(blueprint)
 
     def test_create_template_with_alias_full_name_arn(self):
-        blueprint = Function(
-            'test_aws_lambda_Function_with_alias_full_name_arn',
-            self.ctx
+        blueprint = self.create_blueprint(
+            'test_aws_lambda_Function_with_alias_full_name_arn'
         )
-        blueprint.resolve_variables(
-            [
-                Variable(
-                    "Code",
-                    Code(S3Bucket="test_bucket", S3Key="code_key")
-                ),
-                Variable("Description", "Test function."),
-                Variable("Environment", {"TEST_NAME": "test_value"}),
-                Variable("Runtime", "python2.7"),
-                Variable("AliasName", "arn:aws:lambda:aws-region:"
-                                      "acct-id:function:helloworld:PROD"),
-            ]
-        )
+        self.common_variables["AliasName"] = ("arn:aws:lambda:aws-region:"
+                                              "acct-id:function:helloworld:"
+                                              "PROD")
+
+        blueprint.resolve_variables(self.generate_variables())
         blueprint.create_template()
         self.assertRenderedBlueprint(blueprint)
 
     def test_create_template_with_alias_partial_name(self):
-        blueprint = Function(
-            'test_aws_lambda_Function_with_alias_partial_name',
-            self.ctx
+        blueprint = self.create_blueprint(
+            'test_aws_lambda_Function_with_alias_partial_name'
         )
-        blueprint.resolve_variables(
-            [
-                Variable(
-                    "Code",
-                    Code(S3Bucket="test_bucket", S3Key="code_key")
-                ),
-                Variable("Description", "Test function."),
-                Variable("Environment", {"TEST_NAME": "test_value"}),
-                Variable("Runtime", "python2.7"),
-                Variable("AliasName", "prod"),
-            ]
-        )
+        self.common_variables["AliasName"] = "prod"
+
+        blueprint.resolve_variables(self.generate_variables())
         blueprint.create_template()
         self.assertRenderedBlueprint(blueprint)
 
     def test_create_template_with_alias_provided_version(self):
-        blueprint = Function(
-            'test_aws_lambda_Function_with_alias_provided_version',
-            self.ctx
+        blueprint = self.create_blueprint(
+            'test_aws_lambda_Function_with_alias_provided_version'
         )
-        blueprint.resolve_variables(
-            [
-                Variable(
-                    "Code",
-                    Code(S3Bucket="test_bucket", S3Key="code_key")
-                ),
-                Variable("Description", "Test function."),
-                Variable("Environment", {"TEST_NAME": "test_value"}),
-                Variable("Runtime", "python2.7"),
-                Variable("AliasName", "prod"),
-                Variable("AliasVersion", "1")
+
+        self.common_variables["AliasName"] = "prod"
+        self.common_variables["AliasVersion"] = "1"
+
+        blueprint.resolve_variables(self.generate_variables())
+        blueprint.create_template()
+        self.assertRenderedBlueprint(blueprint)
+
+    def test_create_template_event_source_mapping(self):
+        blueprint = self.create_blueprint(
+            'test_aws_lambda_Function_event_source_mapping'
+        )
+        self.common_variables["EventSourceMapping"] = {
+            "EventSourceArn": "arn:aws:dynamodb:us-east-1:12345:table/"
+                              "FakeTable/stream/FakeStream",
+            "StartingPosition": "0",
+        }
+
+        blueprint.resolve_variables(self.generate_variables())
+        blueprint.create_template()
+        self.assertRenderedBlueprint(blueprint)
+
+    def test_create_template_extended_statements(self):
+        blueprint = self.create_blueprint(
+            'test_aws_lambda_Function_extended_statements'
+        )
+
+        def extended_statements(self):
+            return [
+                Statement(
+                    Effect=Allow,
+                    Resource=["*"],
+                    Action=[awacs.ec2.DescribeInstances],
+                )
             ]
+
+        # Patch the extended_policy_statements method
+        blueprint.extended_policy_statements = MethodType(
+            extended_statements,
+            blueprint
         )
+
+        blueprint.resolve_variables(self.generate_variables())
         blueprint.create_template()
         self.assertRenderedBlueprint(blueprint)
 
@@ -167,7 +167,3 @@ class TestFunctionScheduler(BlueprintTestCase):
         )
         blueprint.create_template()
         self.assertRenderedBlueprint(blueprint)
-
-
-if __name__ == '__main__':
-    unittest.main()
