@@ -6,6 +6,7 @@
 - Change version in setup.py and stacker\_blueprints/\_\_init\_\_.py
 - Update CHANGELOG.md with changes made since last release (see below for helpful
   command)
+- add changed files: `git add setup.py stacker_blueprints/\_\_init\_\_.py CHANGELOG.md`
 - Commit changes: `git commit -m "Release 1.1.1"`
 - Create a signed tag: `git tag --sign -m "Release 1.1.1" 1.1.1`
 - Push branch up to git: `git push -u origin release-1.1.1`
