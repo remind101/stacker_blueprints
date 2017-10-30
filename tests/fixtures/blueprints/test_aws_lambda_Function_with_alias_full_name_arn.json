@@ -68,18 +68,16 @@
                     "S3Key": "code_key"
                 },
                 "DeadLetterConfig": {
-                    "Ref": "AWS::NoValue"
+                    "TargetArn": "arn:aws:sqs:us-east-1:12345:dlq"
                 },
                 "Description": "Test function.",
                 "Environment": {
                     "Variables": {
-                        "TEST_NAME": "test_value"
+                        "Env1": "Value1"
                     }
                 },
                 "Handler": "handler",
-                "KmsKeyArn": {
-                    "Ref": "AWS::NoValue"
-                },
+                "KmsKeyArn": "arn:aws:kms:us-east-1:12345:key",
                 "MemorySize": 128,
                 "Role": {
                     "Fn::GetAtt": [
