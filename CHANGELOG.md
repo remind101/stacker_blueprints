@@ -1,3 +1,14 @@
+## 1.0.4 (2017-10-30)
+
+- Convert SQS Queue blueprint to TroposphereType [GH-132]
+- Allow overriding of Code object in aws\_lambda.Function subclasses [GH-133]
+- FunctionScheduler (Cloudwatch Events based) blueprint [GH-134]
+- route53 VPC private hosted zones [GH-135]
+- Add lambda external role support [GH-136]
+- Add lambda version support [GH-138]
+- Add lambda alias support [GH-139]
+- Add stream spec for aws lambda [GH-146]
+
 ## 1.0.3 (2017-08-24)
 
 - New iam Roles blueprint [GH-106]
