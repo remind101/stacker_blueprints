@@ -4,13 +4,15 @@ from setuptools import setup, find_packages
 src_dir = os.path.dirname(__file__)
 
 install_requires = [
-    "stacker~=1.0.1",
-    "troposphere~=1.9.5",
+    "stacker>=1.0.1",
+    "troposphere>=1.9.5",
+    "awacs>=0.6.0",
 ]
 
 tests_require = [
-    "nose~=1.0",
+    "nose",
     "mock~=2.0.0",
+    "stacker>=1.1.1",
 ]
 
 

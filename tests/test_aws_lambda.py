@@ -1,6 +1,7 @@
 from types import MethodType
 
 from stacker.context import Context
+from stacker.config import Config
 from stacker.variables import Variable
 from stacker_blueprints.aws_lambda import Function, FunctionScheduler
 from stacker.blueprints.testutil import BlueprintTestCase
@@ -25,7 +26,7 @@ class TestBlueprint(BlueprintTestCase):
             "Runtime": "python2.7",
             "Timeout": 3,
         }
-        self.ctx = Context({'namespace': 'test', 'environment': 'test'})
+        self.ctx = Context(config=Config({'namespace': 'test'}))
 
     def create_blueprint(self, name):
         return Function(name, self.ctx)

@@ -1,4 +1,5 @@
 from stacker.context import Context
+from stacker.config import Config
 from stacker.variables import Variable
 
 from stacker_blueprints.route53 import (
@@ -8,9 +9,10 @@ from stacker_blueprints.route53 import (
 
 from stacker.blueprints.testutil import BlueprintTestCase
 
+
 class TestRoute53(BlueprintTestCase):
     def setUp(self):
-        self.ctx = Context({'namespace': 'test'})
+        self.ctx = Context(config=Config({'namespace': 'test'}))
 
     def test_create_template_hosted_zone_id(self):
         blueprint = DNSRecords('route53_dnsrecords', self.ctx)
@@ -92,10 +94,12 @@ class TestRoute53(BlueprintTestCase):
             ]
         )
         record_sets = blueprint.create_template()
-        self.assertEqual(record_sets[0].AliasTarget.HostedZoneId, "Z2FDTNDATAQYW2")
+        self.assertEqual(record_sets[0].AliasTarget.HostedZoneId,
+                         "Z2FDTNDATAQYW2")
 
     def test_elb_alias_proper_hosted_zone_id(self):
-        blueprint = DNSRecords('test_route53_elb_alias_hosted_zone_id', self.ctx)
+        blueprint = DNSRecords('test_route53_elb_alias_hosted_zone_id',
+                               self.ctx)
         blueprint.resolve_variables(
             [
                 Variable(
@@ -105,7 +109,7 @@ class TestRoute53(BlueprintTestCase):
                             "Name": "host.testdomain.com.",
                             "Type": "A",
                             "AliasTarget": {
-                                "DNSName": "myelb-1234567890-abcdef.us-east-2.elb.amazonaws.com.",
+                                "DNSName": "myelb-1234567890-abcdef.us-east-2.elb.amazonaws.com.",  # noqa
                             },
                         },
                     ]
