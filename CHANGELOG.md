@@ -1,3 +1,8 @@
+## 1.0.5 (2017-11-01)
+
+This is a minor release to deal with dependency conflicts between
+stacker & stacker\_blueprints, specifically around troposphere & awacs.
+
 ## 1.0.4 (2017-10-30)
 
 - Convert SQS Queue blueprint to TroposphereType [GH-132]
