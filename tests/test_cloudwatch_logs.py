@@ -2,6 +2,7 @@ import unittest
 
 from stacker.blueprints.testutil import BlueprintTestCase
 from stacker.context import Context
+from stacker.config import Config
 from stacker.variables import Variable
 
 from stacker_blueprints.cloudwatch_logs import SubscriptionFilters
@@ -11,7 +12,7 @@ from troposphere import GetAtt, Ref
 
 class TestSubscriptionFilters(BlueprintTestCase):
     def setUp(self):
-        self.ctx = Context({'namespace': 'test'})
+        self.ctx = Context(config=Config({'namespace': 'test'}))
 
     def test_create_template(self):
         blueprint = SubscriptionFilters(

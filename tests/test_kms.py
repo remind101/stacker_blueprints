@@ -1,4 +1,5 @@
 from stacker.context import Context
+from stacker.config import Config
 from stacker.variables import Variable
 
 from stacker_blueprints.kms import Key
@@ -8,7 +9,7 @@ from stacker.blueprints.testutil import BlueprintTestCase
 
 class TestKmsKey(BlueprintTestCase):
     def setUp(self):
-        self.ctx = Context({'namespace': 'test'})
+        self.ctx = Context(config=Config({'namespace': 'test'}))
 
     def test_kms_key(self):
         blueprint = Key('kms_key_a', self.ctx)
@@ -31,7 +32,7 @@ class TestKmsKey(BlueprintTestCase):
         )
         blueprint.create_template()
         self.assertRenderedBlueprint(blueprint)
-    
+
     def test_kms_key_without_properties(self):
         blueprint = Key('kms_key_c', self.ctx)
         blueprint.resolve_variables(
@@ -52,7 +53,3 @@ class TestKmsKey(BlueprintTestCase):
         )
         with self.assertRaises(DeprecationWarning):
             blueprint.create_template()
-
-
-if __name__ == '__main__':
-    unittest.main()
