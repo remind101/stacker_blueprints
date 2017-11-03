@@ -58,31 +58,16 @@ def read_only_s3_bucket_policy(buckets):
 
 
 def read_write_s3_bucket_policy_statements(buckets):
-    list_buckets = [s3_arn(b) for b in buckets]
     object_buckets = [s3_arn(Join("/", [b, "*"])) for b in buckets]
-    return [
-        Statement(
-            Effect="Allow",
-            Action=[
-                s3.GetBucketLocation,
-                s3.ListAllMyBuckets,
-            ],
-            Resource=["arn:aws:s3:::*"]
-        ),
+    return read_only_s3_bucket_policy_statements(buckets) + [
         Statement(
             Effect=Allow,
             Action=[
-                s3.ListBucket,
-            ],
-            Resource=list_buckets,
-        ),
-        Statement(
-            Effect=Allow,
-            Action=[
-                s3.GetObject,
                 s3.PutObject,
                 s3.PutObjectAcl,
+                s3.PutObjectVersionAcl,
                 s3.DeleteObject,
+                s3.DeleteObjectVersion,
             ],
             Resource=object_buckets,
         ),
