@@ -1,0 +1,277 @@
+{
+    "Outputs": {
+        "CycleBucketArn": {
+            "Value": {
+                "Fn::Join": [
+                    "", 
+                    [
+                        "arn:aws:s3:::", 
+                        {
+                            "Ref": "Cycle"
+                        }
+                    ]
+                ]
+            }
+        }, 
+        "CycleBucketDomainName": {
+            "Value": {
+                "Fn::GetAtt": [
+                    "Cycle", 
+                    "DomainName"
+                ]
+            }
+        }, 
+        "CycleBucketId": {
+            "Value": {
+                "Ref": "Cycle"
+            }
+        }, 
+        "SimpleBucketArn": {
+            "Value": {
+                "Fn::Join": [
+                    "", 
+                    [
+                        "arn:aws:s3:::", 
+                        {
+                            "Ref": "Simple"
+                        }
+                    ]
+                ]
+            }
+        }, 
+        "SimpleBucketDomainName": {
+            "Value": {
+                "Fn::GetAtt": [
+                    "Simple", 
+                    "DomainName"
+                ]
+            }
+        }, 
+        "SimpleBucketId": {
+            "Value": {
+                "Ref": "Simple"
+            }
+        }
+    }, 
+    "Resources": {
+        "Cycle": {
+            "Properties": {
+                "LifecycleConfiguration": {
+                    "Rules": [
+                        {
+                            "ExpirationInDays": 40, 
+                            "Status": "Enabled"
+                        }
+                    ]
+                }
+            }, 
+            "Type": "AWS::S3::Bucket"
+        }, 
+        "ReadPolicy": {
+            "Properties": {
+                "PolicyDocument": {
+                    "Statement": [
+                        {
+                            "Action": [
+                                "s3:ListAllMyBuckets"
+                            ], 
+                            "Effect": "Allow", 
+                            "Resource": [
+                                {
+                                    "Fn::Join": [
+                                        "", 
+                                        [
+                                            "arn:aws:s3:::", 
+                                            "*"
+                                        ]
+                                    ]
+                                }
+                            ]
+                        }, 
+                        {
+                            "Action": [
+                                "s3:Get*", 
+                                "s3:List*"
+                            ], 
+                            "Effect": "Allow", 
+                            "Resource": [
+                                {
+                                    "Fn::Join": [
+                                        "", 
+                                        [
+                                            "arn:aws:s3:::", 
+                                            {
+                                                "Ref": "Simple"
+                                            }
+                                        ]
+                                    ]
+                                }, 
+                                {
+                                    "Fn::Join": [
+                                        "", 
+                                        [
+                                            "arn:aws:s3:::", 
+                                            {
+                                                "Ref": "Cycle"
+                                            }
+                                        ]
+                                    ]
+                                }, 
+                                {
+                                    "Fn::Join": [
+                                        "", 
+                                        [
+                                            "arn:aws:s3:::", 
+                                            {
+                                                "Fn::Join": [
+                                                    "/", 
+                                                    [
+                                                        {
+                                                            "Ref": "Simple"
+                                                        }, 
+                                                        "*"
+                                                    ]
+                                                ]
+                                            }
+                                        ]
+                                    ]
+                                }, 
+                                {
+                                    "Fn::Join": [
+                                        "", 
+                                        [
+                                            "arn:aws:s3:::", 
+                                            {
+                                                "Fn::Join": [
+                                                    "/", 
+                                                    [
+                                                        {
+                                                            "Ref": "Cycle"
+                                                        }, 
+                                                        "*"
+                                                    ]
+                                                ]
+                                            }
+                                        ]
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }, 
+                "PolicyName": "test-bucketsReadPolicy", 
+                "Roles": [
+                    "Role1", 
+                    "Role2"
+                ]
+            }, 
+            "Type": "AWS::IAM::Policy"
+        }, 
+        "ReadWritePolicy": {
+            "Properties": {
+                "PolicyDocument": {
+                    "Statement": [
+                        {
+                            "Action": [
+                                "s3:GetBucketLocation", 
+                                "s3:ListAllMyBuckets"
+                            ], 
+                            "Effect": "Allow", 
+                            "Resource": [
+                                "arn:aws:s3:::*"
+                            ]
+                        }, 
+                        {
+                            "Action": [
+                                "s3:ListBucket"
+                            ], 
+                            "Effect": "Allow", 
+                            "Resource": [
+                                {
+                                    "Fn::Join": [
+                                        "", 
+                                        [
+                                            "arn:aws:s3:::", 
+                                            {
+                                                "Ref": "Simple"
+                                            }
+                                        ]
+                                    ]
+                                }, 
+                                {
+                                    "Fn::Join": [
+                                        "", 
+                                        [
+                                            "arn:aws:s3:::", 
+                                            {
+                                                "Ref": "Cycle"
+                                            }
+                                        ]
+                                    ]
+                                }
+                            ]
+                        }, 
+                        {
+                            "Action": [
+                                "s3:GetObject", 
+                                "s3:PutObject", 
+                                "s3:PutObjectAcl", 
+                                "s3:DeleteObject"
+                            ], 
+                            "Effect": "Allow", 
+                            "Resource": [
+                                {
+                                    "Fn::Join": [
+                                        "", 
+                                        [
+                                            "arn:aws:s3:::", 
+                                            {
+                                                "Fn::Join": [
+                                                    "/", 
+                                                    [
+                                                        {
+                                                            "Ref": "Simple"
+                                                        }, 
+                                                        "*"
+                                                    ]
+                                                ]
+                                            }
+                                        ]
+                                    ]
+                                }, 
+                                {
+                                    "Fn::Join": [
+                                        "", 
+                                        [
+                                            "arn:aws:s3:::", 
+                                            {
+                                                "Fn::Join": [
+                                                    "/", 
+                                                    [
+                                                        {
+                                                            "Ref": "Cycle"
+                                                        }, 
+                                                        "*"
+                                                    ]
+                                                ]
+                                            }
+                                        ]
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }, 
+                "PolicyName": "test-bucketsReadWritePolicy", 
+                "Roles": [
+                    "Role3", 
+                    "Role4"
+                ]
+            }, 
+            "Type": "AWS::IAM::Policy"
+        }, 
+        "Simple": {
+            "Type": "AWS::S3::Bucket"
+        }
+    }
+}
