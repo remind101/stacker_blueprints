@@ -1,0 +1,64 @@
+{
+    "Outputs": {
+        "ExampleArn": {
+            "Value": {
+                "Ref": "Example"
+            }
+        }, 
+        "ExampleName": {
+            "Value": {
+                "Fn::GetAtt": [
+                    "Example", 
+                    "TopicName"
+                ]
+            }
+        }
+    }, 
+    "Resources": {
+        "Example": {
+            "Properties": {
+                "DisplayName": "ExampleTopic", 
+                "Subscription": [
+                    {
+                        "Endpoint": "arn:aws:sqs:us-east-1:123456788901:example-queue", 
+                        "Protocol": "sqs"
+                    }, 
+                    {
+                        "Endpoint": "postmaster@example.com", 
+                        "Protocol": "email"
+                    }
+                ]
+            }, 
+            "Type": "AWS::SNS::Topic"
+        }, 
+        "ExampleSubPolicy": {
+            "Properties": {
+                "PolicyDocument": {
+                    "Statement": [
+                        {
+                            "Action": [
+                                "sqs:SendMessage"
+                            ], 
+                            "Condition": {
+                                "ArnEquals": {
+                                    "aws:SourceArn": {
+                                        "Ref": "Example"
+                                    }
+                                }
+                            }, 
+                            "Effect": "Allow", 
+                            "Principal": "*", 
+                            "Resource": [
+                                "arn:aws:sqs:us-east-1:123456788901:example-queue"
+                            ]
+                        }
+                    ]
+                }, 
+                "Queues": [
+                    "https://sqs.us-east-1.amazonaws.com/123456788901/example-queue"
+                ]
+            }, 
+            "Type": "AWS::SQS::QueuePolicy"
+        }
+    }
+}
