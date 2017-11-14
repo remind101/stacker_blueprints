@@ -113,7 +113,7 @@ class Topics(Blueprint):
         """
         Creates the SNS topic, along with any subscriptions requested.
         """
-        topic_subs = None
+        topic_subs = []
         t = self.template
 
         if "Subscription" in topic_config:

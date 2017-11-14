@@ -8,6 +8,9 @@ class TestBlueprint(BlueprintTestCase):
     def setUp(self):
         self.variables = [
             Variable('Topics', {
+                'WithoutSubscription': {
+                    'DisplayName': 'SampleTopicWithoutSub',
+                },
                 'Example': {
                     'DisplayName': 'ExampleTopic',
                     'Subscription': [
