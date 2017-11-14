@@ -12,6 +12,19 @@
                     "TopicName"
                 ]
             }
+        }, 
+        "WithoutSubscriptionArn": {
+            "Value": {
+                "Ref": "WithoutSubscription"
+            }
+        }, 
+        "WithoutSubscriptionName": {
+            "Value": {
+                "Fn::GetAtt": [
+                    "WithoutSubscription", 
+                    "TopicName"
+                ]
+            }
         }
     }, 
     "Resources": {
@@ -59,6 +72,12 @@
                 ]
             }, 
             "Type": "AWS::SQS::QueuePolicy"
+        }, 
+        "WithoutSubscription": {
+            "Properties": {
+                "DisplayName": "SampleTopicWithoutSub"
+            }, 
+            "Type": "AWS::SNS::Topic"
         }
     }
 }
