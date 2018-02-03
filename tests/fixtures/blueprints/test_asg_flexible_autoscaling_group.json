@@ -1,0 +1,42 @@
+{
+    "Outputs": {
+        "AutoScalingGroup": {
+            "Value": {
+                "Ref": "AutoScalingGroup"
+            }
+        }, 
+        "LaunchConfiguration": {
+            "Value": {
+                "Ref": "LaunchConfiguration"
+            }
+        }
+    }, 
+    "Resources": {
+        "AutoScalingGroup": {
+            "Properties": {
+                "AvailabilityZones": [
+                    "us-east-1a", 
+                    "us-east-1b"
+                ], 
+                "LaunchConfigurationName": {
+                    "Ref": "LaunchConfiguration"
+                }, 
+                "MaxSize": 3, 
+                "MinSize": 1
+            }, 
+            "Type": "AWS::AutoScaling::AutoScalingGroup"
+        }, 
+        "LaunchConfiguration": {
+            "Properties": {
+                "ImageId": "i-abc1234", 
+                "InstanceType": "m3.medium", 
+                "KeyName": "mock_ssh_key", 
+                "SecurityGroups": [
+                    "sg-abc1234", 
+                    "sg-bcd2345"
+                ]
+            }, 
+            "Type": "AWS::AutoScaling::LaunchConfiguration"
+        }
+    }
+}
