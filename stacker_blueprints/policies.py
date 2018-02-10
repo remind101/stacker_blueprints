@@ -7,9 +7,11 @@ from awacs.aws import (
 )
 
 from troposphere import (
+    Sub,
     Join,
     Region,
     AccountId,
+    AWSHelperFn
 )
 
 from awacs import sts, s3, logs, ec2
@@ -29,13 +31,23 @@ def make_simple_assume_policy(*principals):
 
 
 def s3_arn(bucket):
-    return Join('', ['arn:aws:s3:::', bucket])
+    if isinstance(bucket, AWSHelperFn):
+        return Sub('arn:aws:s3:::${Bucket}', Bucket=bucket)
+    else:
+        return 'arn:aws:s3:::%s' % bucket
 
 
-def read_only_s3_bucket_policy_statements(buckets):
+def s3_objects_arn(bucket, folder="*"):
+    if isinstance(bucket, AWSHelperFn):
+        return Sub('arn:aws:s3:::${Bucket}/%s' % folder, Bucket=bucket)
+    else:
+        return 'arn:aws:s3:::%s/%s' % (bucket, folder)
+
+
+def read_only_s3_bucket_policy_statements(buckets, folder="*"):
     """ Read only policy an s3 bucket. """
     list_buckets = [s3_arn(b) for b in buckets]
-    object_buckets = [s3_arn(Join("/", [b, "*"])) for b in buckets]
+    object_buckets = [s3_objects_arn(b, folder) for b in buckets]
 
     bucket_resources = list_buckets + object_buckets
 
@@ -57,16 +69,34 @@ def read_only_s3_bucket_policy(buckets):
     return Policy(Statement=read_only_s3_bucket_policy_statements(buckets))
 
 
-def read_write_s3_bucket_policy_statements(buckets):
-    object_buckets = [s3_arn(Join("/", [b, "*"])) for b in buckets]
-    return read_only_s3_bucket_policy_statements(buckets) + [
+def read_write_s3_bucket_policy_statements(buckets, folder="*"):
+    list_buckets = [s3_arn(b) for b in buckets]
+    object_buckets = [s3_objects_arn(b, folder) for b in buckets]
+    return [
+        Statement(
+            Effect="Allow",
+            Action=[
+                s3.GetBucketLocation,
+                s3.ListAllMyBuckets,
+            ],
+            Resource=[s3_arn("*")]
+        ),
         Statement(
             Effect=Allow,
             Action=[
+                s3.ListBucket,
+                s3.GetBucketVersioning,
+            ],
+            Resource=list_buckets,
+        ),
+        Statement(
+            Effect=Allow,
+            Action=[
+                s3.GetObject,
                 s3.PutObject,
                 s3.PutObjectAcl,
-                s3.PutObjectVersionAcl,
                 s3.DeleteObject,
+                s3.GetObjectVersion,
                 s3.DeleteObjectVersion,
             ],
             Resource=object_buckets,

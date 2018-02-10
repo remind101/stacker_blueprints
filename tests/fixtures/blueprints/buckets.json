@@ -2,14 +2,13 @@
     "Outputs": {
         "CycleBucketArn": {
             "Value": {
-                "Fn::Join": [
-                    "", 
-                    [
-                        "arn:aws:s3:::", 
-                        {
+                "Fn::Sub": [
+                    "arn:aws:s3:::${Bucket}", 
+                    {
+                        "Bucket": {
                             "Ref": "Cycle"
                         }
-                    ]
+                    }
                 ]
             }
         }, 
@@ -28,14 +27,13 @@
         }, 
         "SimpleBucketArn": {
             "Value": {
-                "Fn::Join": [
-                    "", 
-                    [
-                        "arn:aws:s3:::", 
-                        {
+                "Fn::Sub": [
+                    "arn:aws:s3:::${Bucket}", 
+                    {
+                        "Bucket": {
                             "Ref": "Simple"
                         }
-                    ]
+                    }
                 ]
             }
         }, 
@@ -77,15 +75,7 @@
                             ], 
                             "Effect": "Allow", 
                             "Resource": [
-                                {
-                                    "Fn::Join": [
-                                        "", 
-                                        [
-                                            "arn:aws:s3:::", 
-                                            "*"
-                                        ]
-                                    ]
-                                }
+                                "arn:aws:s3:::*"
                             ]
                         }, 
                         {
@@ -96,63 +86,43 @@
                             "Effect": "Allow", 
                             "Resource": [
                                 {
-                                    "Fn::Join": [
-                                        "", 
-                                        [
-                                            "arn:aws:s3:::", 
-                                            {
+                                    "Fn::Sub": [
+                                        "arn:aws:s3:::${Bucket}", 
+                                        {
+                                            "Bucket": {
                                                 "Ref": "Simple"
                                             }
-                                        ]
+                                        }
                                     ]
                                 }, 
                                 {
-                                    "Fn::Join": [
-                                        "", 
-                                        [
-                                            "arn:aws:s3:::", 
-                                            {
+                                    "Fn::Sub": [
+                                        "arn:aws:s3:::${Bucket}", 
+                                        {
+                                            "Bucket": {
                                                 "Ref": "Cycle"
                                             }
-                                        ]
+                                        }
                                     ]
                                 }, 
                                 {
-                                    "Fn::Join": [
-                                        "", 
-                                        [
-                                            "arn:aws:s3:::", 
-                                            {
-                                                "Fn::Join": [
-                                                    "/", 
-                                                    [
-                                                        {
-                                                            "Ref": "Simple"
-                                                        }, 
-                                                        "*"
-                                                    ]
-                                                ]
+                                    "Fn::Sub": [
+                                        "arn:aws:s3:::${Bucket}/*", 
+                                        {
+                                            "Bucket": {
+                                                "Ref": "Simple"
                                             }
-                                        ]
+                                        }
                                     ]
                                 }, 
                                 {
-                                    "Fn::Join": [
-                                        "", 
-                                        [
-                                            "arn:aws:s3:::", 
-                                            {
-                                                "Fn::Join": [
-                                                    "/", 
-                                                    [
-                                                        {
-                                                            "Ref": "Cycle"
-                                                        }, 
-                                                        "*"
-                                                    ]
-                                                ]
+                                    "Fn::Sub": [
+                                        "arn:aws:s3:::${Bucket}/*", 
+                                        {
+                                            "Bucket": {
+                                                "Ref": "Cycle"
                                             }
-                                        ]
+                                        }
                                     ]
                                 }
                             ]
@@ -173,136 +143,72 @@
                     "Statement": [
                         {
                             "Action": [
+                                "s3:GetBucketLocation", 
                                 "s3:ListAllMyBuckets"
                             ], 
                             "Effect": "Allow", 
                             "Resource": [
-                                {
-                                    "Fn::Join": [
-                                        "", 
-                                        [
-                                            "arn:aws:s3:::", 
-                                            "*"
-                                        ]
-                                    ]
-                                }
+                                "arn:aws:s3:::*"
                             ]
                         }, 
                         {
                             "Action": [
-                                "s3:Get*", 
-                                "s3:List*"
+                                "s3:ListBucket", 
+                                "s3:GetBucketVersioning"
                             ], 
                             "Effect": "Allow", 
                             "Resource": [
                                 {
-                                    "Fn::Join": [
-                                        "", 
-                                        [
-                                            "arn:aws:s3:::", 
-                                            {
+                                    "Fn::Sub": [
+                                        "arn:aws:s3:::${Bucket}", 
+                                        {
+                                            "Bucket": {
                                                 "Ref": "Simple"
                                             }
-                                        ]
+                                        }
                                     ]
                                 }, 
                                 {
-                                    "Fn::Join": [
-                                        "", 
-                                        [
-                                            "arn:aws:s3:::", 
-                                            {
+                                    "Fn::Sub": [
+                                        "arn:aws:s3:::${Bucket}", 
+                                        {
+                                            "Bucket": {
                                                 "Ref": "Cycle"
                                             }
-                                        ]
-                                    ]
-                                }, 
-                                {
-                                    "Fn::Join": [
-                                        "", 
-                                        [
-                                            "arn:aws:s3:::", 
-                                            {
-                                                "Fn::Join": [
-                                                    "/", 
-                                                    [
-                                                        {
-                                                            "Ref": "Simple"
-                                                        }, 
-                                                        "*"
-                                                    ]
-                                                ]
-                                            }
-                                        ]
-                                    ]
-                                }, 
-                                {
-                                    "Fn::Join": [
-                                        "", 
-                                        [
-                                            "arn:aws:s3:::", 
-                                            {
-                                                "Fn::Join": [
-                                                    "/", 
-                                                    [
-                                                        {
-                                                            "Ref": "Cycle"
-                                                        }, 
-                                                        "*"
-                                                    ]
-                                                ]
-                                            }
-                                        ]
+                                        }
                                     ]
                                 }
                             ]
                         }, 
                         {
                             "Action": [
+                                "s3:GetObject", 
                                 "s3:PutObject", 
                                 "s3:PutObjectAcl", 
-                                "s3:PutObjectVersionAcl", 
                                 "s3:DeleteObject", 
+                                "s3:GetObjectVersion", 
                                 "s3:DeleteObjectVersion"
                             ], 
                             "Effect": "Allow", 
                             "Resource": [
                                 {
-                                    "Fn::Join": [
-                                        "", 
-                                        [
-                                            "arn:aws:s3:::", 
-                                            {
-                                                "Fn::Join": [
-                                                    "/", 
-                                                    [
-                                                        {
-                                                            "Ref": "Simple"
-                                                        }, 
-                                                        "*"
-                                                    ]
-                                                ]
+                                    "Fn::Sub": [
+                                        "arn:aws:s3:::${Bucket}/*", 
+                                        {
+                                            "Bucket": {
+                                                "Ref": "Simple"
                                             }
-                                        ]
+                                        }
                                     ]
                                 }, 
                                 {
-                                    "Fn::Join": [
-                                        "", 
-                                        [
-                                            "arn:aws:s3:::", 
-                                            {
-                                                "Fn::Join": [
-                                                    "/", 
-                                                    [
-                                                        {
-                                                            "Ref": "Cycle"
-                                                        }, 
-                                                        "*"
-                                                    ]
-                                                ]
+                                    "Fn::Sub": [
+                                        "arn:aws:s3:::${Bucket}/*", 
+                                        {
+                                            "Bucket": {
+                                                "Ref": "Cycle"
                                             }
-                                        ]
+                                        }
                                     ]
                                 }
                             ]
