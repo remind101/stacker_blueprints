@@ -8,9 +8,10 @@ from troposphere import (
 )
 
 from .policies import (
+    s3_arn,
     read_only_s3_bucket_policy,
     read_write_s3_bucket_policy,
-    s3_arn
+    static_website_bucket_policy,
 )
 
 
@@ -48,9 +49,10 @@ class Buckets(Blueprint):
         bucket_ids = []
 
         for title, attrs in variables["Buckets"].items():
+            bucket_id = Ref(title)
             t.add_resource(s3.Bucket.from_dict(title, attrs))
-            t.add_output(Output(title + "BucketId", Value=Ref(title)))
-            t.add_output(Output(title + "BucketArn", Value=s3_arn(Ref(title))))
+            t.add_output(Output(title + "BucketId", Value=bucket_id))
+            t.add_output(Output(title + "BucketArn", Value=s3_arn(bucket_id)))
             t.add_output(
                 Output(
                     title + "BucketDomainName",
@@ -58,6 +60,13 @@ class Buckets(Blueprint):
                 )
             )
             if "WebsiteConfiguration" in attrs:
+                t.add_resource(
+                    s3.BucketPolicy(
+                        "BucketPolicy",
+                        Bucket=bucket_id,
+                        PolicyDocument=static_website_bucket_policy(bucket_id),
+                    )
+                )
                 t.add_output(
                     Output(
                         title + "WebsiteUrl",
@@ -65,7 +74,7 @@ class Buckets(Blueprint):
                     )
                 )
 
-            bucket_ids.append(Ref(title))
+            bucket_ids.append(bucket_id)
 
         read_write_roles = variables["ReadWriteRoles"]
         if read_write_roles:
