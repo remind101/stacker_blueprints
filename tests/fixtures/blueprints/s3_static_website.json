@@ -1,0 +1,197 @@
+{
+    "Outputs": {
+        "BlogBucketArn": {
+            "Value": {
+                "Fn::Sub": [
+                    "arn:aws:s3:::${Bucket}", 
+                    {
+                        "Bucket": {
+                            "Ref": "Blog"
+                        }
+                    }
+                ]
+            }
+        }, 
+        "BlogBucketDomainName": {
+            "Value": {
+                "Fn::GetAtt": [
+                    "Blog", 
+                    "DomainName"
+                ]
+            }
+        }, 
+        "BlogBucketId": {
+            "Value": {
+                "Ref": "Blog"
+            }
+        }, 
+        "BlogWebsiteUrl": {
+            "Value": {
+                "Fn::GetAtt": [
+                    "Blog", 
+                    "WebsiteURL"
+                ]
+            }
+        }
+    }, 
+    "Resources": {
+        "Blog": {
+            "Properties": {
+                "AccessControl": "PublicRead", 
+                "WebsiteConfiguration": {
+                    "IndexDocument": "index.html"
+                }
+            }, 
+            "Type": "AWS::S3::Bucket"
+        }, 
+        "BucketPolicy": {
+            "Properties": {
+                "Bucket": {
+                    "Ref": "Blog"
+                }, 
+                "PolicyDocument": {
+                    "Statement": [
+                        {
+                            "Action": [
+                                "s3:GetObject"
+                            ], 
+                            "Effect": "Allow", 
+                            "Principal": "*", 
+                            "Resource": [
+                                {
+                                    "Fn::Sub": [
+                                        "arn:aws:s3:::${Bucket}/*", 
+                                        {
+                                            "Bucket": {
+                                                "Ref": "Blog"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            }, 
+            "Type": "AWS::S3::BucketPolicy"
+        }, 
+        "ReadPolicy": {
+            "Properties": {
+                "PolicyDocument": {
+                    "Statement": [
+                        {
+                            "Action": [
+                                "s3:ListAllMyBuckets"
+                            ], 
+                            "Effect": "Allow", 
+                            "Resource": [
+                                "arn:aws:s3:::*"
+                            ]
+                        }, 
+                        {
+                            "Action": [
+                                "s3:Get*", 
+                                "s3:List*"
+                            ], 
+                            "Effect": "Allow", 
+                            "Resource": [
+                                {
+                                    "Fn::Sub": [
+                                        "arn:aws:s3:::${Bucket}", 
+                                        {
+                                            "Bucket": {
+                                                "Ref": "Blog"
+                                            }
+                                        }
+                                    ]
+                                }, 
+                                {
+                                    "Fn::Sub": [
+                                        "arn:aws:s3:::${Bucket}/*", 
+                                        {
+                                            "Bucket": {
+                                                "Ref": "Blog"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }, 
+                "PolicyName": "test-s3_static_websiteReadPolicy", 
+                "Roles": [
+                    "Role1", 
+                    "Role2"
+                ]
+            }, 
+            "Type": "AWS::IAM::Policy"
+        }, 
+        "ReadWritePolicy": {
+            "Properties": {
+                "PolicyDocument": {
+                    "Statement": [
+                        {
+                            "Action": [
+                                "s3:GetBucketLocation", 
+                                "s3:ListAllMyBuckets"
+                            ], 
+                            "Effect": "Allow", 
+                            "Resource": [
+                                "arn:aws:s3:::*"
+                            ]
+                        }, 
+                        {
+                            "Action": [
+                                "s3:ListBucket", 
+                                "s3:GetBucketVersioning"
+                            ], 
+                            "Effect": "Allow", 
+                            "Resource": [
+                                {
+                                    "Fn::Sub": [
+                                        "arn:aws:s3:::${Bucket}", 
+                                        {
+                                            "Bucket": {
+                                                "Ref": "Blog"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }, 
+                        {
+                            "Action": [
+                                "s3:GetObject", 
+                                "s3:PutObject", 
+                                "s3:PutObjectAcl", 
+                                "s3:DeleteObject", 
+                                "s3:GetObjectVersion", 
+                                "s3:DeleteObjectVersion"
+                            ], 
+                            "Effect": "Allow", 
+                            "Resource": [
+                                {
+                                    "Fn::Sub": [
+                                        "arn:aws:s3:::${Bucket}/*", 
+                                        {
+                                            "Bucket": {
+                                                "Ref": "Blog"
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }, 
+                "PolicyName": "test-s3_static_websiteReadWritePolicy", 
+                "Roles": [
+                    "Role3", 
+                    "Role4"
+                ]
+            }, 
+            "Type": "AWS::IAM::Policy"
+        }
+    }
+}

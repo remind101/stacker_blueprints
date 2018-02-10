@@ -35,3 +35,31 @@ class TestBlueprint(BlueprintTestCase):
         blueprint.resolve_variables(self.variables)
         blueprint.create_template()
         self.assertRenderedBlueprint(blueprint)
+
+    def test_s3_static_website(self):
+        """Test a static website blog bucket."""
+        ctx = Context(config=Config({'namespace': 'test'}))
+        blueprint = Buckets('s3_static_website', ctx)
+
+        v = self.variables = [
+            Variable('Buckets', {
+                'Blog': {
+                    'AccessControl': 'PublicRead',
+                    'WebsiteConfiguration' : {
+                        'IndexDocument': 'index.html'
+                    }
+                },
+            }),
+            Variable('ReadRoles', [
+                'Role1',
+                'Role2',
+            ]),
+            Variable('ReadWriteRoles', [
+                'Role3',
+                'Role4',
+            ]),
+        ]
+
+        blueprint.resolve_variables(v)
+        blueprint.create_template()
+        self.assertRenderedBlueprint(blueprint)

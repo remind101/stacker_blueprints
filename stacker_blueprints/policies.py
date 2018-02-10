@@ -108,6 +108,23 @@ def read_write_s3_bucket_policy(buckets):
     return Policy(Statement=read_write_s3_bucket_policy_statements(buckets))
 
 
+def static_website_bucket_policy(bucket):
+    """
+    Attach this policy directly to an S3 bucket to make it a static website.
+    This policy grants read access to **all unauthenticated** users.
+    """
+    return Policy(
+        Statement=[
+            Statement(
+                Effect=Allow,
+                Principal=Principal("*"),
+                Action=[s3.GetObject],
+                Resource=[s3_objects_arn(bucket)],
+            )
+        ]
+    )
+
+
 def log_stream_arn(log_group_name, log_stream_name):
     return Join(
         '',
