@@ -62,7 +62,7 @@ class Buckets(Blueprint):
             if "WebsiteConfiguration" in attrs:
                 t.add_resource(
                     s3.BucketPolicy(
-                        "BucketPolicy",
+                        "%sBucketPolicy" % title,
                         Bucket=bucket_id,
                         PolicyDocument=static_website_bucket_policy(bucket_id),
                     )
