@@ -1,8 +1,10 @@
 from stacker.blueprints.base import Blueprint
 from troposphere import (
+    FindInMap,
+    GetAtt,
     Output,
     Ref,
-    GetAtt,
+    Region,
     s3,
     iam,
 )
@@ -13,6 +15,26 @@ from .policies import (
     read_write_s3_bucket_policy,
     static_website_bucket_policy,
 )
+
+# reference:
+#   https://docs.aws.amazon.com/general/latest/gr/rande.html#s3_region
+S3_WEBSITE_ENDPOINTS = {
+    "us-east-2": {"endpoint": "s3-website.us-east-2.amazonaws.com"},
+    "us-east-1": {"endpoint": "s3-website-us-east-1.amazonaws.com"},
+    "us-west-1": {"endpoint": "s3-website-us-west-1.amazonaws.com"},
+    "us-west-2": {"endpoint": "s3-website-us-west-2.amazonaws.com"},
+    "ca-central-1": {"endpoint": "s3-website.ca-central-1.amazonaws.com"},
+    "ap-south-1": {"endpoint": "s3-website.ap-south-1.amazonaws.com"},
+    "ap-northeast-2": {"endpoint": "s3-website.ap-northeast-2.amazonaws.com"},
+    "ap-southeast-1": {"endpoint": "s3-website-ap-southeast-1.amazonaws.com"},
+    "ap-southeast-2": {"endpoint": "s3-website-ap-southeast-2.amazonaws.com"},
+    "ap-northeast-1": {"endpoint": "s3-website-ap-northeast-1.amazonaws.com"},
+    "eu-central-1": {"endpoint": "s3-website.eu-central-1.amazonaws.com"},
+    "eu-west-1": {"endpoint": "s3-website-eu-west-1.amazonaws.com"},
+    "eu-west-2": {"endpoint": "s3-website.eu-west-2.amazonaws.com"},
+    "eu-west-3": {"endpoint": "s3-website.eu-west-3.amazonaws.com"},
+    "sa-east-1": {"endpoint": "s3-website-sa-east-1.amazonaws.com"},
+}
 
 
 class Buckets(Blueprint):
@@ -46,6 +68,8 @@ class Buckets(Blueprint):
 
         policy_prefix = self.context.get_fqn(self.name)
 
+        t.add_mapping("WebsiteEndpoints", S3_WEBSITE_ENDPOINTS)
+
         bucket_ids = []
 
         for title, attrs in variables["Buckets"].items():
@@ -62,7 +86,7 @@ class Buckets(Blueprint):
             if "WebsiteConfiguration" in attrs:
                 t.add_resource(
                     s3.BucketPolicy(
-                        "%sBucketPolicy" % title,
+                        title + "BucketPolicy",
                         Bucket=bucket_id,
                         PolicyDocument=static_website_bucket_policy(bucket_id),
                     )
@@ -71,6 +95,14 @@ class Buckets(Blueprint):
                     Output(
                         title + "WebsiteUrl",
                         Value=GetAtt(title, "WebsiteURL")
+                    )
+                )
+                t.add_output(
+                    Output(
+                        title + "WebsiteEndpoint",
+                        Value=FindInMap(
+                            "WebsiteEndpoints", Region, "endpoint"
+                        )
                     )
                 )
 

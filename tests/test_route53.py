@@ -118,10 +118,14 @@ class TestRoute53(BlueprintTestCase):
             ]
         )
         record_sets = blueprint.create_template()
-        self.assertEqual(record_sets[0].AliasTarget.HostedZoneId, "Z3AADJGX6KTTL2")
+        self.assertEqual(
+            record_sets[0].AliasTarget.HostedZoneId, "Z3AADJGX6KTTL2"
+        )
 
     def test_alias_default_hosted_zone_id(self):
-        blueprint = DNSRecords('test_route53_alias_default_hosted_zone_id', self.ctx)
+        blueprint = DNSRecords(
+            'test_route53_alias_default_hosted_zone_id', self.ctx
+        )
         blueprint.resolve_variables(
             [
                 Variable(
@@ -131,7 +135,7 @@ class TestRoute53(BlueprintTestCase):
                             "Name": "host.testdomain.com.",
                             "Type": "A",
                             "AliasTarget": {
-                                "DNSName": "original-gangster-host.testdomain.com.",
+                                "DNSName": "original-gangster-host.testdomain.com.",  # noqa
                             },
                         },
                     ]
@@ -140,7 +144,34 @@ class TestRoute53(BlueprintTestCase):
             ]
         )
         record_sets = blueprint.create_template()
-        self.assertEqual(record_sets[0].AliasTarget.HostedZoneId, "fake_zone_id")
+        self.assertEqual(
+            record_sets[0].AliasTarget.HostedZoneId, "fake_zone_id"
+        )
+
+    def test_s3_alias_proper_hosted_zone_id(self):
+        blueprint = DNSRecords('test_route53_s3_alias_hosted_zone_id',
+                               self.ctx)
+        blueprint.resolve_variables(
+            [
+                Variable(
+                    "RecordSets",
+                    [
+                        {
+                            "Name": "host.testdomain.com.",
+                            "Type": "A",
+                            "AliasTarget": {
+                                "DNSName": "s3-website-us-east-1.amazonaws.com",  # noqa
+                            },
+                        },
+                    ]
+                ),
+                Variable("HostedZoneId", "fake_zone_id"),
+            ]
+        )
+        record_sets = blueprint.create_template()
+        self.assertEqual(
+            record_sets[0].AliasTarget.HostedZoneId, "Z3AQBSTGFYJSTF"
+        )
 
     def test_error_when_specify_both_hosted_zone_id_and_name(self):
         blueprint = DNSRecords('route53_both_hosted_zone_id_and_name_error',
@@ -211,4 +242,6 @@ class TestRoute53(BlueprintTestCase):
 
 
 if __name__ == '__main__':
+    import unittest
+
     unittest.main()
