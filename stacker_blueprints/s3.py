@@ -68,8 +68,6 @@ class Buckets(Blueprint):
 
         policy_prefix = self.context.get_fqn(self.name)
 
-        t.add_mapping("WebsiteEndpoints", S3_WEBSITE_ENDPOINTS)
-
         bucket_ids = []
 
         for title, attrs in variables["Buckets"].items():
@@ -84,6 +82,8 @@ class Buckets(Blueprint):
                 )
             )
             if "WebsiteConfiguration" in attrs:
+                t.add_mapping("WebsiteEndpoints", S3_WEBSITE_ENDPOINTS)
+
                 t.add_resource(
                     s3.BucketPolicy(
                         title + "BucketPolicy",
