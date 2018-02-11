@@ -17,7 +17,8 @@ logger = logging.getLogger(__name__)
 # reference: http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-route53-aliastarget.html  # noqa
 CLOUDFRONT_ZONE_ID = "Z2FDTNDATAQYW2"
 
-# reference: http://docs.aws.amazon.com/general/latest/gr/rande.html
+# reference:
+#   https://docs.aws.amazon.com/general/latest/gr/rande.html#elb_region
 ELB_ZONE_IDS = {
     'us-east-2': 'Z3AADJGX6KTTL2',
     'us-east-1': 'Z35SXDOTRQ7X7K',
@@ -32,11 +33,34 @@ ELB_ZONE_IDS = {
     'eu-central-1': 'Z215JYRZR1TBD5',
     'eu-west-1': 'Z32O12XQLNTSW2',
     'eu-west-2': 'ZHURV8PSTC4K8',
+    'eu-west-3': 'Z3Q77PNBQS71R4',
     'sa-east-1': 'Z2P70J7HTTTPLU',
 }
 
+# reference:
+#   https://docs.aws.amazon.com/general/latest/gr/rande.html#s3_region
+S3_WEBSITE_ZONE_IDS = {
+    "s3-website.us-east-2.amazonaws.com": "Z2O1EMRO9K5GLX",
+    "s3-website-us-east-1.amazonaws.com": "Z3AQBSTGFYJSTF",
+    "s3-website-us-west-1.amazonaws.com": "Z2F56UZL2M1ACD",
+    "s3-website-us-west-2.amazonaws.com": "Z3BJ6K6RIION7M",
+    "s3-website.ca-central-1.amazonaws.com": "Z1QDHH18159H29",
+    "s3-website.ap-south-1.amazonaws.com": "Z11RGJOFQNVJUP",
+    "s3-website.ap-northeast-2.amazonaws.com": "Z3W03O7B5YMIYP",
+    "s3-website-ap-southeast-1.amazonaws.com": "Z3O0J2DXBE1FTB",
+    "s3-website-ap-southeast-2.amazonaws.com": "Z1WCIGYICN2BYD",
+    "s3-website-ap-northeast-1.amazonaws.com": "Z2M4EHUR26P7ZW",
+    "s3-website.eu-central-1.amazonaws.com": "Z21DNDUVLTQW6Q",
+    "s3-website-eu-west-1.amazonaws.com": "Z1BKCTXD74EZPE",
+    "s3-website.eu-west-2.amazonaws.com": "Z3GKZC51ZF0DB4",
+    "s3-website.eu-west-3.amazonaws.com": "Z3R1K369G5AVDG",
+    "s3-website-sa-east-1.amazonaws.com": "Z7KQH4QJS55SO",
+}
+
+
 CF_DOMAIN = ".cloudfront.net."
 ELB_DOMAIN = ".elb.amazonaws.com."
+S3_WEBSITE_PREFIX = "s3-website"
 
 
 def get_record_set_md5(rs_name, rs_type):
@@ -56,7 +80,6 @@ def add_hosted_zone_id_if_missing(record_set, hosted_zone_id):
 
 
 class DNSRecords(Blueprint):
-
     VARIABLES = {
         "VPC": {
             "type": str,
@@ -92,15 +115,20 @@ class DNSRecords(Blueprint):
 
     def add_hosted_zone_id_for_alias_target_if_missing(self, rs):
         """Add proper hosted zone id to record set alias target if missing."""
-        if getattr(rs, "AliasTarget", None):
-            if not getattr(rs.AliasTarget, "HostedZoneId", None):
-                if rs.AliasTarget.DNSName.endswith(CF_DOMAIN):
-                    rs.AliasTarget.HostedZoneId = CLOUDFRONT_ZONE_ID
-                elif rs.AliasTarget.DNSName.endswith(ELB_DOMAIN):
-                    elb_region = rs.AliasTarget.DNSName.split('.')[-5]
-                    rs.AliasTarget.HostedZoneId = ELB_ZONE_IDS[elb_region]
+        alias_target = getattr(rs, "AliasTarget", None)
+        if alias_target:
+            hosted_zone_id = getattr(alias_target, "HostedZoneId", None)
+            if not hosted_zone_id:
+                dns_name = alias_target.DNSName
+                if dns_name.endswith(CF_DOMAIN):
+                    alias_target.HostedZoneId = CLOUDFRONT_ZONE_ID
+                elif dns_name.endswith(ELB_DOMAIN):
+                    region = dns_name.split('.')[-5]
+                    alias_target.HostedZoneId = ELB_ZONE_IDS[region]
+                elif dns_name in S3_WEBSITE_ZONE_IDS:
+                    alias_target.HostedZoneId = S3_WEBSITE_ZONE_IDS[dns_name]
                 else:
-                    rs.AliasTarget.HostedZoneId = self.hosted_zone_id
+                    alias_target.HostedZoneId = self.hosted_zone_id
         return rs
 
     def create_record_set(self, rs_dict):
