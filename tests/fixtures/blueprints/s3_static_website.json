@@ -44,7 +44,7 @@
             }, 
             "Type": "AWS::S3::Bucket"
         }, 
-        "BucketPolicy": {
+        "BlogBucketPolicy": {
             "Properties": {
                 "Bucket": {
                     "Ref": "Blog"
