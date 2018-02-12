@@ -1,3 +1,9 @@
+## 1.0.7 (2018-02-11)
+
+- FlexibleAutoScalingGroup blueprint [GH-156]
+- Update s3 policies with Remind in-house copies [GH-158]
+- Setup correct BucketPolicy for public websites in s3 [GH-159]
+
 ## 1.0.6 (2017-12-08)
 
 - Add s3:PutObjectVersionAcl action to s3 policies [GH-150]
