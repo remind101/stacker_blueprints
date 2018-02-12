@@ -2,13 +2,14 @@ import copy
 
 from troposphere import (
     Ref, FindInMap, Not, Equals, And, Condition, Join, ec2, autoscaling,
-    If, GetAtt
+    If, GetAtt, Output
 )
 from troposphere import elasticloadbalancing as elb
 from troposphere.autoscaling import Tag as ASTag
 from troposphere.route53 import RecordSetType
 
 from stacker.blueprints.base import Blueprint
+from stacker.blueprints.variables.types import TroposphereType
 from stacker.blueprints.variables.types import (
     CFNCommaDelimitedList,
     CFNNumber,
@@ -229,4 +230,55 @@ class AutoscalingGroup(Blueprint):
         self.create_conditions()
         self.create_security_groups()
         self.create_load_balancer()
+        self.create_autoscaling_group()
+
+
+class FlexibleAutoScalingGroup(Blueprint):
+    """ A more flexible AutoscalingGroup Blueprint.
+
+    Uses TroposphereTypes to make creating AutoscalingGroups and their
+    associated LaunchConfiguration more flexible. This comes at the price of
+    doing less for you.
+    """
+    VARIABLES = {
+        "LaunchConfiguration": {
+            "type": TroposphereType(autoscaling.LaunchConfiguration),
+            "description": "The LaunchConfiguration for the autoscaling "
+                           "group.",
+        },
+        "AutoScalingGroup": {
+            "type": TroposphereType(autoscaling.AutoScalingGroup),
+            "description": "The Autoscaling definition. Do not provide a "
+                           "LaunchConfiguration parameter, that will be "
+                           "automatically added from the LaunchConfiguration "
+                           "Variable.",
+        },
+    }
+
+    def create_launch_configuration(self):
+        t = self.template
+        variables = self.get_variables()
+        self.launch_config = t.add_resource(variables["LaunchConfiguration"])
+        t.add_output(
+            Output("LaunchConfiguration", Value=self.launch_config.Ref())
+        )
+
+    def add_launch_config_variable(self, asg):
+        if getattr(asg, "LaunchConfigurationName", False):
+            raise ValueError("Do not provide a LaunchConfigurationName "
+                             "variable for the AutoScalingGroup config.")
+
+        asg.LaunchConfigurationName = self.launch_config.Ref()
+        return asg
+
+    def create_autoscaling_group(self):
+        t = self.template
+        variables = self.get_variables()
+        asg = variables["AutoScalingGroup"]
+        asg = self.add_launch_config_variable(asg)
+        t.add_resource(asg)
+        t.add_output(Output("AutoScalingGroup", Value=asg.Ref()))
+
+    def create_template(self):
+        self.create_launch_configuration()
         self.create_autoscaling_group()
