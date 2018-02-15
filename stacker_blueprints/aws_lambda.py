@@ -280,11 +280,14 @@ class Function(Blueprint):
     def create_role(self):
         t = self.template
 
-        vpc_policy = NoValue
+        role_kwargs = {
+            "AssumeRolePolicyDocument": get_lambda_assumerole_policy()
+        }
+
         if self.get_variables()["VpcConfig"]:
             # allow this Lambda to modify ENIs to allow it to run in our VPC.
             policy_prefix = self.context.get_fqn(self.name)
-            vpc_policy = [
+            role_kwargs['Policies'] = [
                 iam.Policy(
                     PolicyName="%s-vpc-policy" % policy_prefix,
                     PolicyDocument=Policy(
@@ -296,8 +299,7 @@ class Function(Blueprint):
         self.role = t.add_resource(
             iam.Role(
                 "Role",
-                AssumeRolePolicyDocument=get_lambda_assumerole_policy(),
-                Policies=vpc_policy
+                **role_kwargs
             )
         )
 
