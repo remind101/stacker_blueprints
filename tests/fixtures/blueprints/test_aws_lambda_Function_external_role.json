@@ -3,64 +3,64 @@
         "FunctionArn": {
             "Value": {
                 "Fn::GetAtt": [
-                    "Function",
+                    "Function", 
                     "Arn"
                 ]
             }
-        },
+        }, 
         "FunctionName": {
             "Value": {
                 "Ref": "Function"
             }
-        },
+        }, 
         "LatestVersion": {
             "Value": {
                 "Fn::GetAtt": [
-                    "LatestVersion",
+                    "LatestVersion", 
                     "Version"
                 ]
             }
-        },
+        }, 
         "LatestVersionArn": {
             "Value": {
                 "Ref": "LatestVersion"
             }
         }
-    },
+    }, 
     "Resources": {
         "Function": {
             "Properties": {
                 "Code": {
-                    "S3Bucket": "test_bucket",
+                    "S3Bucket": "test_bucket", 
                     "S3Key": "code_key"
-                },
+                }, 
                 "DeadLetterConfig": {
                     "TargetArn": "arn:aws:sqs:us-east-1:12345:dlq"
-                },
-                "Description": "Test function.",
+                }, 
+                "Description": "Test function.", 
                 "Environment": {
                     "Variables": {
                         "Env1": "Value1"
                     }
-                },
-                "Handler": "handler",
-                "KmsKeyArn": "arn:aws:kms:us-east-1:12345:key",
-                "MemorySize": 128,
-                "Role": "my-fake-role",
-                "Runtime": "python2.7",
-                "Timeout": 3,
+                }, 
+                "Handler": "handler", 
+                "KmsKeyArn": "arn:aws:kms:us-east-1:12345:key", 
+                "MemorySize": 128, 
+                "Role": "my-fake-role", 
+                "Runtime": "python2.7", 
+                "Timeout": 3, 
                 "VpcConfig": {
                     "Ref": "AWS::NoValue"
                 }
-            },
+            }, 
             "Type": "AWS::Lambda::Function"
-        },
+        }, 
         "LatestVersion": {
             "Properties": {
                 "FunctionName": {
                     "Ref": "Function"
                 }
-            },
+            }, 
             "Type": "AWS::Lambda::Version"
         }
     }
