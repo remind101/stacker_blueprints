@@ -1,0 +1,57 @@
+{
+    "Outputs": {
+        "MyInstanceAZ": {
+            "Value": {
+                "Fn::GetAtt": [
+                    "MyInstance", 
+                    "AvailabilityZone"
+                ]
+            }
+        }, 
+        "MyInstanceInstanceId": {
+            "Value": {
+                "Ref": "MyInstance"
+            }
+        }, 
+        "MyInstancePrivateDnsName": {
+            "Value": {
+                "Fn::GetAtt": [
+                    "MyInstance", 
+                    "PrivateDnsName"
+                ]
+            }
+        }, 
+        "MyInstancePrivateIp": {
+            "Value": {
+                "Fn::GetAtt": [
+                    "MyInstance", 
+                    "PrivateIp"
+                ]
+            }
+        }, 
+        "MyInstancePublicDnsName": {
+            "Value": {
+                "Fn::GetAtt": [
+                    "MyInstance", 
+                    "PublicDnsName"
+                ]
+            }
+        }, 
+        "MyInstancePublicIp": {
+            "Value": {
+                "Fn::GetAtt": [
+                    "MyInstance", 
+                    "PublicIp"
+                ]
+            }
+        }
+    }, 
+    "Resources": {
+        "MyInstance": {
+            "Properties": {
+                "ImageId": "ami-abc12345"
+            }, 
+            "Type": "AWS::EC2::Instance"
+        }
+    }
+}
