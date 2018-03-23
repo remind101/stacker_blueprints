@@ -179,7 +179,9 @@
                         }
                     ]
                 }, 
-                "PolicyName": "test-s3_static_websiteReadPolicy", 
+                "PolicyName": {
+                    "Fn::Sub": "${AWS::StackName}ReadPolicy"
+                }, 
                 "Roles": [
                     "Role1", 
                     "Role2"
@@ -245,7 +247,9 @@
                         }
                     ]
                 }, 
-                "PolicyName": "test-s3_static_websiteReadWritePolicy", 
+                "PolicyName": {
+                    "Fn::Sub": "${AWS::StackName}ReadWritePolicy"
+                }, 
                 "Roles": [
                     "Role3", 
                     "Role4"

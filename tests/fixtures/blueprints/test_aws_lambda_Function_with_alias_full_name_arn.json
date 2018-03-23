@@ -172,7 +172,9 @@
                         }
                     ]
                 }, 
-                "PolicyName": "test-test_aws_lambda_Function_with_alias_full_name_arn-policy", 
+                "PolicyName": {
+                    "Fn::Sub": "${AWS::StackName}-policy"
+                }, 
                 "Roles": [
                     {
                         "Ref": "Role"

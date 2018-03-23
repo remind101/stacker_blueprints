@@ -2,30 +2,30 @@
     "Resources": {
         "MyTestFuncSchedule": {
             "Properties": {
-                "Description": "The AWS Lambda schedule for my-powerful-test-function",
-                "ScheduleExpression": "rate(15 minutes)",
-                "State": "ENABLED",
+                "Description": "The AWS Lambda schedule for my-powerful-test-function", 
+                "ScheduleExpression": "rate(15 minutes)", 
+                "State": "ENABLED", 
                 "Targets": [
                     {
-                        "Arn": "arn:aws:lambda:us-east-1:01234:function:my-Function-162L1234",
+                        "Arn": "arn:aws:lambda:us-east-1:01234:function:my-Function-162L1234", 
                         "Id": "my-powerful-test-function"
                     }
                 ]
-            },
+            }, 
             "Type": "AWS::Events::Rule"
-        },
+        }, 
         "PermToInvokeFunctionForMyPowerfulTestFunction": {
             "Properties": {
-                "Action": "lambda:InvokeFunction",
-                "FunctionName": "arn:aws:lambda:us-east-1:01234:function:my-Function-162L1234",
-                "Principal": "events.amazonaws.com",
+                "Action": "lambda:InvokeFunction", 
+                "FunctionName": "arn:aws:lambda:us-east-1:01234:function:my-Function-162L1234", 
+                "Principal": "events.amazonaws.com", 
                 "SourceArn": {
                     "Fn::GetAtt": [
-                        "MyTestFuncSchedule",
+                        "MyTestFuncSchedule", 
                         "Arn"
                     ]
                 }
-            },
+            }, 
             "Type": "AWS::Lambda::Permission"
         }
     }

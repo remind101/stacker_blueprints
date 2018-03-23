@@ -3,6 +3,7 @@ from troposphere import (
     FindInMap,
     GetAtt,
     Output,
+    Sub,
     Ref,
     Region,
     s3,
@@ -66,8 +67,6 @@ class Buckets(Blueprint):
         t = self.template
         variables = self.get_variables()
 
-        policy_prefix = self.context.get_fqn(self.name)
-
         bucket_ids = []
 
         for title, attrs in variables["Buckets"].items():
@@ -113,7 +112,7 @@ class Buckets(Blueprint):
             t.add_resource(
                 iam.PolicyType(
                     "ReadWritePolicy",
-                    PolicyName=policy_prefix + "ReadWritePolicy",
+                    PolicyName=Sub("${AWS::StackName}ReadWritePolicy"),
                     PolicyDocument=read_write_s3_bucket_policy(
                         bucket_ids
                     ),
@@ -126,7 +125,7 @@ class Buckets(Blueprint):
             t.add_resource(
                 iam.PolicyType(
                     "ReadPolicy",
-                    PolicyName=policy_prefix + "ReadPolicy",
+                    PolicyName=Sub("${AWS::StackName}ReadPolicy"),
                     PolicyDocument=read_only_s3_bucket_policy(
                         bucket_ids
                     ),

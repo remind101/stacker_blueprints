@@ -4,56 +4,56 @@
             "Value": {
                 "Ref": "HostedZone"
             }
-        },
+        }, 
         "NameServers": {
             "Value": {
                 "Fn::Join": [
-                    ",",
+                    ",", 
                     {
                         "Fn::GetAtt": [
-                            "HostedZone",
+                            "HostedZone", 
                             "NameServers"
                         ]
                     }
                 ]
             }
         }
-    },
+    }, 
     "Resources": {
         "154ad64949b7d01dc1d117e306f5ef2c": {
             "Properties": {
-                "Comment": "This is host2's record. : )",
+                "Comment": "This is host2's record. : )", 
                 "HostedZoneId": {
                     "Ref": "HostedZone"
-                },
-                "Name": "host2.testdomain.com.",
+                }, 
+                "Name": "host2.testdomain.com.", 
                 "ResourceRecords": [
                     "10.0.0.2"
-                ],
+                ], 
                 "Type": "A"
-            },
+            }, 
             "Type": "AWS::Route53::RecordSet"
-        },
+        }, 
         "HostedZone": {
             "Properties": {
                 "HostedZoneConfig": {
                     "Comment": "test-testdomain-com"
-                },
+                }, 
                 "Name": "testdomain.com"
-            },
+            }, 
             "Type": "AWS::Route53::HostedZone"
-        },
+        }, 
         "d8df5bad0c9f04ee2c1f12f25a46a67c": {
             "Properties": {
                 "HostedZoneId": {
                     "Ref": "HostedZone"
-                },
-                "Name": "host.testdomain.com.",
+                }, 
+                "Name": "host.testdomain.com.", 
                 "ResourceRecords": [
                     "10.0.0.1"
-                ],
+                ], 
                 "Type": "A"
-            },
+            }, 
             "Type": "AWS::Route53::RecordSet"
         }
     }

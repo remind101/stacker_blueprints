@@ -23,6 +23,7 @@ from troposphere import (
     GetAtt,
     Output,
     Ref,
+    Sub,
 )
 
 from ..policies import (
@@ -214,9 +215,8 @@ class BaseDeliveryStream(Blueprint):
         return statements
 
     def generate_iam_policy(self):
-        name_prefix = self.context.get_fqn(self.name)
         return iam.Policy(
-            PolicyName="{}-policy".format(name_prefix),
+            PolicyName=Sub("${AWS::StackName}-policy"),
             PolicyDocument=Policy(
                 Statement=self.generate_iam_policy_statements()
             )
