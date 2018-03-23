@@ -4,42 +4,42 @@
             "Value": {
                 "Ref": "Filter1"
             }
-        },
+        }, 
         "Filter2Name": {
             "Value": {
                 "Ref": "Filter2"
             }
         }
-    },
+    }, 
     "Resources": {
         "Filter1": {
             "Properties": {
                 "DestinationArn": {
                     "Fn::GetAtt": [
-                        "KinesisStream1",
+                        "KinesisStream1", 
                         "Arn"
                     ]
-                },
-                "FilterPattern": "{$.userIdentity.type = Root}",
+                }, 
+                "FilterPattern": "{$.userIdentity.type = Root}", 
                 "LogGroupName": {
                     "Ref": "LogGroup1"
                 }
-            },
+            }, 
             "Type": "AWS::Logs::SubscriptionFilter"
-        },
+        }, 
         "Filter2": {
             "Properties": {
                 "DestinationArn": {
                     "Fn::GetAtt": [
-                        "KinesisStream2",
+                        "KinesisStream2", 
                         "Arn"
                     ]
-                },
-                "FilterPattern": "{$.userIdentity.type = Root}",
+                }, 
+                "FilterPattern": "{$.userIdentity.type = Root}", 
                 "LogGroupName": {
                     "Ref": "LogGroup2"
                 }
-            },
+            }, 
             "Type": "AWS::Logs::SubscriptionFilter"
         }
     }

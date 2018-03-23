@@ -3,28 +3,28 @@
         "HostedZoneId": {
             "Value": "fake_zone_id"
         }
-    },
+    }, 
     "Resources": {
         "154ad64949b7d01dc1d117e306f5ef2c": {
             "Properties": {
-                "HostedZoneId": "fake_zone_id",
-                "Name": "host2.testdomain.com.",
+                "HostedZoneId": "fake_zone_id", 
+                "Name": "host2.testdomain.com.", 
                 "ResourceRecords": [
                     "10.0.0.2"
-                ],
+                ], 
                 "Type": "A"
-            },
+            }, 
             "Type": "AWS::Route53::RecordSet"
-        },
+        }, 
         "d8df5bad0c9f04ee2c1f12f25a46a67c": {
             "Properties": {
-                "HostedZoneId": "fake_zone_id",
-                "Name": "host.testdomain.com.",
+                "HostedZoneId": "fake_zone_id", 
+                "Name": "host.testdomain.com.", 
                 "ResourceRecords": [
                     "10.0.0.1"
-                ],
+                ], 
                 "Type": "A"
-            },
+            }, 
             "Type": "AWS::Route53::RecordSet"
         }
     }

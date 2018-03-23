@@ -4,6 +4,7 @@ from troposphere import (
     GetAtt,
     Output,
     Ref,
+    Sub,
     iam,
 )
 
@@ -78,12 +79,11 @@ class Roles(Blueprint):
             return
 
         t = self.template
-        policy_prefix = self.context.get_fqn(self.name)
 
         policy = t.add_resource(
             iam.PolicyType(
                 "{}Policy".format(name),
-                PolicyName="{}-{}-policy".format(policy_prefix, name),
+                PolicyName=Sub("${AWS::StackName}-${Name}-policy", Name=name),
                 PolicyDocument=Policy(
                     Statement=statements,
                 ),

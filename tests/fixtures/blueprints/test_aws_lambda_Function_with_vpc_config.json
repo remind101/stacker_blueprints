@@ -166,7 +166,9 @@
                         }
                     ]
                 }, 
-                "PolicyName": "test-test_aws_lambda_Function_with_vpc_config-policy", 
+                "PolicyName": {
+                    "Fn::Sub": "${AWS::StackName}-policy"
+                }, 
                 "Roles": [
                     {
                         "Ref": "Role"
@@ -209,7 +211,9 @@
                                 }
                             ]
                         }, 
-                        "PolicyName": "test-test_aws_lambda_Function_with_vpc_config-vpc-policy"
+                        "PolicyName": {
+                            "Fn::Sub": "${AWS::StackName}-vpc-policy"
+                        }
                     }
                 ]
             }, 

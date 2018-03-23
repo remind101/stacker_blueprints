@@ -4,78 +4,78 @@
             "Value": {
                 "Ref": "Alias"
             }
-        },
+        }, 
         "KeyArn": {
             "Value": {
                 "Fn::Join": [
-                    "",
+                    "", 
                     [
-                        "arn:aws:kms:",
+                        "arn:aws:kms:", 
                         {
                             "Ref": "AWS::Region"
-                        },
-                        ":",
+                        }, 
+                        ":", 
                         {
                             "Ref": "AWS::AccountId"
-                        },
-                        ":key/",
+                        }, 
+                        ":key/", 
                         {
                             "Ref": "Key"
                         }
                     ]
                 ]
             }
-        },
+        }, 
         "KeyId": {
             "Value": {
                 "Ref": "Key"
             }
         }
-    },
+    }, 
     "Resources": {
         "Alias": {
             "Properties": {
-                "AliasName": "alias/a-test-key",
+                "AliasName": "alias/a-test-key", 
                 "TargetKeyId": {
                     "Ref": "Key"
                 }
-            },
+            }, 
             "Type": "AWS::KMS::Alias"
-        },
+        }, 
         "Key": {
             "Properties": {
-                "Description": "a KMS test-key.",
+                "Description": "a KMS test-key.", 
                 "KeyPolicy": {
-                    "Id": "root-account-access",
+                    "Id": "root-account-access", 
                     "Statement": [
                         {
                             "Action": [
                                 "kms:*"
-                            ],
-                            "Effect": "Allow",
+                            ], 
+                            "Effect": "Allow", 
                             "Principal": {
                                 "AWS": {
                                     "Fn::Join": [
-                                        ":",
+                                        ":", 
                                         [
-                                            "arn:aws:iam:",
+                                            "arn:aws:iam:", 
                                             {
                                                 "Ref": "AWS::AccountId"
-                                            },
+                                            }, 
                                             "root"
                                         ]
                                     ]
                                 }
-                            },
+                            }, 
                             "Resource": [
                                 "*"
-                            ],
+                            ], 
                             "Sid": "Enable IAM User Permissions"
                         }
-                    ],
+                    ], 
                     "Version": "2012-10-17"
                 }
-            },
+            }, 
             "Type": "AWS::KMS::Key"
         }
     }

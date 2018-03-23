@@ -129,7 +129,9 @@
                         }
                     ]
                 }, 
-                "PolicyName": "test-bucketsReadPolicy", 
+                "PolicyName": {
+                    "Fn::Sub": "${AWS::StackName}ReadPolicy"
+                }, 
                 "Roles": [
                     "Role1", 
                     "Role2"
@@ -215,7 +217,9 @@
                         }
                     ]
                 }, 
-                "PolicyName": "test-bucketsReadWritePolicy", 
+                "PolicyName": {
+                    "Fn::Sub": "${AWS::StackName}ReadWritePolicy"
+                }, 
                 "Roles": [
                     "Role3", 
                     "Role4"

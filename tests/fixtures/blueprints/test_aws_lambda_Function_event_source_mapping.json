@@ -195,7 +195,9 @@
                         }
                     ]
                 }, 
-                "PolicyName": "test-test_aws_lambda_Function_event_source_mapping-policy", 
+                "PolicyName": {
+                    "Fn::Sub": "${AWS::StackName}-policy"
+                }, 
                 "Roles": [
                     {
                         "Ref": "Role"

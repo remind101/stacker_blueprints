@@ -166,7 +166,9 @@
                         }
                     ]
                 }, 
-                "PolicyName": "test-test_aws_lambda_Function_extended_statements-policy", 
+                "PolicyName": {
+                    "Fn::Sub": "${AWS::StackName}-policy"
+                }, 
                 "Roles": [
                     {
                         "Ref": "Role"
