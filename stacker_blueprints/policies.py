@@ -14,7 +14,14 @@ from troposphere import (
     AWSHelperFn
 )
 
-from awacs import sts, s3, logs, ec2
+from awacs import (
+    sts,
+    s3,
+    logs,
+    ec2,
+    dynamodb,
+    cloudwatch,
+)
 
 
 def make_simple_assume_statement(*principals):
@@ -201,3 +208,30 @@ def lambda_vpc_execution_statements():
 
 def flowlogs_assumerole_policy():
     return make_simple_assume_policy("vpc-flow-logs.amazonaws.com")
+
+
+def dynamodb_autoscaling_policy(tables):
+    """Policy to allow AutoScaling a list of DynamoDB tables."""
+    return Policy(
+        Statement=[
+            Statement(
+                Effect=Allow,
+                Resource=tables,
+                Action=[
+                    dynamodb.DescribeTable,
+                    dynamodb.UpdateTable,
+                ]
+            ),
+            Statement(
+                Effect=Allow,
+                Resource=['*'],
+                Action=[
+                    cloudwatch.PutMetricAlarm,
+                    cloudwatch.DescribeAlarms,
+                    cloudwatch.GetMetricStatistics,
+                    cloudwatch.SetAlarmState,
+                    cloudwatch.DeleteAlarms,
+                ]
+            ),
+        ]
+    )
