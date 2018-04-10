@@ -46,15 +46,27 @@ class TestDynamoDB(BlueprintTestCase):
         ]
         self.dynamodb_autoscaling_variables = [
             Variable(
-              'Tables',
-              ['test-user-table', 'test-group-table'],
-            ),
-            Variable(
-              'ReadCapacity', [5, 100]
-            ),
-            Variable(
-              'WriteCapacity', [5, 50]
-            ),
+              "AutoScalingConfigs",
+              [
+                  {
+                      "table": "test-user-table",
+                      "capacity": {
+                          "read" : [5, 100],
+                          "write" : [5, 50],
+                      },
+                      "target-value": 75.0,
+                  },
+                  {
+                      "table": "test-group-table",
+                      "capacity": {
+                          "read" : [10, 50],
+                          "write" : [1, 25],
+                      },
+                      "scale-in-cooldown": 180,
+                      "scale-out-cooldown": 180,
+                  },
+              ]
+            )
         ]
 
     def test_dynamodb_table(self):

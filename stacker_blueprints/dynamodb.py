@@ -106,44 +106,30 @@ class AutoScaling(Blueprint):
       - name: dynamodb-autoscaling
         class_path: stacker_blueprints.dynamodb.AutoScaling
         variables:
-          Tables:
-            - test-user-table
-            - test-group-table
-          ReadCapacity: (5, 100)
-          WriteCapacity: (5, 50)
+          AutoScalingConfigs:
+
+            - table: test-user-table
+              capacity:
+                read: [5, 100]
+                write: [5, 50]
+              target-value: 75.0
+
+            - table: test-group-table
+              capacity:
+                read: [10, 50]
+                write: [1, 25]
+              scale-in-cooldown: 180
+              scale-out-cooldown: 180
     """
     VARIABLES = {
-        "Tables": {
+        "AutoScalingConfigs": {
             "type": list,
-            "description": "A list of DynamoDB tables to turn on autoscaling",
-        },
-        "ReadCapacity": {
-            "type": list,
-            "description": "Read (Min,Max) Capacity tuple.",
-        },
-        "WriteCapacity": {
-            "type": list,
-            "description": "Write (Min,Max) Capacity tuple.",
-        },
-        "ScaleInCooldown": {
-            "type": int,
-            "default": 60,
-            "description": "Time in seconds to wait after scale in activity"
-                           "completes before another scale in may start.",
-        },
-        "ScaleOutCooldown": {
-            "type": int,
-            "default": 60,
-            "description": "Time in seconds to wait after scale out activity"
-                           "completes before another scale out may start.",
-        },
-        "TargetValue": {
-            "type": float,
-            "default": 50.0,
-            "description": "The target value for the metric.",
-        },
+            "description": "A list of dicts, each of which represent "
+                           "a DynamoDB AutoScaling Configuration.",
+        }
     }
 
+    # reference: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-dynamodb-table.html#cfn-dynamodb-table-examples-application-autoscaling # noqa
     def create_scaling_iam_role(self):
         assumerole_policy = get_application_autoscaling_assumerole_policy()
         return self.template.add_resource(
@@ -161,40 +147,50 @@ class AutoScaling(Blueprint):
             )
         )
 
-    def create_scalable_target_and_policy(self, table, capacity_tuple, capacity_type): # noqa
+    def create_scalable_target_and_scaling_policy(self, asc, capacity_type="read"): # noqa
+        if capacity_type.lower() not in ("read", "write"):
+            raise Exception("capacity_type must be either `read` or `write`.")
+
+        min_capacity, max_capacity = asc["capacity"][capacity_type.lower()]
         capacity_type = capacity_type.title()
-        if capacity_type not in ("Write", "Read"):
-            raise Exception("capacity_type must be either Write or Read.")
         dimension = "dynamodb:table:{}CapacityUnits".format(capacity_type)
-        camel_table = snake_to_camel_case(table)
+
+        camel_table = snake_to_camel_case(asc["table"])
+
+        scalable_target_name = "{}{}ScalableTarget".format(
+            camel_table,
+            capacity_type,
+        )
+
         scalable_target = self.template.add_resource(
            aas.ScalableTarget(
-              "{}{}ScalableTarget".format(camel_table, capacity_type),
-              MaxCapacity=capacity_tuple[0],
-              MinCapacity=capacity_tuple[1],
-              ResourceId=table,
+              scalable_target_name,
+              MinCapacity=min_capacity,
+              MaxCapacity=max_capacity,
+              ResourceId=asc["table"],
               RoleARN=self.iam_role.ref(),
               ScalableDimension=dimension,
               ServiceNamespace="dynamodb"
            )
         )
 
+        # https://docs.aws.amazon.com/autoscaling/application/APIReference/API_PredefinedMetricSpecification.html # noqa
+        predefined_metric_spec = aas.PredefinedMetricSpecification(
+            PredefinedMetricType="DynamoDB{}CapacityUtilization".format(
+                capacity_type
+            )
+        )
+
+        ttspc = aas.TargetTrackingScalingPolicyConfiguration(
+            TargetValue=asc.get("target-value", 50.0),
+            ScaleInCooldown=asc.get("scale-in-cooldown", 60),
+            ScaleOutCooldown=asc.get("scale-out-cooldown", 60),
+            PredefinedMetricSpecification=predefined_metric_spec,
+        )
+
         scaling_policy_name = "{}{}ScalablePolicy".format(
             camel_table,
-            capacity_type
-        )
-
-        # https://docs.aws.amazon.com/autoscaling/application/APIReference/API_PredefinedMetricSpecification.html # noqa
-        predefined_metric_spec = aas.PredefinedMetricSpecification( # noqa
-            PredefinedMetricType="DynamoDB{}CapacityUtilization".format(capacity_type) # noqa
-        )
-
-        variables = self.get_variables()
-        ttspc = aas.TargetTrackingScalingPolicyConfiguration(       # noqa
-            TargetValue=variables["TargetValue"],
-            ScaleInCooldown=variables["ScaleInCooldown"],
-            ScaleOutCooldown=variables["ScaleOutCooldown"],
-            PredefinedMetricSpecification=predefined_metric_spec,
+            capacity_type,
         )
 
         # dynamodb only supports TargetTrackingScaling polcy type.
@@ -211,12 +207,13 @@ class AutoScaling(Blueprint):
 
     def create_template(self):
         variables = self.get_variables()
-        self.tables = variables["Tables"]
+        self.auto_scaling_configs = variables["AutoScalingConfigs"]
+        self.tables = [asc['table'] for asc in self.auto_scaling_configs]
         self.iam_role = self.create_scaling_iam_role()
-        for table in self.tables:
-            self.create_scalable_target_and_policy(
-                table, variables["ReadCapacity"], "read"
+        for asc in self.auto_scaling_configs:
+            self.create_scalable_target_and_scaling_policy(
+                asc, "read"
             )
-            self.create_scalable_target_and_policy(
-                table, variables["WriteCapacity"], "write"
+            self.create_scalable_target_and_scaling_policy(
+                asc, "write"
             )

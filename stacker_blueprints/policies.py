@@ -210,6 +210,7 @@ def flowlogs_assumerole_policy():
     return make_simple_assume_policy("vpc-flow-logs.amazonaws.com")
 
 
+# reference: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-dynamodb-table.html#cfn-dynamodb-table-examples-application-autoscaling # noqa
 def dynamodb_autoscaling_policy(tables):
     """Policy to allow AutoScaling a list of DynamoDB tables."""
     return Policy(

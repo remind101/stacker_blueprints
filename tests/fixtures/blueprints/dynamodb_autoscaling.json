@@ -66,8 +66,8 @@
                     "PredefinedMetricSpecification": {
                         "PredefinedMetricType": "DynamoDBReadCapacityUtilization"
                     }, 
-                    "ScaleInCooldown": 60, 
-                    "ScaleOutCooldown": 60, 
+                    "ScaleInCooldown": 180, 
+                    "ScaleOutCooldown": 180, 
                     "TargetValue": 50.0
                 }
             }, 
@@ -75,8 +75,8 @@
         }, 
         "TestGroupTableReadScalableTarget": {
             "Properties": {
-                "MaxCapacity": 5, 
-                "MinCapacity": 100, 
+                "MaxCapacity": 50, 
+                "MinCapacity": 10, 
                 "ResourceId": "test-group-table", 
                 "RoleARN": {
                     "Ref": "Role"
@@ -97,8 +97,8 @@
                     "PredefinedMetricSpecification": {
                         "PredefinedMetricType": "DynamoDBWriteCapacityUtilization"
                     }, 
-                    "ScaleInCooldown": 60, 
-                    "ScaleOutCooldown": 60, 
+                    "ScaleInCooldown": 180, 
+                    "ScaleOutCooldown": 180, 
                     "TargetValue": 50.0
                 }
             }, 
@@ -106,8 +106,8 @@
         }, 
         "TestGroupTableWriteScalableTarget": {
             "Properties": {
-                "MaxCapacity": 5, 
-                "MinCapacity": 50, 
+                "MaxCapacity": 25, 
+                "MinCapacity": 1, 
                 "ResourceId": "test-group-table", 
                 "RoleARN": {
                     "Ref": "Role"
@@ -130,15 +130,15 @@
                     }, 
                     "ScaleInCooldown": 60, 
                     "ScaleOutCooldown": 60, 
-                    "TargetValue": 50.0
+                    "TargetValue": 75.0
                 }
             }, 
             "Type": "AWS::ApplicationAutoScaling::ScalingPolicy"
         }, 
         "TestUserTableReadScalableTarget": {
             "Properties": {
-                "MaxCapacity": 5, 
-                "MinCapacity": 100, 
+                "MaxCapacity": 100, 
+                "MinCapacity": 5, 
                 "ResourceId": "test-user-table", 
                 "RoleARN": {
                     "Ref": "Role"
@@ -161,15 +161,15 @@
                     }, 
                     "ScaleInCooldown": 60, 
                     "ScaleOutCooldown": 60, 
-                    "TargetValue": 50.0
+                    "TargetValue": 75.0
                 }
             }, 
             "Type": "AWS::ApplicationAutoScaling::ScalingPolicy"
         }, 
         "TestUserTableWriteScalableTarget": {
             "Properties": {
-                "MaxCapacity": 5, 
-                "MinCapacity": 50, 
+                "MaxCapacity": 50, 
+                "MinCapacity": 5, 
                 "ResourceId": "test-user-table", 
                 "RoleARN": {
                     "Ref": "Role"
