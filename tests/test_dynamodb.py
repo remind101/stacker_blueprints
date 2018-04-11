@@ -50,20 +50,13 @@ class TestDynamoDB(BlueprintTestCase):
               [
                   {
                       "table": "test-user-table",
-                      "capacity": {
-                          "read" : [5, 100],
-                          "write" : [5, 50],
-                      },
-                      "target-value": 75.0,
+                      "read": {"min": 5, "max": 100, "target": 75.0},
+                      "write": {"min": 5, "max": 50, "target": 80.0},
                   },
                   {
                       "table": "test-group-table",
-                      "capacity": {
-                          "read" : [10, 50],
-                          "write" : [1, 25],
-                      },
-                      "scale-in-cooldown": 180,
-                      "scale-out-cooldown": 180,
+                      "read": {"min": 10, "max": 50, "scale-in-cooldown": 180, "scale-out-cooldown": 180},
+                      "write": {"max": 25},
                   },
               ]
             )

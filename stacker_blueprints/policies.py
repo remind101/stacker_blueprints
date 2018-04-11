@@ -37,6 +37,14 @@ def make_simple_assume_policy(*principals):
             make_simple_assume_statement(*principals)])
 
 
+def dynamodb_arn(table_name):
+    return 'arn:aws:dynamodb:::table/{}'.format(table_name)
+
+
+def dynamodb_arns(table_names):
+    return [dynamodb_arn(table_name) for table_name in table_names]
+
+
 def s3_arn(bucket):
     if isinstance(bucket, AWSHelperFn):
         return Sub('arn:aws:s3:::${Bucket}', Bucket=bucket)
@@ -217,7 +225,7 @@ def dynamodb_autoscaling_policy(tables):
         Statement=[
             Statement(
                 Effect=Allow,
-                Resource=tables,
+                Resource=dynamodb_arns(tables),
                 Action=[
                     dynamodb.DescribeTable,
                     dynamodb.UpdateTable,
