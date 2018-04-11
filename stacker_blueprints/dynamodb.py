@@ -109,17 +109,23 @@ class AutoScaling(Blueprint):
           AutoScalingConfigs:
 
             - table: test-user-table
-              capacity:
-                read: [5, 100]
-                write: [5, 50]
-              target-value: 75.0
+              read:
+                min: 5
+                max: 100
+                target: 75.0
+              write:
+                min: 5
+                max: 50
+                target: 80.0
 
             - table: test-group-table
-              capacity:
-                read: [10, 50]
-                write: [1, 25]
-              scale-in-cooldown: 180
-              scale-out-cooldown: 180
+              read:
+                min: 10
+                max: 50
+                scale-in-cooldown: 180
+                scale-out-cooldown: 180
+              write:
+                max: 25
     """
     VARIABLES = {
         "AutoScalingConfigs": {
@@ -147,15 +153,14 @@ class AutoScaling(Blueprint):
             )
         )
 
-    def create_scalable_target_and_scaling_policy(self, asc, capacity_type="read"): # noqa
-        if capacity_type.lower() not in ("read", "write"):
+    def create_scalable_target_and_scaling_policy(self, table, asc, capacity_type="read"): # noqa
+        capacity_type = capacity_type.title()
+        if capacity_type not in ("Read", "Write"):
             raise Exception("capacity_type must be either `read` or `write`.")
 
-        min_capacity, max_capacity = asc["capacity"][capacity_type.lower()]
-        capacity_type = capacity_type.title()
         dimension = "dynamodb:table:{}CapacityUnits".format(capacity_type)
 
-        camel_table = snake_to_camel_case(asc["table"])
+        camel_table = snake_to_camel_case(table)
 
         scalable_target_name = "{}{}ScalableTarget".format(
             camel_table,
@@ -165,10 +170,10 @@ class AutoScaling(Blueprint):
         scalable_target = self.template.add_resource(
            aas.ScalableTarget(
               scalable_target_name,
-              MinCapacity=min_capacity,
-              MaxCapacity=max_capacity,
-              ResourceId=asc["table"],
-              RoleARN=self.iam_role.ref(),
+              MinCapacity=asc.get("min", 1),
+              MaxCapacity=asc.get("max", 1000),
+              ResourceId="table/{}".format(table),
+              RoleARN=self.iam_role_arn,
               ScalableDimension=dimension,
               ServiceNamespace="dynamodb"
            )
@@ -182,7 +187,7 @@ class AutoScaling(Blueprint):
         )
 
         ttspc = aas.TargetTrackingScalingPolicyConfiguration(
-            TargetValue=asc.get("target-value", 50.0),
+            TargetValue=asc.get("target", 50.0),
             ScaleInCooldown=asc.get("scale-in-cooldown", 60),
             ScaleOutCooldown=asc.get("scale-out-cooldown", 60),
             PredefinedMetricSpecification=predefined_metric_spec,
@@ -208,12 +213,13 @@ class AutoScaling(Blueprint):
     def create_template(self):
         variables = self.get_variables()
         self.auto_scaling_configs = variables["AutoScalingConfigs"]
-        self.tables = [asc['table'] for asc in self.auto_scaling_configs]
+        self.tables = [config["table"] for config in self.auto_scaling_configs]
         self.iam_role = self.create_scaling_iam_role()
-        for asc in self.auto_scaling_configs:
+        self.iam_role_arn = GetAtt(self.iam_role, "Arn")
+        for table_asc in self.auto_scaling_configs:
             self.create_scalable_target_and_scaling_policy(
-                asc, "read"
+                table_asc["table"], table_asc["read"], "read"
             )
             self.create_scalable_target_and_scaling_policy(
-                asc, "write"
+                table_asc["table"], table_asc["write"], "write"
             )
