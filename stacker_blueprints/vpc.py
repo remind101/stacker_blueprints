@@ -352,7 +352,6 @@ class VPC(Blueprint):
             t.add_resource(
                 ec2.Instance(
                     instance_name,
-                    Condition="UseNatInstances",
                     ImageId=image_id,
                     SecurityGroupIds=[Ref(DEFAULT_SG), Ref(NAT_SG)],
                     SubnetId=Ref(subnet_name),
