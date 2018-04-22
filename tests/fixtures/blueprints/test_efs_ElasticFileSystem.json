@@ -20,7 +20,7 @@
                 ]
             }
         },
-        "EfsSecurityGroupIds": {
+        "EfsNewSecurityGroupIds": {
             "Value": {
                 "Fn::Join": [
                     ",",
@@ -100,9 +100,17 @@
                         "ToPort": 2049
                     }
                 ],
-                "VpcId": {
-                    "Ref": "VpcId"
-                }
+                "Tags": [
+                    {
+                        "Key": "Foo",
+                        "Value": "Bar"
+                    },
+                    {
+                        "Key": "Hello",
+                        "Value": "World"
+                    }
+                ],
+                "VpcId": "vpc-11111111"
             },
             "Type": "AWS::EC2::SecurityGroup"
         },
@@ -111,15 +119,19 @@
                 "GroupDescription": "EFS SG 2",
                 "SecurityGroupIngress": [
                     {
-                        "FromPort": 2048,
+                        "FromPort": 2049,
                         "IpProtocol": "tcp",
                         "SourceSecurityGroupId": "sg-11111111",
                         "ToPort": 2049
                     }
                 ],
-                "VpcId": {
-                    "Ref": "VpcId"
-                }
+                "Tags": [
+                    {
+                        "Key": "Hello",
+                        "Value": "World"
+                    }
+                ],
+                "VpcId": "vpc-11111111"
             },
             "Type": "AWS::EC2::SecurityGroup"
         }
