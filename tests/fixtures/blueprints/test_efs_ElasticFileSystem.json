@@ -1,0 +1,139 @@
+{
+    "Outputs": {
+        "EfsFileSystemId": {
+            "Value": {
+                "Ref": "EfsFileSystem"
+            }
+        },
+        "EfsMountTargetIds": {
+            "Value": {
+                "Fn::Join": [
+                    ",",
+                    [
+                        {
+                            "Ref": "EfsMountTarget1"
+                        },
+                        {
+                            "Ref": "EfsMountTarget2"
+                        }
+                    ]
+                ]
+            }
+        },
+        "EfsNewSecurityGroupIds": {
+            "Value": {
+                "Fn::Join": [
+                    ",",
+                    [
+                        {
+                            "Ref": "EfsSg1"
+                        },
+                        {
+                            "Ref": "EfsSg2"
+                        }
+                    ]
+                ]
+            }
+        }
+    },
+    "Resources": {
+        "EfsFileSystem": {
+            "Properties": {
+                "FileSystemTags": [
+                    {
+                        "Key": "Hello",
+                        "Value": "World"
+                    }
+                ],
+                "PerformanceMode": "generalPurpose"
+            },
+            "Type": "AWS::EFS::FileSystem"
+        },
+        "EfsMountTarget1": {
+            "Properties": {
+                "FileSystemId": {
+                    "Ref": "EfsFileSystem"
+                },
+                "IpAddress": "172.16.1.10",
+                "SecurityGroups": [
+                    {
+                        "Ref": "EfsSg1"
+                    },
+                    {
+                        "Ref": "EfsSg2"
+                    },
+                    "sg-22222222",
+                    "sg-33333333"
+                ],
+                "SubnetId": "subnet-11111111"
+            },
+            "Type": "AWS::EFS::MountTarget"
+        },
+        "EfsMountTarget2": {
+            "Properties": {
+                "FileSystemId": {
+                    "Ref": "EfsFileSystem"
+                },
+                "IpAddress": "172.16.2.10",
+                "SecurityGroups": [
+                    {
+                        "Ref": "EfsSg1"
+                    },
+                    {
+                        "Ref": "EfsSg2"
+                    },
+                    "sg-22222222",
+                    "sg-33333333"
+                ],
+                "SubnetId": "subnet-22222222"
+            },
+            "Type": "AWS::EFS::MountTarget"
+        },
+        "EfsSg1": {
+            "Properties": {
+                "GroupDescription": "EFS SG 1",
+                "SecurityGroupIngress": [
+                    {
+                        "CidrIp": "172.16.0.0/12",
+                        "FromPort": 2049,
+                        "IpProtocol": "tcp",
+                        "ToPort": 2049
+                    }
+                ],
+                "Tags": [
+                    {
+                        "Key": "Foo",
+                        "Value": "Bar"
+                    },
+                    {
+                        "Key": "Hello",
+                        "Value": "World"
+                    }
+                ],
+                "VpcId": "vpc-11111111"
+            },
+            "Type": "AWS::EC2::SecurityGroup"
+        },
+        "EfsSg2": {
+            "Properties": {
+                "GroupDescription": "EFS SG 2",
+                "SecurityGroupIngress": [
+                    {
+                        "FromPort": 2049,
+                        "IpProtocol": "tcp",
+                        "SourceSecurityGroupId": "sg-11111111",
+                        "ToPort": 2049
+                    }
+                ],
+                "Tags": [
+                    {
+                        "Key": "Hello",
+                        "Value": "World"
+                    }
+                ],
+                "VpcId": "vpc-11111111"
+            },
+            "Type": "AWS::EC2::SecurityGroup"
+        }
+    }
+}
