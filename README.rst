@@ -1,3 +1,12 @@
+DEPRECATED
+==================
+
+This repository has been moved to
+https://github.com/cloudtools/stacker_blueprints and is only kept here for
+archival purposes.  Please submit all issues & pull requests to the new repo.
+
+Thanks!
+
 stacker_blueprints
 ==================
 
