@@ -5,12 +5,12 @@ This includes the VPC, it's subnets, availability zones, etc.
 
 from troposphere import (
     Ref, Output, Join, FindInMap, Select, GetAZs, Tags,
-    GetAtt
+    GetAtt, NoValue, Region
 )
-from troposphere import ec2
-from troposphere.route53 import HostedZone, HostedZoneVPCs
+from troposphere import ec2, route53
 
 from stacker.blueprints.base import Blueprint
+from stacker.blueprints.variables.types import TroposphereType
 
 NAT_INSTANCE_NAME = 'NatInstance%s'
 NAT_GATEWAY_NAME = 'NatGateway%s'
@@ -87,10 +87,10 @@ class VPC(Blueprint):
 
         if variables["InternalDomain"]:
             t.add_resource(
-                HostedZone(
+                route53.HostedZone(
                     "InternalZone",
                     Name=variables["InternalDomain"],
-                    VPCs=[HostedZoneVPCs(
+                    VPCs=[route53.HostedZoneVPCs(
                         VPCId=VPC_ID,
                         VPCRegion=Ref("AWS::Region"))]
                 )
@@ -394,3 +394,131 @@ class VPC(Blueprint):
         self.create_default_security_group()
         self.create_dhcp_options()
         self.create_network()
+
+
+class VPC2(Blueprint):
+    """This is a stripped down version of the VPC Blueprint."""
+
+    VARIABLES = {
+        "VPC": {
+            "type": TroposphereType(ec2.VPC),
+        },
+        "InternalZone": {
+            "type": TroposphereType(route53.HostedZone, optional=True),
+            "description": "The config for an internal zone. If provided, "
+                           "the zone will be created with the VPCs setting "
+                           "set to this VPC.",
+            "default": None,
+        },
+    }
+
+    def create_vpc(self):
+        t = self.template
+        variables = self.get_variables()
+
+        self.vpc = t.add_resource(variables["VPC"])
+        t.add_output(Output("VpcId", Value=self.vpc.Ref()))
+
+        attrs = [
+            "CidrBlock", "CidrBlockAssociations", "DefaultNetworkAcl",
+            "DefaultSecurityGroup", "Ipv6CidrBlocks"
+        ]
+        for attr in attrs:
+            t.add_output(Output(attr, Value=self.vpc.GetAtt(attr)))
+
+    def create_internet_gateway(self):
+        t = self.template
+        self.gateway = t.add_resource(ec2.InternetGateway("InternetGateway"))
+
+        t.add_output(
+            Output(
+                "InternetGatewayId",
+                Value=self.gateway.Ref(),
+            )
+        )
+
+        self.gateway_attachment = t.add_resource(
+            ec2.VPCGatewayAttachment(
+                "VPCGatewayAttachment",
+                VpcId=self.vpc.Ref(),
+                InternetGatewayId=self.gateway.Ref(),
+            )
+        )
+
+        t.add_output(
+            Output(
+                "VPCGatewayAttachmentId",
+                Value=self.gateway_attachment.Ref(),
+            )
+        )
+
+    def create_internal_zone(self):
+        t = self.template
+        variables = self.get_variables()
+
+        self.zone = variables["InternalZone"]
+
+        if self.zone:
+            hosted_zone_vpc = route53.HostedZoneVPCs(
+                VPCId=self.vpc.Ref(),
+                VPCRegion=Region,
+            )
+
+            self.zone.VPCs = [hosted_zone_vpc, ]
+            t.add_resource(self.zone)
+
+            t.add_output(
+                Output(
+                    "InternalZoneId",
+                    Value=self.zone.Ref(),
+                )
+            )
+            t.add_output(
+                Output(
+                    "InternalZoneName",
+                    Value=self.zone.Name,
+                )
+            )
+
+    def create_dhcp_options(self):
+        t = self.template
+
+        search_path = NoValue
+        if self.zone:
+            search_path = self.zone.Name
+
+        self.dhcp_options = t.add_resource(
+            ec2.DHCPOptions(
+                "DHCPOptions",
+                DomainName=search_path,
+                DomainNameServers=["AmazonProvidedDNS", ],
+            )
+        )
+
+        t.add_output(
+            Output(
+                "DHCPOptionsId",
+                Value=self.dhcp_options.Ref(),
+            )
+        )
+
+        self.dhcp_association = t.add_resource(
+            ec2.VPCDHCPOptionsAssociation(
+                "VPCDHCPOptionsAssociation",
+                VpcId=self.vpc.Ref(),
+                DhcpOptionsId=self.dhcp_options.Ref(),
+            )
+        )
+
+        t.add_output(
+            Output(
+                "VPCDHCPOptionsAssociation",
+                Value=self.dhcp_association.Ref(),
+            )
+        )
+
+    def create_template(self):
+        self.create_vpc()
+        self.create_internet_gateway()
+        self.create_internal_zone()
+        self.create_dhcp_options()

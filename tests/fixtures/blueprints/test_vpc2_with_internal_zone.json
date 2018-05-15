@@ -1,0 +1,135 @@
+{
+    "Outputs": {
+        "CidrBlock": {
+            "Value": {
+                "Fn::GetAtt": [
+                    "MyVPC", 
+                    "CidrBlock"
+                ]
+            }
+        }, 
+        "CidrBlockAssociations": {
+            "Value": {
+                "Fn::GetAtt": [
+                    "MyVPC", 
+                    "CidrBlockAssociations"
+                ]
+            }
+        }, 
+        "DHCPOptionsId": {
+            "Value": {
+                "Ref": "DHCPOptions"
+            }
+        }, 
+        "DefaultNetworkAcl": {
+            "Value": {
+                "Fn::GetAtt": [
+                    "MyVPC", 
+                    "DefaultNetworkAcl"
+                ]
+            }
+        }, 
+        "DefaultSecurityGroup": {
+            "Value": {
+                "Fn::GetAtt": [
+                    "MyVPC", 
+                    "DefaultSecurityGroup"
+                ]
+            }
+        }, 
+        "InternalZoneId": {
+            "Value": {
+                "Ref": "MyInternalZone"
+            }
+        }, 
+        "InternalZoneName": {
+            "Value": "internal."
+        }, 
+        "InternetGatewayId": {
+            "Value": {
+                "Ref": "InternetGateway"
+            }
+        }, 
+        "Ipv6CidrBlocks": {
+            "Value": {
+                "Fn::GetAtt": [
+                    "MyVPC", 
+                    "Ipv6CidrBlocks"
+                ]
+            }
+        }, 
+        "VPCDHCPOptionsAssociation": {
+            "Value": {
+                "Ref": "VPCDHCPOptionsAssociation"
+            }
+        }, 
+        "VPCGatewayAttachmentId": {
+            "Value": {
+                "Ref": "VPCGatewayAttachment"
+            }
+        }, 
+        "VpcId": {
+            "Value": {
+                "Ref": "MyVPC"
+            }
+        }
+    }, 
+    "Resources": {
+        "DHCPOptions": {
+            "Properties": {
+                "DomainName": "internal.", 
+                "DomainNameServers": [
+                    "AmazonProvidedDNS"
+                ]
+            }, 
+            "Type": "AWS::EC2::DHCPOptions"
+        }, 
+        "InternetGateway": {
+            "Type": "AWS::EC2::InternetGateway"
+        }, 
+        "MyInternalZone": {
+            "Properties": {
+                "Name": "internal.", 
+                "VPCs": [
+                    {
+                        "VPCId": {
+                            "Ref": "MyVPC"
+                        }, 
+                        "VPCRegion": {
+                            "Ref": "AWS::Region"
+                        }
+                    }
+                ]
+            }, 
+            "Type": "AWS::Route53::HostedZone"
+        }, 
+        "MyVPC": {
+            "Properties": {
+                "CidrBlock": "10.0.0.0/16"
+            }, 
+            "Type": "AWS::EC2::VPC"
+        }, 
+        "VPCDHCPOptionsAssociation": {
+            "Properties": {
+                "DhcpOptionsId": {
+                    "Ref": "DHCPOptions"
+                }, 
+                "VpcId": {
+                    "Ref": "MyVPC"
+                }
+            }, 
+            "Type": "AWS::EC2::VPCDHCPOptionsAssociation"
+        }, 
+        "VPCGatewayAttachment": {
+            "Properties": {
+                "InternetGatewayId": {
+                    "Ref": "InternetGateway"
+                }, 
+                "VpcId": {
+                    "Ref": "MyVPC"
+                }
+            }, 
+            "Type": "AWS::EC2::VPCGatewayAttachment"
+        }
+    }
+}
