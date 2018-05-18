@@ -111,6 +111,13 @@ class DNSRecords(Blueprint):
                            "Also accepts an optional 'Enabled' boolean.",
             "default": []
         },
+        "RecordSetGroups": {
+            "type": dict,
+            "description": "A list of dictionaries representing the attributes"
+                           "of a troposphere.route53.RecordSetGroup object."
+                           "Also accepts an optional 'Enabled' boolean.",
+            "default": {}
+        },
     }
 
     def add_hosted_zone_id_for_alias_target_if_missing(self, rs):
@@ -139,6 +146,13 @@ class DNSRecords(Blueprint):
         rs = self.add_hosted_zone_id_for_alias_target_if_missing(rs)
         return self.template.add_resource(rs)
 
+    def create_record_set_group(self, name, g_dict):
+        """Accept a record_set dict. Return a Troposphere record_set object."""
+        rs = route53.RecordSetGroup.from_dict(name, g_dict)
+        rs = add_hosted_zone_id_if_missing(rs, self.hosted_zone_id)
+        rs = self.add_hosted_zone_id_for_alias_target_if_missing(rs)
+        return self.template.add_resource(rs)
+
     def create_record_sets(self, record_set_dicts):
         """Accept list of record_set dicts.
         Return list of record_set objects."""
@@ -150,6 +164,18 @@ class DNSRecords(Blueprint):
                     self.create_record_set(record_set_dict)
                 )
         return record_set_objects
+
+    def create_record_set_groups(self, record_set_group_dicts):
+        """Accept list of record_set_group dicts.
+        Return list of record_set_group objects."""
+        record_set_groups = []
+        for name, group in record_set_group_dicts.iteritems():
+            # pop removes the 'Enabled' key and tests if True.
+            if group.pop('Enabled', True):
+                record_set_groups.append(
+                    self.create_record_set_group(name, group)
+                )
+        return record_set_groups
 
     def create_template(self):
         variables = self.get_variables()
@@ -204,5 +230,5 @@ class DNSRecords(Blueprint):
             Output("HostedZoneId", Value=self.hosted_zone_id)
         )
 
-        # return a list of troposphere record set objects.
+        self.create_record_set_groups(variables["RecordSetGroups"])
         return self.create_record_sets(variables["RecordSets"])
