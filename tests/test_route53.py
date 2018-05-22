@@ -39,6 +39,39 @@ class TestRoute53(BlueprintTestCase):
         blueprint.create_template()
         self.assertRenderedBlueprint(blueprint)
 
+    def test_create_template_record_set_grroup(self):
+        blueprint = DNSRecords('route53_record_set_groups', self.ctx)
+        blueprint.resolve_variables(
+            [
+                Variable(
+                    "RecordSetGroups",
+                    {
+                        "Frontend": {
+                            "RecordSets": [
+                                {
+                                    "Name": "mysite.example.com",
+                                    "Type": "CNAME",
+                                    "SetIdentifier": "Frontend One",
+                                    "Weight": "4",
+                                    "ResourceRecords": ["example-ec2.amazonaws.com"],
+                                },
+                                {
+                                    "Name": "mysite.example.com",
+                                    "Type": "CNAME",
+                                    "SetIdentifier": "Frontend Two",
+                                    "Weight": "6",
+                                    "ResourceRecords": ["example-ec2-larger.amazonaws.com"],
+                                },
+                            ]
+                        },
+                    }
+                ),
+                Variable("HostedZoneId", "fake_zone_id"),
+            ]
+        )
+        blueprint.create_template()
+        self.assertRenderedBlueprint(blueprint)
+
     def test_create_template_hosted_zone_name(self):
         blueprint = DNSRecords('route53_dnsrecords_zone_name', self.ctx)
         blueprint.resolve_variables(

@@ -1,0 +1,35 @@
+{
+    "Outputs": {
+        "HostedZoneId": {
+            "Value": "fake_zone_id"
+        }
+    }, 
+    "Resources": {
+        "Frontend": {
+            "Properties": {
+                "HostedZoneId": "fake_zone_id", 
+                "RecordSets": [
+                    {
+                        "Name": "mysite.example.com", 
+                        "ResourceRecords": [
+                            "example-ec2.amazonaws.com"
+                        ], 
+                        "SetIdentifier": "Frontend One", 
+                        "Type": "CNAME", 
+                        "Weight": "4"
+                    }, 
+                    {
+                        "Name": "mysite.example.com", 
+                        "ResourceRecords": [
+                            "example-ec2-larger.amazonaws.com"
+                        ], 
+                        "SetIdentifier": "Frontend Two", 
+                        "Type": "CNAME", 
+                        "Weight": "6"
+                    }
+                ]
+            }, 
+            "Type": "AWS::Route53::RecordSetGroup"
+        }
+    }
+}
