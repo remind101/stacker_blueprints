@@ -67,7 +67,7 @@ class Buckets(Blueprint):
         t = self.template
         variables = self.get_variables()
 
-        bucket_ids = []
+        self.bucket_ids = []
 
         for title, attrs in variables["Buckets"].items():
             bucket_id = Ref(title)
@@ -105,7 +105,7 @@ class Buckets(Blueprint):
                     )
                 )
 
-            bucket_ids.append(bucket_id)
+            self.bucket_ids.append(bucket_id)
 
         read_write_roles = variables["ReadWriteRoles"]
         if read_write_roles:
@@ -114,7 +114,7 @@ class Buckets(Blueprint):
                     "ReadWritePolicy",
                     PolicyName=Sub("${AWS::StackName}ReadWritePolicy"),
                     PolicyDocument=read_write_s3_bucket_policy(
-                        bucket_ids
+                        self.bucket_ids
                     ),
                     Roles=read_write_roles,
                 )
@@ -127,7 +127,7 @@ class Buckets(Blueprint):
                     "ReadPolicy",
                     PolicyName=Sub("${AWS::StackName}ReadPolicy"),
                     PolicyDocument=read_only_s3_bucket_policy(
-                        bucket_ids
+                        self.bucket_ids
                     ),
                     Roles=read_only_roles,
                 )
