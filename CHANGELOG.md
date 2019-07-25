@@ -1,3 +1,7 @@
+## 1.0.8 (2019-07-25)
+
+- Update Redis settings validation
+
 ## 1.0.7 (2018-02-11)
 
 - FlexibleAutoScalingGroup blueprint [GH-156]
